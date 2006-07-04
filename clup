@@ -1,0 +1,11 @@
+#!/bin/bash
+#
+# usage: ../clup branch
+# head branch is 'trunk'
+#
+# ex.: ../clup trunk, ../clup FOOBAR_BRANCH, ../clup VIRTUAL_REALITY_PORT
+#
+
+export PATH=/opt/bin:/usr/bin:/bin:$PATH
+
+/home/pasky/src/cvs2cl.pl -w --gmt -S -U ../CVSROOT/users --stdout -F $1 -I ChangeLog -b --fsf >ChangeLog && cvs ci -m"ChangeLog update" ChangeLog

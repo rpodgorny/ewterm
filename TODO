@@ -1,0 +1,14 @@
+- Improve internal design of ewterm
+
+- Its code is from large part very big mess - exch.c/ewterm.c has no clear
+  centralized exchange protocol handler, state keeping is very ugly and
+  protocol communication is done in multiple functions. Someone should clean
+  (hm, rewrite :) that, possibly someone from Siemens who *knows* the
+  protocol).
+
+- The forms should be fully integrated to ewterm, not just connected by thin
+  lines of help.c.
+
+- Ewterm<->ewrecv protocol should be exchange-independent as much as possible.
+
+- Splitting of mlog files.

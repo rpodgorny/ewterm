@@ -1,0 +1,8 @@
+Read Makefile and change definitions in the configuration section (see comments
+there for further explanation).
+
+Then run make. After successful creation run 'make install' as root.
+
+Happy ewrecving and ewterming.
+
+

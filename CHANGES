@@ -1,0 +1,303 @@
+Changes in mdterm (by Michal Kara).
+
+V 1.0
+
+--- 20-Aug-1996 ---
+
+- Vim-compatibile mode added to mdsfld. Now, when no file specified,
+  it reads stdin, sends it to tmp file and to stdout. 
+
+- Port ID name changed to include login name to avoid possible conflicts.
+  Now the name format is "mdportid.$(USER)".
+
+- CR is not converted to LF while sending chars to serial/connection.
+
+- Config format changed. Now lines are in the form "NAME=VALUE". It
+  is mostly to ease options backward compatibility.
+
+- Some changes in program (move of blocks) to fix problems with dirs.
+
+- When user changes speed/device, a warning is printed, that the change
+  will not take place immediately.
+
+- When device is changed from serial to net, port number is reset to 23.
+
+- Error is printed when program could not save phonebook and preferences.
+
+V 1.1
+
+--- 23-Aug-96 ---
+
+- CUA window is directly refreshed when you exit from scrollback.
+  So all changes all immediately visible.
+
+- When sending file and LF is read, command buffer is cleared. This
+  allows having ! Text ! comments after commands in the file.
+
+- Auto LogOn when command sent option added
+
+- Fixed some bugs in parsing arguments
+
+V 1.2
+
+--- 28-Aug-96 ---
+
+- Fixed bug in getting message port number. When two MDTERMs were
+  running, they were using same port ID.
+
+V 1.3
+
+--- 01-Sep-96 ---
+
+- Tree changed, all files that will be put in $(LIBDIR)/mdterm are now
+  in the 'lib' directory.
+
+- When mdterm finds lock on device it wants to use, it looks whether the
+  process that created the lock still exists. If not, asks user to
+  confirm that found lock is obsolette and should be removed.
+
+- Possibility of defining lock directory. When it is commented out,
+  locks are not used.
+
+- Makefile changed and InstallScript added to be able to properly install
+  mdterm. LOCKDIR can be specified in Makefile.
+
+- Mode function removed form options menu since it cannot work here anumore.
+
+- mdterm.guide finished.
+
+V 1.4
+
+--- 05-Sep-96 ---
+
+- Serial transfer fastened. Data are transmitted by blocks whenever possible.
+  Screen is not refreshed when there are more characters to be received.
+
+- Strange things do not happen anymore when binary data are received
+
+V 1.5
+
+--- 13-Sep-96 ---
+
+- PgUp and PgDown placed on CTRL-keys.
+
+- Check for CD signal added. When program gets prompt, it checks if CD signal is
+  active. If yes, it checks for it every time it sends command. When CD is not
+  detected during sending command, connection is probably lost and program
+  switches itself to logged-off mode.
+
+- Command editting allowed also when program is in line (buffered) mode and
+  scrollback is shown. When ENTER is pressed, scrollback disappears and ENTER
+  key is passed on, so command is executed.
+
+- In DialList and FileList, you can type characters and active entry in the
+  listview will move to the entry you typed.
+
+- PID is also stored with port ID in mdportid.$USER file. User is asked if
+  mdterm should overwrite this file and it is removed on quit. MDSFl also
+  checks for existatnce of process that created portid file. 
+
+V 1.6
+
+--- 19-Sep-96 ---
+
+- "Mode" relabeled to Raw/Buf
+
+- History-storing routine now allocates more memory. It might fix
+  bug with trashed scrollback...
+
+- Quitting is done slightly other way; the old one cause curses to crash
+  on their cleanup (why???).
+
+- Colors added.
+
+- Port is now freed when program is invoked with bad option.
+
+- Option to switch to line (buffered) mode on LogOn added.
+
+- Possibility to switch between two history modes added.
+
+V 1.7
+
+--- 24-Sep-96 ---
+
+- Bug when editting phonebook fixed
+
+- No longer crashes when you have empty list and want to search by keys.
+
+- In "Keep" history mode, UpArrow shows the command you recently choosen, not
+  the previous one.
+
+- '~' character expansion added
+
+- Directories are kept for filerequester
+
+- Entries in filerequester are labeled
+
+V 1.8
+
+--- 26-Sep-96 ---
+
+- getcwd() used instead of getwd() and help does not crash now.
+
+- Setting of password in phonebook now works OK.
+
+- Problems with multiple printing of some erorr messages fixed (I hope).
+
+- The -m option no longer affects which device will be used :-).
+
+- 'Brightness' parameter added to color menu.
+
+- Colors can be set also for help.
+
+V 1.9
+
+--- 27-Sep-96 ---
+
+- Menu item names are not printed inverted when they are bright. This
+  prevents not-very-nice effects.
+
+- Some other 'color' bugs fixed.
+
+- Phonebook brings up so that last entry you dialed is active.
+
+- When sending of a file is paused because of an error, Send Menu
+  is made active.
+
+V 1.10
+
+--- 15-Oct-96 ---
+
+- History limit works again.
+- Makefile changed to automagically find the ncurses include files.
+- lib/mdterm.guide modified - all the links to MD help files replaced
+  by the single one.
+
+V 1.11
+
+--- 21-Oct-96 ---
+
+V 1.12
+
+- CR is sent after password instead of LF, so it works also with BC3 systems.
+- Personal option file support. All changes are written to it instead of global
+  options file. It is read after the global version, so it has greater priority.
+- Bright cannot be set in mono mode.
+- 'Force mono mode' added to options.
+
+---  7-Nov-96 ---
+
+V 1.13
+
+- PgUp (or CTRL-T) switches to showing buffer and shows previous page
+  when in TTY or Buf mode.
+
+--- 14-Nov-96 ---
+
+- Another change from LF to CR to make MDTerm work with BC3.
+
+V 1.14
+
+--- 15-Nov-96 ---
+
+Black hole...
+
+- Only first semicolon on line issues command - rest is ignored.
+- Changed printing. Instead of printing to /dev/printer runs lpr.
+
+V 1.18
+
+--- 27-Mar-98 ---
+
+- Dash in arguments now processed correctly
+
+V 1.19
+
+--- 31-Mar-98 --
+
+- Processing command files remade
+
+V 1.20
+
+--- 06-Jun-98 ---
+
+- Changes in processing command filed
+
+V 1.21
+
+--- 21-Jul-98 ---
+
+- GetString() repaired - xmodem send works
+
+V 1.22
+
+--- 17-Sep-98 ---
+
+- Logging enabled by defining LOGFILE symbol. See Makefile.
+- If password is entered via options, it is stored into options
+- Paths for SendFile and SaveBuffer are stored in options
+- Problems with /? in !!s after command fixed
+
+V 1.23
+
+--- 08-Oct-98 ---
+
+- No changes were recorded here
+
+V 2.0
+
+--- 30-Jul-01 ---
+
+- Pasky took over the development
+- Partial code cleanup
+- Fixed segfault when quitting
+- Implemented username
+- CAPS not on by default
+- Support for making new passwords implemented
+- Fixed proper rescuing of tty when connecting to a device
+- Fixed previous fix not to drop stale proccesses around system
+  (now running Done() on SIGTERM)
+- Fixed some gcc's && glibc's warning
+- Fixed LogOffing through NIU
+- Fixed sending files through NIU
+- Fixed mangling with signals once more, don't let everyone
+  kill everything!
+
+
+
+
+
+
+
+
+
+
+
+
+Changes in ewterm
+
+V 1.0
+
+--- 08-Aug-01 ---
+
+- Initial release
+- Massive cleanup of mdterm, all the unneeded things removed
+- EWSD communication 'driver', protocol hacked ;-)
+- Rewritten internal communication mechanism, now one monolythic proccess
+  select()ing fds, no more msg queues, sorry
+
+V 1.1
+
+--- 17-Aug-01 ---
+
+- ewrecv listening daemon splitted from ewterm => now detachable
+- Various small improvements and fixes (well, a LOT of them ;)
+- Waitstr rewritten to allow more wait-for strings at once
+  (need more improving)
+- History bursting ewrecv -> ewterm
+
+V 2.0
+
+- minor fixes
+- split into more smaller files
+- for further changes, see ChangeLog

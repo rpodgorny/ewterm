@@ -1,0 +1,222 @@
+--- ewrecv: new session pid 13977 -> 13977 at Sat Aug 18 15:42:50 2001
+
+--- ewrecv: attached thing connected at Sat Aug 18 15:42:59 2001
+
+
+PLEASE ENTER USERID.
+<
+
+
+
+
+GTS1/AD061D1880E/GTSCPZ1V11530791/113                 01-08-18  15:43:01
+9013                               3084/02434           HF.ARCHIVE-68932
+
+CENTRAL UNIT ACTIVATION
+
+CONFIGURATION  OMT-0       FROM  UNA  TO  ACT
+
+PRECEDING UNIT: IOPUNI-0  
+
+END JOB 9013
+
+PLEASE ENTER CURRENT PASSWORD
+(AND OPTIONALLY A NEW ONE SEPARATED BY BLANK).
+< @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM ################################################# 
+
+
+
+
+GTS1/AD061D1880E/GTSCPZ1V11530791/113                 01-08-18  15:43:01
+9015                               3084/07751           HF.ARCHIVE-68933
+
+                                                            MASKNO:07751
+    END OF EQUIPMENT ALARM         
+
+    PROBABLE CAUSE:   INPUT/OUTPUT DEVICE ERROR                         
+    SPECIFIC PROBLEM: NOT AVAILABLE
+    MESSAGE NUMBER:   6152 
+    ALARM IDENTIFICATION:
+                                                            MASKNO:07709
+    CLASS=OMT        UNITNO=00                                   
+
+END JOB 9015
+
+
+
+
+
+
+GTS1/AD061D1880E/GTSCPZ1V11530791/113                 01-08-18  15:43:08
+9024         OMT-00/PATR
+
+<
+
+
+
+
+GTS1/AD061D1880E/GTSCPZ1V11530791/113                 01-08-18  15:43:08
+4764                               2996/06903            DCP.AFILE-04550
+
+LOGIN SUCCESSFUL: SESSION OPENED                                       
+
+USER        TERMINAL     PROCESSOR   APPLI-   DATE        TIME
+ID          ID                       CATION
+-----------+------------+-----------+--------+-----------+--------
+PATR        OMT-00       GTS1                 01-08-18    15:43:08
+
+
+
+
+
+GTS1/AD061D1880E/GTSCPZ1V11530791/113                 01-08-18  15:43:09
+9024         OMT-00/PATR           3080/02056
+
+STATSSP:OST=UNA;                                                  EXEC'D
+
+UNIT         OST        UNIT         OST        UNIT         OST
+------------+-----      ------------+-----      ------------+-----
+NO (MORE) DATA FOR DISPLAY AVAILABLE
+
+END JOB 9024
+
+9045
+<
+
+
+
+
+GTS1/AD061D1880E/GTSCPZ1V11530791/113                 01-08-18  15:43:36
+9045         OMT-00/PATR           2977/00007
+
+ENDSESSION;                                                       EXEC'D
+
+END JOB 9045
+
+
+
+
+
+GTS1/AD061D1880E/GTSCPZ1V11530791/113                 01-08-18  15:43:36
+4764                               2996/06903            DCP.AFILE-04551
+
+LOGOUT SUCCESSFUL: SESSION CLOSED                                      
+
+USER        TERMINAL     PROCESSOR   APPLI-   DATE        TIME
+ID          ID                       CATION
+-----------+------------+-----------+--------+-----------+--------
+PATR        OMT-00       GTS1                 01-08-18    15:43:36
+--- ewrecv: attached thing terminated at Sat Aug 18 15:43:40 2001
+
+--- ewrecv: new session pid 14107 -> 14107 at Sat Aug 18 15:46:44 2001
+
+--- ewrecv: attached thing connected at Sat Aug 18 15:46:52 2001
+
+
+PLEASE ENTER USERID.
+<
+
+
+
+
+GTS1/AD061D1880E/GTSCPZ1V11530791/113                 01-08-18  15:46:53
+9094                               3084/02434           HF.ARCHIVE-68935
+
+CENTRAL UNIT ACTIVATION
+
+CONFIGURATION  OMT-0       FROM  UNA  TO  ACT
+
+PRECEDING UNIT: IOPUNI-0  
+
+END JOB 9094
+
+PLEASE ENTER CURRENT PASSWORD
+(AND OPTIONALLY A NEW ONE SEPARATED BY BLANK).
+< @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM ################################################# 
+
+
+
+
+GTS1/AD061D1880E/GTSCPZ1V11530791/113                 01-08-18  15:46:53
+9095                               3084/07751           HF.ARCHIVE-68936
+
+                                                            MASKNO:07751
+    END OF EQUIPMENT ALARM         
+
+    PROBABLE CAUSE:   INPUT/OUTPUT DEVICE ERROR                         
+    SPECIFIC PROBLEM: NOT AVAILABLE
+    MESSAGE NUMBER:   6153 
+    ALARM IDENTIFICATION:
+                                                            MASKNO:07709
+    CLASS=OMT        UNITNO=00                                   
+
+END JOB 9095
+
+
+
+
+
+
+GTS1/AD061D1880E/GTSCPZ1V11530791/113                 01-08-18  15:46:59
+9102         OMT-00/PATR
+
+<
+
+
+
+
+GTS1/AD061D1880E/GTSCPZ1V11530791/113                 01-08-18  15:46:59
+4764                               2996/06903            DCP.AFILE-04552
+
+LOGIN SUCCESSFUL: SESSION OPENED                                       
+
+USER        TERMINAL     PROCESSOR   APPLI-   DATE        TIME
+ID          ID                       CATION
+-----------+------------+-----------+--------+-----------+--------
+PATR        OMT-00       GTS1                 01-08-18    15:46:59
+
+
+
+
+
+GTS1/AD061D1880E/GTSCPZ1V11530791/113                 01-08-18  15:47:00
+9102         OMT-00/PATR           3080/02056
+
+STATSSP:OST=UNA;                                                  EXEC'D
+
+UNIT         OST        UNIT         OST        UNIT         OST
+------------+-----      ------------+-----      ------------+-----
+NO (MORE) DATA FOR DISPLAY AVAILABLE
+
+END JOB 9102
+
+9109
+<
+
+
+
+
+GTS1/AD061D1880E/GTSCPZ1V11530791/113                 01-08-18  15:47:07
+9109         OMT-00/PATR           2977/00007
+
+ENDSESSION;                                                       EXEC'D
+
+END JOB 9109
+
+
+
+
+
+GTS1/AD061D1880E/GTSCPZ1V11530791/113                 01-08-18  15:47:07
+4764                               2996/06903            DCP.AFILE-04553
+
+LOGOUT SUCCESSFUL: SESSION CLOSED                                      
+
+USER        TERMINAL     PROCESSOR   APPLI-   DATE        TIME
+ID          ID                       CATION
+-----------+------------+-----------+--------+-----------+--------
+PATR        OMT-00       GTS1                 01-08-18    15:47:07
+--- ewrecv: attached thing terminated at Sat Aug 18 15:47:13 2001
+
+--- ewrecv: attached thing failed to connect at Sat Aug 18 15:47:25 2001
+
