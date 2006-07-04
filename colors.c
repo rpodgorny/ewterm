@@ -57,7 +57,7 @@ void SetBrightness(), SetColorBlack(), SetColorRed(), SetColorGreen();
 void SetColorYellow(), SetColorBlue(), SetColorMagenta(), SetColorCyan();
 void SetColorWhite(), EndShowColor();
 
-struct MenuEntry ColorMenu[10] = {
+struct MenuEntry ColorMenu[] = {
   {"Bright", 0, SetBrightness},
   {"Black", 0, SetColorBlack},
   {"Red", 0, SetColorRed},

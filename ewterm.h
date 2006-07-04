@@ -60,37 +60,6 @@ extern void AddCh(char);
 extern void AddStr(char *, char, char), AddEStr(char *, char, char);
 extern void StartShowBuf();
 
-/* colors.c - Colourful stuff */
-#define COL_TERM 0
-#define COL_STATUS 1
-#define COL_EDIT 1
-#define COL_WIN 2
-#define COL_BUF 3
-#define COL_CMD 4
-#define COL_PROMPT 5
-#define COL_ERR 6
-#define COL_HELP 7
-#define COL_LINK 8
-#define ATT_TERM (COL_TERM+1)<<8
-#define ATT_STATUS (COL_STATUS+1)<<8
-#define ATT_EDIT (COL_EDIT+1)<<8
-#define ATT_WIN (COL_WIN+1)<<8
-#define ATT_BUF (COL_BUF+1)<<8
-#define ATT_CMD (COL_CMD+1)<<8
-#define ATT_PROMPT (COL_PROMPT+1)<<8
-#define ATT_ERR (COL_ERR+1)<<8
-#define ATT_HELP (COL_HELP+1)<<8
-#define ATT_LINK (COL_LINK+1)<<8
-#define BrightAttr(Col) ((Br[Col][0] == '1')?A_BOLD:0)
-#define FillLine(Win, Col) wchgat(Win, -1, ((Col+1)<<8)+BrightAttr(Col), Col+1, 0)
-extern char UsingColor, DenyColors, ForceMono;
-extern char Br[][2];
-extern int FGs[], BGs[];
-extern unsigned char ActCol;
-extern struct MenuEntry ColorMenu[];
-extern void SetBright(WINDOW *, int);
-extern void CreatePairs(), StartShowColor();
-
 /* edit.c - Edit lines, user input handling */
 #define CV2CAPS 1
 #define ADDSEMI 2
@@ -183,6 +152,37 @@ extern struct MenuEntry *ActMenu, MainMenu[];
 extern unsigned int DisplayMode;
 extern void SetMenu(struct MenuEntry *, char);
 extern void RedrawKeys(), RedrawStatus();
+
+/* colors.c - Colourful stuff */
+#define COL_TERM 0
+#define COL_STATUS 1
+#define COL_EDIT 1
+#define COL_WIN 2
+#define COL_BUF 3
+#define COL_CMD 4
+#define COL_PROMPT 5
+#define COL_ERR 6
+#define COL_HELP 7
+#define COL_LINK 8
+#define ATT_TERM (COL_TERM+1)<<8
+#define ATT_STATUS (COL_STATUS+1)<<8
+#define ATT_EDIT (COL_EDIT+1)<<8
+#define ATT_WIN (COL_WIN+1)<<8
+#define ATT_BUF (COL_BUF+1)<<8
+#define ATT_CMD (COL_CMD+1)<<8
+#define ATT_PROMPT (COL_PROMPT+1)<<8
+#define ATT_ERR (COL_ERR+1)<<8
+#define ATT_HELP (COL_HELP+1)<<8
+#define ATT_LINK (COL_LINK+1)<<8
+#define BrightAttr(Col) ((Br[Col][0] == '1')?A_BOLD:0)
+#define FillLine(Win, Col) wchgat(Win, -1, ((Col+1)<<8)+BrightAttr(Col), Col+1, 0)
+extern char UsingColor, DenyColors, ForceMono;
+extern char Br[][2];
+extern int FGs[], BGs[];
+extern unsigned char ActCol;
+extern struct MenuEntry ColorMenu[];
+extern void SetBright(WINDOW *, int);
+extern void CreatePairs(), StartShowColor();
 
 /* options.c - Options */
 struct OptionEntry {
