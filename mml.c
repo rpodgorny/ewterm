@@ -31,7 +31,7 @@ parse_mml_command(char *str) {
 				char *end, *end1, *end2;
 
 				cmdstr = t2;
-				*cmdstr = '\0';<
+				*cmdstr = '\0';
 				stripspaces(cmd->param[cmd->params].name);
 				cmdstr++;
 				cmd->param[cmd->params].value = cmdstr;
