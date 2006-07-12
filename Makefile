@@ -48,7 +48,8 @@ HISTLEN = -DHISTLEN=10000
 #
 
 CC   = gcc
-CFLAGS = -DDEBUG -Wall -O2 -fomit-frame-pointer -DEWDIR=\"$(LIBDIR)/ewterm\" $(LOCKDEF) $(HISTLEN)
+CFLAGS = -Wall -O2 -fomit-frame-pointer -DEWDIR=\"$(LIBDIR)/ewterm\" $(LOCKDEF) $(HISTLEN)
+#CFLAGS = -DDEBUG -Wall -O2 -fomit-frame-pointer -DEWDIR=\"$(LIBDIR)/ewterm\" $(LOCKDEF) $(HISTLEN)
 #-O2
 LDFLAGS =-s
 
