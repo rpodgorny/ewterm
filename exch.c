@@ -434,51 +434,54 @@ void DispOMTUser(struct mml_command *mml) {
 }
 
 void EnterOMTMsg(struct mml_command *mml) {
-  struct mml_param params[3] = {
-    { "USER", NULL },
-    { "ID", NULL },
-    { "MSG", NULL },
-  };
-  int id = -1;
-  char s[1024];
-  char *msg = NULL;
+	struct mml_param params[3] = {
+		{ "USER", NULL },
+		{ "ID", NULL },
+		{ "MSG", NULL },
+	};
+	int id = -1;
+	char s[1024];
+	char *msg = NULL;
 
-  sort_mml_command(mml, 3, params);
-  if (params[2].value) msg = dequote(params[2].value);
-  if (params[1].value) id = atoi(params[1].value);
+	sort_mml_command(mml, 3, params);
+	if (params[2].value) msg = dequote(params[2].value);
+	if (params[1].value) id = atoi(params[1].value);
 
-  if (!msg) {
-    char s[256];
-    snprintf(s, 256, "%-60s  NOT EXEC'D\n", "Missing mandatory MSG parameter.");
-    AddEStr("\n", 0, 0);
-    AddEStr(s, 0, 0);
-    return;
-  }
+	if (!msg) {
+		char s[256];
+		snprintf(s, 256, "%-60s  NOT EXEC'D\n", "Missing mandatory MSG parameter.");
+		AddEStr("\n", 0, 0);
+		AddEStr(s, 0, 0);
+		return;
+	}
 
-  InBurst = 1;
+	InBurst = 1;
 
-  if (!params[0].value)
-    snprintf(s, 1024, "[ewrecv] [->ALL] %s\n", msg);
-  else
-    if (id < 0)
-      snprintf(s, 1024, "[ewrecv] [->%s@*:*] %s\n", params[0].value, msg);
-    else
-      snprintf(s, 1024, "[ewrecv] [->%s@*:%d] %s\n", params[0].value, id, msg);
-  AddEStr(s, 0, 0);
+	if (!params[0].value) {
+		snprintf(s, 1024, "[ewrecv] [->ALL] %s\n", msg);
+	} else {
+		if (id < 0) {
+			snprintf(s, 1024, "[ewrecv] [->%s@*:*] %s\n", params[0].value, msg);
+		} else {
+			snprintf(s, 1024, "[ewrecv] [->%s@*:%d] %s\n", params[0].value, id, msg);
+		}
+	}
+	AddEStr(s, 0, 0);
 
-  snprintf(s, 1024, "%s@:%d=%s", params[0].value?params[0].value:"", id, msg);
-  if (connection) IProtoSEND(connection, 0x03, s);
-  else {
-    char s[256];
-    snprintf(s, 256, "%-60s  NOT EXEC'D\n", "Not connected to server.");
-    AddEStr("\n", 0, 0);
-    AddEStr(s, 0, 0);
-    return;
-  }
+	snprintf(s, 1024, "%s@:%d=%s", params[0].value?params[0].value:"", id, msg);
+	if (connection) {
+		IProtoSEND(connection, 0x03, s);
+	} else {
+		char s[256];
+		snprintf(s, 256, "%-60s  NOT EXEC'D\n", "Not connected to server.");
+		AddEStr("\n", 0, 0);
+		AddEStr(s, 0, 0);
+		return;
+	}
 
-  InBurst = 0;
+	InBurst = 0;
 
-  free(msg);
+	free(msg);
 }
 
 void AddCommandToQueue(char *Command, char Convert) {
