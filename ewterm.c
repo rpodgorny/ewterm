@@ -469,63 +469,52 @@ ProcessArgs(int argc, char *argv[])
   been_here = 1;
 }
 
-int main(int argc, char **argv)
-{
-  char *TmpPtr;
-  char LogFName[256] = "";
+int main(int argc, char **argv) {
+	char *TmpPtr;
+	char LogFName[256] = "";
 
-  wl = wl;
+	wl = wl;
 
-  printf("EWTerm "VERSION" written by Petr Baudis, 2001, 2002\n");
+	printf("EWTerm "VERSION" written by Petr Baudis, 2001, 2002\n");
 
-  /* Set some directories to CWD */
+	/* Set some directories to CWD */
+	getcwd(LogFName, 255);
+	TmpPtr = LogFName;
+	while (*TmpPtr) TmpPtr++;
+	*TmpPtr++ = '/';
+	*TmpPtr = 0;
+	strcpy(BufSaveFName, LogFName);
+	strcpy(SendFileFName, LogFName);
 
-  getcwd(LogFName, 255);
-  TmpPtr = LogFName;
-  while(*TmpPtr) TmpPtr++;
-  *TmpPtr++ = '/';
-  *TmpPtr = 0;
-  strcpy(BufSaveFName, LogFName);
-  strcpy(SendFileFName, LogFName);
+	/* Read options */
+	chdir(EWDIR);
+	ReadOptions("ewterm.options");
+	sprintf(MultiBuf, "%s/.ewterm.options", getenv("HOME"));
+	ReadOptions(MultiBuf);
 
-  /* Read options */
+	/* Process args */
+	ProcessArgs(argc, argv);
+	if (*Profile) {
+		snprintf(MultiBuf, 64, "%s/.ewterm.options.%s", getenv("HOME"), Profile);
+		ReadOptions(MultiBuf);
+		ProcessArgs(argc, argv); /* still possibly override with args */
+	}
 
-  chdir(EWDIR);
-  ReadOptions("ewterm.options");
-  sprintf(MultiBuf, "%s/.ewterm.options", getenv("HOME"));
-  ReadOptions(MultiBuf);
+	if (*HostPortStr && *HostPortStr != '0') HostPort = atoi(HostPortStr);
 
-  /* Process args */
+	if (*BurstLinesStr) BurstLines = atoi(BurstLinesStr);
 
-  ProcessArgs(argc, argv);
-  if (*Profile) {
-    snprintf(MultiBuf, 64, "%s/.ewterm.options.%s", getenv("HOME"), Profile);
-    ReadOptions(MultiBuf);
-    ProcessArgs(argc, argv); /* still possibly override with args */
-  }
+	/* Attach to ewrecv */
+	if (connection != (void *)1) {
+		AttachConnection();
+	} else {
+		connection = NULL;
+	}
 
-  if (*HostPortStr && *HostPortStr != '0') {
-    HostPort = atoi(HostPortStr);
-  }
+	/* Startup */
+	Init();
+	Run();
+	Done(0);
 
-  if (*BurstLinesStr) {
-    BurstLines = atoi(BurstLinesStr);
-  }
-
-  /* Attach to ewrecv */
-
-  if (connection != (void *) 1) {
-    AttachConnection();
-
-  } else {
-    connection = NULL;
-  }
-
-  /* Startup */
-  
-  Init();
-  Run();
-  Done(0);
-
-  return 0;
+	return 0;
 }
