@@ -642,294 +642,281 @@ SendChar(struct connection *c, char Chr) {
 
 int LastMask = 0;
 
-void
-ProcessExchangeChar(char Chr) {
-  static int prompt = 0;
+void ProcessExchangeChar(char Chr) {
+	static int prompt = 0;
 
-//  pdebug("ProcessExchangeChar() Chr = %d\n", Chr);
+	pdebug("ProcessExchangeChar() Chr = %d\n", Chr);
 
-  if (prompt && Chr != ENQ) {
-    prompt = 0;
-    foreach_ipr_conn (NULL) {
-      if (!c->authenticated) continue;
-      IProtoSEND(c, 0x40, NULL);
-    } foreach_ipr_conn_end;
-  }
-
-  if (Chr == ETX) {
-    pdebug("cm %d\n", CommandMode);
-    if (CommandMode == CM_PBUSY) {
-      CommandMode = CM_PROMPT;
-
-      LastMask = 0;
-      foreach_ipr_conn (NULL) {
-        if (!c->authenticated) continue;
-	IProtoSEND(c, 0x46, "0");
-      } foreach_ipr_conn_end;
-
-      if (!Prompt) {
-	char *lastlinet = Lines[LastLine]; int linelent = LineLen;
-	while (*lastlinet == ' ') lastlinet++, linelent--;
-
-        if (linelent == 1 && lastlinet[linelent - 1] == '<') {
-	  Prompt = '<';
-	  if (!LoggedIn || LoggedIn == 1) {
-	    foreach_ipr_conn (NULL) {
-              if (!c->authenticated) continue;
-	      IProtoSEND(c, 0x43, NULL);
-	    } foreach_ipr_conn_end;
-	    if (!LoggedIn) {
-	      foreach_ipr_conn (connection) {
-                if (!c->authenticated) continue;
-		IProtoSEND(c, 0x04, "RO");
-	      } foreach_ipr_conn_end;
-	    }
-	    LoggedIn = 2;
-	  }
-	} else {
-	  Prompt = 'I';
+	if (prompt && Chr != ENQ) {
+		prompt = 0;
+		foreach_ipr_conn (NULL) {
+			if (!c->authenticated) continue;
+			IProtoSEND(c, 0x40, NULL);
+		} foreach_ipr_conn_end;
 	}
-      }
 
-      {
-	char s[256];
+	if (Chr == ETX) {
+		pdebug("cm %d\n", CommandMode);
+		if (CommandMode == CM_PBUSY) {
+			CommandMode = CM_PROMPT;
 
-	if (Prompt == '<') {
+			LastMask = 0;
+			foreach_ipr_conn (NULL) {
+				if (!c->authenticated) continue;
+				IProtoSEND(c, 0x46, "0");
+			} foreach_ipr_conn_end;
+
+			if (!Prompt) {
+				char *lastlinet = Lines[LastLine]; int linelent = LineLen;
+				while (*lastlinet == ' ') lastlinet++, linelent--;
+
+				if (linelent == 1 && lastlinet[linelent - 1] == '<') {
+					Prompt = '<';
+					if (!LoggedIn || LoggedIn == 1) {
+						foreach_ipr_conn (NULL) {
+							if (!c->authenticated) continue;
+							IProtoSEND(c, 0x43, NULL);
+						} foreach_ipr_conn_end;
+						if (!LoggedIn) {
+							foreach_ipr_conn (connection) {
+								if (!c->authenticated) continue;
+								IProtoSEND(c, 0x04, "RO");
+							} foreach_ipr_conn_end;
+						}
+						LoggedIn = 2;
+					}
+				} else {
+					Prompt = 'I';
+				}
+			}
+
+			{
+				char s[256];
+
+				if (Prompt == '<') {
 #if 0
-	  fprintf(stderr, "lines (%d) [%d] ::%s::%s::%s::\n", LastLine, (LastLine - 1 + HISTLEN) % HISTLEN,
-	      Lines[(LastLine - 1 + HISTLEN) % HISTLEN],
-	      Lines[(LastLine + HISTLEN) % HISTLEN],
-	      Lines[LastLine]);
+					fprintf(stderr, "lines (%d) [%d] ::%s::%s::%s::\n", LastLine, (LastLine - 1 + HISTLEN) % HISTLEN,
+					Lines[(LastLine - 1 + HISTLEN) % HISTLEN],
+					Lines[(LastLine + HISTLEN) % HISTLEN],
+					Lines[LastLine]);
 #endif
-	  snprintf(s, 256, "<%s", Lines[(LastLine - 1 + HISTLEN) % HISTLEN]);
-	} else
-	  snprintf(s, 256, "%c", Prompt);
-	Prompt = 0;
+					snprintf(s, 256, "<%s", Lines[(LastLine - 1 + HISTLEN) % HISTLEN]);
+				} else {
+					snprintf(s, 256, "%c", Prompt);
+				}
+				Prompt = 0;
 
-	foreach_ipr_conn (NULL) {
-          if (!c->authenticated) continue;
-	  pdebug("%p->%s\n", c, s);
-	  IProtoSEND(c, 0x41, s);
-	} foreach_ipr_conn_end;
-      }
+				foreach_ipr_conn (NULL) {
+					if (!c->authenticated) continue;
+					pdebug("%p->%s\n", c, s);
+					IProtoSEND(c, 0x41, s);
+				} foreach_ipr_conn_end;
+			}
+		} else {
+			CommandMode = CM_READY;
+			if (WantPrompt) {
+				WantPrompt = 0;
+				SendChar(NULL, ACK);
+			}
+		}
+		SendChar(NULL, BEL);
+	} else if (Chr == ENQ) {
+		if (CommandMode == CM_PBUSY) {
+			CommandMode = CM_BUSY;
+			prompt = 0;
+		}
+		SendChar(NULL, NAK);
+		SendChar(NULL, '0');
+		SendChar(NULL, '0');
+		SendChar(NULL, '0');
+		SendChar(NULL, ETX);
+	} else if (Chr == ACK) {
+		CommandMode = CM_PBUSY;
+		prompt = 1; /* schedule sending of prompt to ewterms */
+	} else if (Chr == 10 || Chr >= 32) {
+		if (Chr == 10) {
+			static int NewLines, Header;
+			static char ActExchange[10] = "";
+			char *lastlinet = Lines[LastLine];
 
-    } else {
-      CommandMode = CM_READY;
-      if (WantPrompt) {
-	WantPrompt = 0;
-	SendChar(NULL, ACK);
-      }
-    }
-    SendChar(NULL, BEL);
+			while (*lastlinet == ' ') lastlinet++;
+			pdebug("Got newline, analyzing ::%s::\n", lastlinet);
 
-  } else if (Chr == ENQ) {
-    if (CommandMode == CM_PBUSY) {
-      CommandMode = CM_BUSY;
-      prompt = 0;
-    }
-    SendChar(NULL, NAK);
-    SendChar(NULL, '0');
-    SendChar(NULL, '0');
-    SendChar(NULL, '0');
-    SendChar(NULL, ETX);
+			/* Analyze this line */
+			if (!strncmp(lastlinet, "END JOB ", 8)) {
+				foreach_ipr_conn (NULL) {
+					if (!c->authenticated) continue;
+					IProtoSEND(c, 0x45, lastlinet + 8);
+				} foreach_ipr_conn_end;
+			} else if (!strncmp(lastlinet, "PLEASE ENTER USERID", 19)) {
+				Prompt = 'U';
+				if (!LoggedIn) {
+					LoggedIn = 1;
+					foreach_ipr_conn (connection) {
+						if (!c->authenticated) continue;
+						IProtoSEND(c, 0x04, "RO");
+					} foreach_ipr_conn_end;
+				}
+			} else if (!strncmp(lastlinet, "PLEASE ENTER CURRENT PASSWORD", 29)) {
+				Prompt = 'P';
+			} else if (!strncmp(lastlinet, "PLEASE ENTER ", 13) && strstr(lastlinet, "PASSWORD")) {
+				if (strstr(lastlinet, " FILE ")) {
+					Prompt = 'F';
+				} else {
+					Prompt = 'p';
+				}
+			} else if (strstr(lastlinet, "MASKNO:")) {
+				char *m = strstr(lastlinet, "MASKNO:") + 7;
+				foreach_ipr_conn (NULL) {
+					if (!c->authenticated) continue;
+					IProtoSEND(c, 0x46, m);
+				} foreach_ipr_conn_end;
+				LastMask = atoi(m);
+			}
+			pdebug("P %c\n", Prompt);
 
-  } else if (Chr == ACK) {
-    CommandMode = CM_PBUSY;
-    prompt = 1; /* schedule sending of prompt to ewterms */
+			if (Header) {
+				int ActJob; char ActOMT[6] = ""; char Usrname[10] = "";
+				char *job = lastlinet;
+				char *omt = job+13;
+				char *mask= omt+20;
 
-  } else if (Chr == 10 || Chr >= 32) {
-    if (Chr == 10) {
-      static int NewLines, Header;
-      static char ActExchange[10] = "";
-      char *lastlinet = Lines[LastLine];
+				Header = 0;
 
-      while (*lastlinet == ' ') lastlinet++;
-      pdebug("Got newline, analyzing ::%s::\n", lastlinet);
+				/* 3882         OMT-01/PEBA           2977/00007 */
+				/* job          omt  [/uname]        [????/maskno] */
+				ActJob = atoi(job);
+				if (strlen(job) > 13) {
+					/* We already have it otherwise. */
+					if (omt[0] && omt[0] != ' ') { strncpy(ActOMT, omt, 6); ActOMT[6] = 0; }
+					if (omt[6] == '/') {
+						strncpy(Usrname, omt + 7, 9);
+						Usrname[9] = 0;
+						if (strchr(Usrname, ' ')) *strchr(Usrname, ' ') = 0;
+						if (strchr(Usrname, '\n')) *strchr(Usrname, '\n') = 0;
+					}
+					if (strlen(omt) > 20) {
+						mask = strchr(mask, '/');
+						if (mask) LastMask = atoi(++mask);
+					} else {
+						LastMask = 0;
+					}
+					foreach_ipr_conn (NULL) {
+						char s[256];
+						sprintf(s, "%d", LastMask); pdebug("LM->%d\n", LastMask);
+						if (!c->authenticated) continue;
+						IProtoSEND(c, 0x46, s);
+					} foreach_ipr_conn_end;
+				}
+				{
+					char s[256];
+					snprintf(s, 256, "%d,%s,%s,%s", ActJob, ActOMT, Usrname, ActExchange);
+					pdebug("%s <- ::%s::\n", s, lastlinet);
+					foreach_ipr_conn (NULL) {
+						if (!c->authenticated) continue;
+						IProtoSEND(c, 0x47, s);
+					} foreach_ipr_conn_end;
+				}
+			}
 
-      /* Analyze this line */
-      if (!strncmp(lastlinet, "END JOB ", 8)) {
-	foreach_ipr_conn (NULL) {
-          if (!c->authenticated) continue;
-	  IProtoSEND(c, 0x45, lastlinet + 8);
-	} foreach_ipr_conn_end;
-      } else if (!strncmp(lastlinet, "PLEASE ENTER USERID", 19)) {
-	Prompt = 'U';
-	if (!LoggedIn) {
-	  LoggedIn = 1;
-	  foreach_ipr_conn (connection) {
-            if (!c->authenticated) continue;
-	    IProtoSEND(c, 0x04, "RO");
-	  } foreach_ipr_conn_end;
+			if (!*lastlinet) {
+				NewLines++;
+			} else if (strncmp(lastlinet, "CONTINUATION TEXT", 17)) {
+				if (NewLines >= 4) {
+					Header = 1;
+					if (strchr(lastlinet, '/')) {
+						*strchr(lastlinet, '/') = 0;
+						strncpy(ActExchange, lastlinet, 9);
+						ActExchange[9] = 0;
+						lastlinet[strlen(lastlinet)] = '/';
+					}
+				}
+				NewLines = 0;
+			}
+
+			if (LastMask) {
+				int LI = LoggedIn;
+
+				if (LastMask == 12062) {
+					/* NOT AUTHORIZED TO OPEN A SESSION. */
+					foreach_ipr_conn (NULL) {
+						if (!c->authenticated) continue;
+						IProtoSEND(c, 0x42, NULL);
+					} foreach_ipr_conn_end;
+					LoggedIn = 0;
+				} else if (LastMask == 12060) {
+					/* LOCKED. */
+					foreach_ipr_conn (NULL) {
+						if (!c->authenticated) continue;
+						IProtoSEND(c, 0x42, NULL);
+					} foreach_ipr_conn_end;
+					LoggedIn = 0;
+				} else if (LastMask == 12048) {
+					/* SESSION REJECTED, NEW PASSWORD INVALID. */
+					foreach_ipr_conn (NULL) {
+						if (!c->authenticated) continue;
+						IProtoSEND(c, 0x42, NULL);
+					} foreach_ipr_conn_end;
+					LoggedIn = 0;
+				} else if (LastMask == 12055) {
+					/* CURRENT PASSWORD EXPIRED, PLEASE ENTER NEW PASSWORD. */
+					Prompt = 'p';
+				} else if (LastMask == 12059) {
+					/* SESSION REJECTED, USERID PATR   IN USE. */
+					foreach_ipr_conn (NULL) {
+						if (!c->authenticated) continue;
+						IProtoSEND(c, 0x42, NULL);
+					} foreach_ipr_conn_end;
+					LoggedIn = 0;
+				} else if (LastMask == 10115 || LastMask == 6904) {
+					/* INVALID PASSWORD */
+					foreach_ipr_conn (NULL) {
+						if (!c->authenticated) continue;
+						IProtoSEND(c, 0x42, NULL);
+					} foreach_ipr_conn_end;
+					LoggedIn = 0;
+				} else if (LastMask == 6299) {
+					/* SESSION FOR PATR   CANCELLED! */
+					foreach_ipr_conn (NULL) {
+						if (!c->authenticated) continue;
+						IProtoSEND(c, 0x44, NULL);
+					} foreach_ipr_conn_end;
+					LoggedIn = 0;
+				} else if (LastMask == 10119) {
+					/* SESSION CANCELLED BY TIMEOUT */
+					foreach_ipr_conn (NULL) {
+						if (!c->authenticated) continue;
+						IProtoSEND(c, 0x44, NULL);
+					} foreach_ipr_conn_end;
+					LoggedIn = 0;
+				} else if (LastMask == 10397) {
+					/* SESSION CANCELLED FROM TERMINAL */
+					foreach_ipr_conn (NULL) {
+						if (!c->authenticated) continue;
+						IProtoSEND(c, 0x44, NULL);
+					} foreach_ipr_conn_end;
+					LoggedIn = 0;
+				} else if (LastMask == 7 && !strncmp(lastlinet, "ENDSESSION;", 11)) {
+					/* Logout - hope it will work properly.. */
+					foreach_ipr_conn (NULL) {
+						if (!c->authenticated) continue;
+						IProtoSEND(c, 0x44, NULL);
+					} foreach_ipr_conn_end;
+					LoggedIn = 0;
+				}
+
+				if (!LoggedIn && LI) {
+					foreach_ipr_conn (connection) {
+						if (c->authenticated < 2) continue;
+						IProtoSEND(c, 0x04, "RW");
+					} foreach_ipr_conn_end;
+				}
+			}
+		}
+		LogCh(Chr);
 	}
-      } else if (!strncmp(lastlinet, "PLEASE ENTER CURRENT PASSWORD", 29)) {
-	Prompt = 'P';
-      } else if (!strncmp(lastlinet, "PLEASE ENTER ", 13) && strstr(lastlinet, "PASSWORD")) {
-	if (strstr(lastlinet, " FILE "))
-	  Prompt = 'F';
-	else
-	  Prompt = 'p';
-      } else if (strstr(lastlinet, "MASKNO:")) {
-	char *m = strstr(lastlinet, "MASKNO:") + 7;
-	foreach_ipr_conn (NULL) {
-          if (!c->authenticated) continue;
-	  IProtoSEND(c, 0x46, m);
-	} foreach_ipr_conn_end;
-	LastMask = atoi(m);
-      }
-      pdebug("P %c\n", Prompt);
 
-      if (Header) {
-	int ActJob; char ActOMT[6] = ""; char Usrname[10] = "";
-	char *job = lastlinet;
-	char *omt = job+13;
-	char *mask= omt+20;
-
-	Header = 0;
-
-	/* 3882         OMT-01/PEBA           2977/00007 */
-	/* job          omt  [/uname]        [????/maskno] */
-	ActJob = atoi(job);
-	if (strlen(job) > 13) {
-	  /* We already have it otherwise. */
-	  if (omt[0] && omt[0] != ' ') { strncpy(ActOMT, omt, 6); ActOMT[6] = 0; }
-	  if (omt[6] == '/') {
-	    strncpy(Usrname, omt + 7, 9);
-	    Usrname[9] = 0;
-	    if (strchr(Usrname, ' '))
-	      *strchr(Usrname, ' ') = 0;
-	    if (strchr(Usrname, '\n'))
-	      *strchr(Usrname, '\n') = 0;
-	  }
-	  if (strlen(omt) > 20) {
-	    mask = strchr(mask, '/');
-	    if (mask) {
-	      LastMask = atoi(++mask);
-	    }
-	  } else LastMask = 0;
-	  foreach_ipr_conn (NULL) {
-	    char s[256]; sprintf(s, "%d", LastMask); pdebug("LM->%d\n", LastMask);
-            if (!c->authenticated) continue;
-	    IProtoSEND(c, 0x46, s);
-	  } foreach_ipr_conn_end;
-	}
-	{
-	  char s[256];
-	  snprintf(s, 256, "%d,%s,%s,%s", ActJob, ActOMT, Usrname, ActExchange);
-	  pdebug("%s <- ::%s::\n", s, lastlinet);
-	  foreach_ipr_conn (NULL) {
-            if (!c->authenticated) continue;
-	    IProtoSEND(c, 0x47, s);
-	  } foreach_ipr_conn_end;
-	}
-      }
-
-      if (!*lastlinet)
-	NewLines++;
-      else if (strncmp(lastlinet, "CONTINUATION TEXT", 17)) {
-	if (NewLines >= 4) {
-	  Header = 1;
-	  if (strchr(lastlinet, '/')) {
-	    *strchr(lastlinet, '/') = 0;
-	    strncpy(ActExchange, lastlinet, 9);
-	    ActExchange[9] = 0;
-	    lastlinet[strlen(lastlinet)] = '/';
-	  }
-	}
-	NewLines = 0;
-      }
-
-      if (LastMask) {
-	int LI = LoggedIn;
-
-	if (LastMask == 12062) {
-	  /* NOT AUTHORIZED TO OPEN A SESSION. */
-	  foreach_ipr_conn (NULL) {
-            if (!c->authenticated) continue;
-	    IProtoSEND(c, 0x42, NULL);
-	  } foreach_ipr_conn_end;
-	  LoggedIn = 0;
-
-	} else if (LastMask == 12060) {
-	  /* LOCKED. */
-	  foreach_ipr_conn (NULL) {
-            if (!c->authenticated) continue;
-	    IProtoSEND(c, 0x42, NULL);
-	  } foreach_ipr_conn_end;
-	  LoggedIn = 0;
-
-	} else if (LastMask == 12048) {
-	  /* SESSION REJECTED, NEW PASSWORD INVALID. */
-	  foreach_ipr_conn (NULL) {
-            if (!c->authenticated) continue;
-	    IProtoSEND(c, 0x42, NULL);
-	  } foreach_ipr_conn_end;
-	  LoggedIn = 0;
-
-	} else if (LastMask == 12055) {
-	  /* CURRENT PASSWORD EXPIRED, PLEASE ENTER NEW PASSWORD. */
-	  Prompt = 'p';
-
-	} else if (LastMask == 12059) {
-	  /* SESSION REJECTED, USERID PATR   IN USE. */
-	  foreach_ipr_conn (NULL) {
-            if (!c->authenticated) continue;
-	    IProtoSEND(c, 0x42, NULL);
-	  } foreach_ipr_conn_end;
-	  LoggedIn = 0;
-
-	} else if (LastMask == 10115 || LastMask == 6904) {
-	  /* INVALID PASSWORD */
-	  foreach_ipr_conn (NULL) {
-            if (!c->authenticated) continue;
-	    IProtoSEND(c, 0x42, NULL);
-	  } foreach_ipr_conn_end;
-	  LoggedIn = 0;
-
-        } else if (LastMask == 6299) {
-	  /* SESSION FOR PATR   CANCELLED! */
-	  foreach_ipr_conn (NULL) {
-            if (!c->authenticated) continue;
-	    IProtoSEND(c, 0x44, NULL);
-	  } foreach_ipr_conn_end;
-	  LoggedIn = 0;
-
-	} else if (LastMask == 10119) {
-	  /* SESSION CANCELLED BY TIMEOUT */
-	  foreach_ipr_conn (NULL) {
-            if (!c->authenticated) continue;
-	    IProtoSEND(c, 0x44, NULL);
-	  } foreach_ipr_conn_end;
-	  LoggedIn = 0;
-
-	} else if (LastMask == 10397) {
-	  /* SESSION CANCELLED FROM TERMINAL */
-	  foreach_ipr_conn (NULL) {
-            if (!c->authenticated) continue;
-	    IProtoSEND(c, 0x44, NULL);
-	  } foreach_ipr_conn_end;
-	  LoggedIn = 0;
-
-	} else if (LastMask == 7 && !strncmp(lastlinet, "ENDSESSION;", 11)) {
-	  /* Logout - hope it will work properly.. */
-	  foreach_ipr_conn (NULL) {
-            if (!c->authenticated) continue;
-	    IProtoSEND(c, 0x44, NULL);
-	  } foreach_ipr_conn_end;
-	  LoggedIn = 0;
-	}
-
-	if (!LoggedIn && LI) {
-	  foreach_ipr_conn (connection) {
-            if (c->authenticated < 2) continue;
-	    IProtoSEND(c, 0x04, "RW");
-	  } foreach_ipr_conn_end;
-	}
-      }
-    }
-    LogCh(Chr);
-  }
-
-  if (LogRaw) fputc(Chr, LogRaw);
+	if (LogRaw) fputc(Chr, LogRaw);
 }
 
 
