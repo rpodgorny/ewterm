@@ -488,53 +488,54 @@ void EnterOMTMsg(struct mml_command *mml) {
 }
 
 void AddCommandToQueue(char *Command, char Convert) {
-  struct mml_command *mml;
-  pdebug("AddCommandToQueue() %s (|%c)\n", Command, Convert);
+	struct mml_command *mml;
+	pdebug("AddCommandToQueue() %s (|%c)\n", Command, Convert);
 
-  if (strchr(Command, 13)) *strchr(Command, 13) = 0;
-  if (strchr(Command, 10)) *strchr(Command, 10) = 0;
-  mml = parse_mml_command(Command);
+	if (strchr(Command, 13)) *strchr(Command, 13) = 0;
+	if (strchr(Command, 10)) *strchr(Command, 10) = 0;
+	mml = parse_mml_command(Command);
 
-  if (!strcasecmp(mml->command, "DISPOMTUSER")) {
-    DispOMTUser(mml);
-    free_mml_command(mml);
-    return;
-  } else if (!strcasecmp(mml->command, "ENTROMTMSG")) {
-    EnterOMTMsg(mml);
-    free_mml_command(mml);
-    return;
-  }
+	if (!strcasecmp(mml->command, "DISPOMTUSER")) {
+		DispOMTUser(mml);
+		free_mml_command(mml);
+		return;
+	} else if (!strcasecmp(mml->command, "ENTROMTMSG")) {
+		EnterOMTMsg(mml);
+		free_mml_command(mml);
+		return;
+	}
 
-  free_mml_command(mml);
+	free_mml_command(mml);
 
-  if (connection && connection->fwmode == FWD_IN) {
-    AddEStr("This connection is now for observation only.\n", 0, 0);
-    return;
-  }
+	if (connection && connection->fwmode == FWD_IN) {
+		AddEStr("This connection is now for observation only.\n", 0, 0);
+		return;
+	}
 
-  if (!InputRequest && PendingCmd) {
-    AddEStr("Some command is already queued!\n", 0, 0);
-  } else {
-    /* Add to queue */
+	if (!InputRequest && PendingCmd) {
+		AddEStr("Some command is already queued!\n", 0, 0);
+	} else {
+		/* Add to queue */
 
-    if (connection && LoggedOff && !InputRequest) {
-      if (AutoLogOn == '1') {
-        StartLogOn();
-      } else {
-	AddEStr("You are not logged in!\n", 0, 0);
-	return;
-      }
-    }
+		if (connection && LoggedOff && !InputRequest) {
+			if (AutoLogOn == '1') {
+				StartLogOn();
+			} else {
+				AddEStr("You are not logged in!\n", 0, 0);
+				return;
+			}
+		}
 
-    if (PendingCmd) free(PendingCmd);
-    PendingCmd = strdup(Command);
+		if (PendingCmd) free(PendingCmd);
+		PendingCmd = strdup(Command);
 
-    if (!connection || InputRequest) {
-      InputRequest = 0;
-      ProcessPrompt();
-    } else
-      IProtoASK(connection, 0x40, NULL);
-  }
+		if (!connection || InputRequest) {
+			InputRequest = 0;
+			ProcessPrompt();
+		} else {
+			IProtoASK(connection, 0x40, NULL);
+		}
+	}
 }
 
 void CheckChr(struct connection *c, int Chr)
