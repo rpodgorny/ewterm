@@ -1459,7 +1459,6 @@ int main(int argc, char *argv[]) {
   }
 
   /* install signal handlers */
-
   signal(SIGTERM, SigTermCaught);
   signal(SIGQUIT, SigTermCaught);
   signal(SIGINT, SigTermCaught);
@@ -1467,7 +1466,6 @@ int main(int argc, char *argv[]) {
   signal(SIGPIPE, SIG_IGN);
 
   /* open cua device */
-
   if (CuaName && *CuaName) {
     int Tmp;
 
@@ -1476,7 +1474,7 @@ int main(int argc, char *argv[]) {
     while (!Tmp) {
       Tmp = atoi(SpeedBuf);
 
-      switch(Tmp) {
+      switch (Tmp) {
         case 300:
         case 2400:
         case 9600:
