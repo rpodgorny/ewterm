@@ -1127,129 +1127,131 @@ void SendIntro(struct connection *conn) {
 }
 
 struct connection *TryAccept(int Fd) {
-  struct connection *conn;
-  int NewFd;
-  static struct sockaddr_in remote;
-  static int remlen;
+	struct connection *conn;
+	int NewFd;
+	static struct sockaddr_in remote;
+	static int remlen;
 
-  NewFd = accept(Fd, (struct sockaddr *) &remote, &remlen);
-  if (NewFd < 0) {
-    if (errno != EWOULDBLOCK && errno != EINTR) {
-      perror("--- ewrecv: accept() failed");
-      Done(4);
-    }
-    return NULL;
-  }
-
-  {
-    static struct conn_handlers h = {
-      /* 2.1a */
-      SendChar,
-      NULL,
-      GotUser,
-      NULL,
-      NULL,
-
-      /* 2.1b */
-      NULL,
-      NULL,
-      NULL,
-
-      /* 2.2a */
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-
-      /* 2.3a */
-      GotPrivMsg,
-
-      /* 2.1a */
-      NULL,
-      NULL,
-
-      /* 2.2a */
-      PromptRequest,
-      LoginPromptRequest,
-      CancelPromptRequest,
-      TakeOverRequest,
-
-      /* 0.5pre3 */
-      NULL,
-
-      /* 0.5rc2 */
-      SendBurst,
-
-      /* 0.5pre3 */
-      SendIntro /* AuthSuccess */,
-      AuthFailed,
-    };
-
-    conn = MakeConnection(NewFd, &h);
-    if (!conn) {
-      fprintf(stderr, "Unable to create connection!\n");
-      close(NewFd);
-      return NULL;
-    }
-
-    {
-      struct hostent *he = gethostbyaddr((char*)&remote.sin_addr, sizeof(remote.sin_addr), AF_INET);
-      char *n = he&&he->h_name?he->h_name:inet_ntoa(remote.sin_addr);
-      conn->host = strdup(n);
-      endhostent();
-    }
-
-    if (connection) {
-      {
-	/* less memory, more time.. but it should still be fast enough as we
-	 * don't expect more than 3-5 users per ewrecv.. */
-	int lowest_spot = 0; /* lowest free place for us */
-	while (1) {
-	  int b = 1;
-	  foreach_conn (NULL) {
-	    if (lowest_spot == c->id) {
-	      lowest_spot++;
-	      b = 0;
-	    }
-	  } foreach_conn_end;
-	  if (b) break;
+	NewFd = accept(Fd, (struct sockaddr *) &remote, &remlen);
+	if (NewFd < 0) {
+		if (errno != EWOULDBLOCK && errno != EINTR) {
+			perror("--- ewrecv: accept() failed");
+			Done(4);
+		}
+		return NULL;
 	}
-        conn->id = lowest_spot;
-      }
-      connection->prev->next = conn;
-      conn->prev = connection->prev;
-      connection->prev = conn;
-      conn->next = connection;
-    } else {
-      connection = conn;
-      connection->next = conn;
-      connection->prev = conn;
-      conn->id = 0;
-    }
-  }
 
-  WriteChar(conn, DC1);
+	{
+		static struct conn_handlers h = {
+			/* 2.1a */
+			SendChar,
+			NULL,
+			GotUser,
+			NULL,
+			NULL,
 
-  if (*ConnPassword) {
-    char *S = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    int i;
-    conn->authstr = malloc(129);
-    for (i = 0; i < 128; i++) conn->authstr[i] = S[random()%strlen(S)]; conn->authstr[128] = 0;
-    IProtoASK(conn, 0x02, conn->authstr);
-  }
+			/* 2.1b */
+			NULL,
+			NULL,
+			NULL,
 
-  IProtoASK(conn, 0x01, NULL);
+			/* 2.2a */
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
 
-  if (!*ConnPassword) {
-    conn->authenticated = 2;
-    /* SendBurst(conn); */ /* Clients request it now. */
-  }
+			/* 2.3a */
+			GotPrivMsg,
 
-  return conn;
+			/* 2.1a */
+			NULL,
+			NULL,
+
+			/* 2.2a */
+			PromptRequest,
+			LoginPromptRequest,
+			CancelPromptRequest,
+			TakeOverRequest,
+
+			/* 0.5pre3 */
+			NULL,
+
+			/* 0.5rc2 */
+			SendBurst,
+
+			/* 0.5pre3 */
+			SendIntro /* AuthSuccess */,
+			AuthFailed,
+		};
+
+		conn = MakeConnection(NewFd, &h);
+		if (!conn) {
+			fprintf(stderr, "Unable to create connection!\n");
+			close(NewFd);
+			return NULL;
+		}
+
+		{
+			struct hostent *he = gethostbyaddr((char *)&remote.sin_addr, sizeof(remote.sin_addr), AF_INET);
+			char *n = he&&he->h_name?he->h_name:inet_ntoa(remote.sin_addr);
+			conn->host = strdup(n);
+			endhostent();
+		}
+
+		if (connection) {
+			{
+				/* less memory, more time.. but it should still be fast enough as we don't expect more than 3-5 users per ewrecv.. */
+				int lowest_spot = 0; /* lowest free place for us */
+				for (;;) {
+					int b = 1;
+					foreach_conn (NULL) {
+						if (lowest_spot == c->id) {
+							lowest_spot++;
+							b = 0;
+						}
+					} foreach_conn_end;
+					if (b) break;
+				}
+				conn->id = lowest_spot;
+			}
+			connection->prev->next = conn;
+			conn->prev = connection->prev;
+			connection->prev = conn;
+			conn->next = connection;
+		} else {
+			connection = conn;
+			connection->next = conn;
+			connection->prev = conn;
+			conn->id = 0;
+		}
+	}
+
+	WriteChar(conn, DC1);
+
+	if (*ConnPassword) {
+		char *S = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+		int i;
+		conn->authstr = malloc(129);
+		for (i = 0; i < 128; i++) {
+			conn->authstr[i] = S[random()%strlen(S)];
+		}
+		conn->authstr[128] = 0;
+		IProtoASK(conn, 0x02, conn->authstr);
+	}
+
+	IProtoASK(conn, 0x01, NULL);
+
+	if (!*ConnPassword) {
+		conn->authenticated = 2;
+		/* SendBurst(conn); */ /* Clients request it now. */
+	}
+
+	return conn;
 }
 
 int DeploySocket(char *SockName, int SockPort) {
