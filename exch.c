@@ -512,26 +512,27 @@ void AddCommandToQueue(char *Command, char Convert) {
 
 	if (!InputRequest && PendingCmd) {
 		AddEStr("Some command is already queued!\n", 0, 0);
-	} else {
-		/* Add to queue */
-		if (connection && LoggedOff && !InputRequest) {
-			if (AutoLogOn == '1') {
-				StartLogOn();
-			} else {
-				AddEStr("You are not logged in!\n", 0, 0);
-				return;
-			}
-		}
+		return;
+	}
 
-		if (PendingCmd) free(PendingCmd);
-		PendingCmd = strdup(Command);
-
-		if (!connection || InputRequest) {
-			InputRequest = 0;
-			ProcessPrompt();
+	/* Add to queue */
+	if (connection && LoggedOff && !InputRequest) {
+		if (AutoLogOn == '1') {
+			StartLogOn();
 		} else {
-			IProtoASK(connection, 0x40, NULL);
+			AddEStr("You are not logged in!\n", 0, 0);
+			return;
 		}
+	}
+
+	if (PendingCmd) free(PendingCmd);
+	PendingCmd = strdup(Command);
+
+	if (!connection || InputRequest) {
+		InputRequest = 0;
+		ProcessPrompt();
+	} else {
+		IProtoASK(connection, 0x40, NULL);
 	}
 }
 
