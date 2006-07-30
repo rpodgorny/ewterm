@@ -276,73 +276,62 @@ DoRead(struct connection *conn)
   return len;
 }
 
-void
-Write(struct connection *conn, void *data, int dlen)
-{
-  int len;
+void Write(struct connection *conn, void *data, int dlen) {
+	int len;
 
-  if (!dlen) return;
+	if (!dlen) return;
 
-  conn->WriteBuffer = ShrinkBuffer(conn->WriteBuffer, conn->WriteBufferLen);
-  len = BUF_GRAIN - (conn->WriteBufferLen % BUF_GRAIN);
-  if (len > dlen) len = dlen;
+	conn->WriteBuffer = ShrinkBuffer(conn->WriteBuffer, conn->WriteBufferLen);
+	len = BUF_GRAIN - (conn->WriteBufferLen % BUF_GRAIN);
+	if (len > dlen) len = dlen;
 
-  memcpy(conn->WriteBuffer + conn->WriteBufferLen, data, len);
-  conn->WriteBufferLen += len;
+	memcpy(conn->WriteBuffer + conn->WriteBufferLen, data, len);
+	conn->WriteBufferLen += len;
 
-  data += len;
-  dlen -= len;
-  if (dlen) Write(conn, data, dlen);
+	data += len;
+	dlen -= len;
+	if (dlen) Write(conn, data, dlen);
 }
 
-int
-DoWrite(struct connection *conn)
-{
-  int len = 0;
+int DoWrite(struct connection *conn) {
+	int len = 0;
 
-  if (!conn->WriteBuffer) return 0;
-  len = write(conn->Fd, conn->WriteBuffer, conn->WriteBufferLen);
+	if (!conn->WriteBuffer) return 0;
+	len = write(conn->Fd, conn->WriteBuffer, conn->WriteBufferLen);
 
-  if (len <= 0) return len;
-  conn->WriteBufferLen -= len;
-  if (conn->WriteBufferLen)
-    memmove(conn->WriteBuffer, conn->WriteBuffer + len, conn->WriteBufferLen);
-  else
-    free(conn->WriteBuffer), conn->WriteBuffer = NULL;
-  return len;
+	if (len <= 0) return len;
+	conn->WriteBufferLen -= len;
+	if (conn->WriteBufferLen) {
+		memmove(conn->WriteBuffer, conn->WriteBuffer + len, conn->WriteBufferLen);
+	} else {
+		free(conn->WriteBuffer), conn->WriteBuffer = NULL;
+	}
+	return len;
 }
 
 
 
-void
-IProtoSEND(struct connection *conn, char opcode, char *data)
-{
-  WriteChar(conn, DC2);
-  WriteChar(conn, opcode);
-  if (data) Write(conn, data, strlen(data));
-  WriteChar(conn, DC1);
+void IProtoSEND(struct connection *conn, char opcode, char *data) {
+	WriteChar(conn, DC2);
+	WriteChar(conn, opcode);
+	if (data) Write(conn, data, strlen(data));
+	WriteChar(conn, DC1);
 }
 
-void
-IProtoASK(struct connection *conn, char opcode, char *data)
-{
-  WriteChar(conn, DC3);
-  WriteChar(conn, opcode);
-  if (data) Write(conn, data, strlen(data));
-  WriteChar(conn, DC1);
+void IProtoASK(struct connection *conn, char opcode, char *data) {
+	WriteChar(conn, DC3);
+	WriteChar(conn, opcode);
+	if (data) Write(conn, data, strlen(data));
+	WriteChar(conn, DC1);
 }
 
-char *
-StripData(char *str, char *delim)
-{
-  int idx = strcspn(str, delim);
+char *StripData(char *str, char *delim) {
+	int idx = strcspn(str, delim);
 
-  if (str[idx]) { str[idx] = 0; return str + idx + 1; } else return NULL; 
+	if (str[idx]) { str[idx] = 0; return str + idx + 1; } else return NULL; 
 }
 
-void
-MD5Sum(char *v, char *p)
-{
+void MD5Sum(char *v, char *p) {
   struct md5_state_s ms;
   md5_byte_t digest[16]; int i;
 
