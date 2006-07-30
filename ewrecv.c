@@ -1090,29 +1090,28 @@ void PromptRequest(struct connection *conn, char *d) {
 		WantPrompt = 1;
 }
 
-void
-SendBurst(struct connection *conn, char *lines, char *d)
-{
-  int ln, li = HISTLEN, lmax;
+void SendBurst(struct connection *conn, char *lines, char *d) {
+	int ln, li = HISTLEN, lmax;
 
-  if (conn && ! conn->authenticated) return;
+	if (conn && ! conn->authenticated) return;
 
-  if (isdigit(*lines))
-    lmax = atoi(lines);
-  else
-    lmax = HISTLEN;
+	if (isdigit(*lines)) {
+		lmax = atoi(lines);
+	} else {
+		lmax = HISTLEN;
+	}
 
-  WriteChar(conn, SO); /* start burst */
+	WriteChar(conn, SO); /* start burst */
 
-  for (ln = LastLine + 1; ln < HISTLEN; ln++, li--)
-    if (li <= lmax)
-      Write(conn, Lines[ln], strlen(Lines[ln]));
+	for (ln = LastLine + 1; ln < HISTLEN; ln++, li--) {
+		if (li <= lmax) Write(conn, Lines[ln], strlen(Lines[ln]));
+	}
 
-  for (ln = 0; ln <= LastLine; ln++, li--)
-    if (li <= lmax)
-      Write(conn, Lines[ln], strlen(Lines[ln]));
+	for (ln = 0; ln <= LastLine; ln++, li--) {
+		if (li <= lmax) Write(conn, Lines[ln], strlen(Lines[ln]));
+	}
 
-  WriteChar(conn, SI); /* end burst */
+	WriteChar(conn, SI); /* end burst */
 }
 
 void SendIntro(struct connection *conn) {
@@ -1260,49 +1259,53 @@ struct connection *TryAccept(int Fd) {
   return conn;
 }
 
-int
-DeploySocket(char *SockName, int SockPort)
-{
-  struct sockaddr_in addr;
-  int SockFd, opt;
+int DeploySocket(char *SockName, int SockPort) {
+	struct sockaddr_in addr;
+	int SockFd, opt;
 
-  SockFd = socket(PF_INET, SOCK_STREAM, 0);
-  if (SockFd < 0) {
-    perror("socket()"); Done(2);
-  }
+	SockFd = socket(PF_INET, SOCK_STREAM, 0);
+	if (SockFd < 0) {
+		perror("socket()");
+		Done(2);
+	}
 
-  addr.sin_family = AF_INET;
-  if (*SockName) {
-    struct hostent *host = gethostbyname(SockName);
-    if (!host) {
-      perror("gethostbyname()");
-      exit(6);
-    }
-    addr.sin_addr.s_addr = ((struct in_addr *) host->h_addr)->s_addr;
-  } else
-    addr.sin_addr.s_addr = INADDR_ANY;
-  addr.sin_port = htons(SockPort);
+	addr.sin_family = AF_INET;
+	if (*SockName) {
+		struct hostent *host = gethostbyname(SockName);
+		if (!host) {
+			perror("gethostbyname()");
+			exit(6);
+		}
+		addr.sin_addr.s_addr = ((struct in_addr *) host->h_addr)->s_addr;
+	} else {
+		addr.sin_addr.s_addr = INADDR_ANY;
+	}
+	addr.sin_port = htons(SockPort);
 
-  opt = 1;
-  if (setsockopt (SockFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof (opt)) < 0) {
-    perror("setsockopt()"); Done(2);
-  }
+	opt = 1;
+	if (setsockopt (SockFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof (opt)) < 0) {
+		perror("setsockopt()");
+		Done(2);
+	}
 
-  if (bind(SockFd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-    perror("bind()"); Done(2);
-  }
+	if (bind(SockFd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+		perror("bind()");
+		Done(2);
+	}
 
-  if (listen(SockFd, 16) < 0) {
-    perror("listen()"); Done(2);
-  }
+	if (listen(SockFd, 16) < 0) {
+		perror("listen()");
+		Done(2);
+	}
 
-  if (fcntl(SockFd, F_SETFL, O_NONBLOCK) < 0) {
-    perror("fcntl()"); Done(2);
-  }
+	if (fcntl(SockFd, F_SETFL, O_NONBLOCK) < 0) {
+		perror("fcntl()");
+		Done(2);
+	}
 
-  printf("Deployed socket: %s:%d\n", SockName, SockPort);
+	printf("Deployed socket: %s:%d\n", SockName, SockPort);
 
-  return SockFd;
+	return SockFd;
 }
 
 
@@ -1604,7 +1607,7 @@ main(int argc, char *argv[]) {
 
   /* select forever */
   
-  while (1) {
+  for (;;) {
     int MaxFd;
     fd_set ReadQ;
     fd_set WriteQ;
