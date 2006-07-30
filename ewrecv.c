@@ -1501,7 +1501,7 @@ int main(int argc, char *argv[]) {
 
     ReOpenSerial();
 
-    while (! Tmp) {
+    while (!Tmp) {
       Tmp = atoi(SpeedBuf);
 
       switch(Tmp) {
@@ -1551,7 +1551,7 @@ int main(int argc, char *argv[]) {
 
   /* update lock */
   
- #ifdef LOCKDIR
+#ifdef LOCKDIR
   {
     FILE *Fl;
       
@@ -1578,7 +1578,6 @@ int main(int argc, char *argv[]) {
   }
 
   /* first attempt to accept() */
-
   TryAccept(SockFd);
 
 #if 0
@@ -1590,7 +1589,6 @@ int main(int argc, char *argv[]) {
 #endif
 
   /* select forever */
-  
   for (;;) {
     int MaxFd;
     fd_set ReadQ;
@@ -1598,7 +1596,6 @@ int main(int argc, char *argv[]) {
     fd_set ErrorQ;
 
     /* prepare for select */
-
     Reselect = 0;
 
     if (to_destroy && !to_destroy->WriteBufferLen) {
@@ -1614,32 +1611,28 @@ int main(int argc, char *argv[]) {
     foreach_conn (NULL) { /* talking with terminal */
       FD_SET(c->Fd, &ReadQ);
       if (c->Fd > MaxFd) MaxFd = c->Fd;
-      if (c->WriteBuffer)
-	FD_SET(c->Fd, &WriteQ);
+      if (c->WriteBuffer) FD_SET(c->Fd, &WriteQ);
       FD_SET(c->Fd, &ErrorQ);
     } foreach_conn_end;
 
-    if (SockFd >= 0) {	/* listening on socket */
+    if (SockFd >= 0) { /* listening on socket */
       FD_SET(SockFd, &ReadQ);
       if (SockFd > MaxFd) MaxFd = SockFd;
     }
 
-    if (CuaFd >= 0) {	/* talking with EWSD */
+    if (CuaFd >= 0) { /* talking with EWSD */
       FD_SET(CuaFd, &ReadQ);
       if (CuaFd > MaxFd) MaxFd = CuaFd;
-      if (WriteBufLen > 0)
-        FD_SET(CuaFd, &WriteQ);
+      if (WriteBufLen > 0) FD_SET(CuaFd, &WriteQ);
     }
 
     /* select */
-
     if (select(MaxFd + 1, &ReadQ, &WriteQ, &ErrorQ, 0) < 0) {
       if (errno == EINTR) continue; /* try once more, just some silly signal */
       perror("--- ewrecv: Select failed");
       Done(4);
     } else {
       /* something from terminal */
-
       foreach_conn (NULL) {
 	if (!FD_ISSET(c->Fd, &ReadQ)) continue;
 
@@ -1656,7 +1649,6 @@ int main(int argc, char *argv[]) {
       } foreach_conn_end;
 
       /* something to terminal */
-
       foreach_conn (NULL) {
 	if (!FD_ISSET(c->Fd, &WriteQ)) continue;
 
