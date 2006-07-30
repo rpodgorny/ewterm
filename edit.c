@@ -110,39 +110,39 @@ void DefPgUpHook()
   PgUpHook();
 }
 
-void CmdEnterHook()
-{
-  char Add;
-  struct THistE *Ptr;
+void CmdEnterHook() {
+	pdebug("CmdEnterHook()\n");
 
-  DontGoUp = 0;
+	char Add;
+	struct THistE *Ptr;
 
-  OldActHist = (HistoryMode[0]=='B')?0:ActHist;
-  if (OldActHist == 0) Add = 1;
+	DontGoUp = 0;
 
-  Ptr = ActHist;
-  LineChanged();
+	OldActHist = (HistoryMode[0]=='B')?0:ActHist;
+	if (OldActHist == 0) Add = 1;
 
-  if ((((OldActHist == 0) && ((LastLine != Ptr) || (LastLine == 0))) ||
-       ((LastLine == ActHist) && (ClearLastLine)))
-       && (strlen(LineBuf) > CmdHistLen))
-    AddLineToBuffer(0, COMMAND);
+	Ptr = ActHist;
+	LineChanged();
 
-  ActHist = 0;
+	if ((((OldActHist == 0) && ((LastLine != Ptr) || (LastLine == 0))) || ((LastLine == ActHist) && (ClearLastLine))) && (strlen(LineBuf) > CmdHistLen)) {
+		AddLineToBuffer(0, COMMAND);
+	}
 
-  if (OldActHist && (HistoryMode[0] != 'B')) DontGoUp = 1;  /* Just display actual history entry */
+	ActHist = 0;
 
-  LineBPos = LineBLen;
-  InsertChr(13);
-  /* Flush line */
-  ContType = COMMAND;
-  AddCommandToQueue(LineBuf, 1);
-  
-  LineBPos = 0;
-  LineBLen = 0;
-  LineWOff = 0;
-  LineBuf[0] = 0;
-  RefreshEdit();
+	if (OldActHist && (HistoryMode[0] != 'B')) DontGoUp = 1;  /* Just display actual history entry */
+
+	LineBPos = LineBLen;
+	InsertChr(13);
+	/* Flush line */
+	ContType = COMMAND;
+	AddCommandToQueue(LineBuf, 1);
+
+	LineBPos = 0;
+	LineBLen = 0;
+	LineWOff = 0;
+	LineBuf[0] = 0;
+	RefreshEdit();
 }
 
 /* Hook for 'command line' editing */
