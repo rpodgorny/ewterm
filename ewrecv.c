@@ -996,56 +996,51 @@ void AuthFailed(struct connection *conn) {
 	Reselect = 1;
 }
 
-void
-GotUser(struct connection *conn, char *uname, char *d)
-{
-  char s[1024];
+void GotUser(struct connection *conn, char *uname, char *d) {
+	char s[1024];
 
 #if 0
-  /* The client may pop up a dialog asking for the password, so we should be not
-   * so strict. We won't send it anything anyway until we will get the correct
-   * auth token. */
-  if (!conn->authenticated) {
-    /* We got no response to the cram ASK, and we sent this right after that. We are not
-     * authenticated, no burst and so on, buddy! */
-    AuthFailed(conn);
-    return;
-  }
+	/* The client may pop up a dialog asking for the password, so we should be not so strict. We won't send it anything anyway until we will get the correct auth token. */
+	if (!conn->authenticated) {
+		/* We got no response to the cram ASK, and we sent this right after that. We are not authenticated, no burst and so on, buddy! */
+		AuthFailed(conn);
+		return;
+	}
 #endif
 
-  conn->user = strdup(uname);
-  log_msg("--- ewrecv: attached client %d is %s\n\n", conn->id, conn->user);
-  AnnounceUser(conn, 0x05);
-  snprintf(s, 1024, "!%s@%s:%d", conn->user ? conn->user : "UNKNOWN", conn->host, conn->id);
-  IProtoSEND(conn, 0x05, s);
+	conn->user = strdup(uname);
+	log_msg("--- ewrecv: attached client %d is %s\n\n", conn->id, conn->user);
+	AnnounceUser(conn, 0x05);
+	snprintf(s, 1024, "!%s@%s:%d", conn->user ? conn->user : "UNKNOWN", conn->host, conn->id);
+	IProtoSEND(conn, 0x05, s);
 }
 
 void GotPrivMsg(struct connection *conn, char *tg, int id, char *host, char *msg, char *d) {
-  char s[1024];
+	char s[1024];
 
-  snprintf(s, 1024, "%s@%s:%d=%s", conn->user?conn->user:"", conn->host, conn->id, msg);
+	snprintf(s, 1024, "%s@%s:%d=%s", conn->user?conn->user:"", conn->host, conn->id, msg);
 
-  foreach_ipr_conn (NULL) {
-    if (!c->authenticated) continue;
-    if (id >= 0) {
-      if (id == c->id) {
-	IProtoSEND(c, 0x03, s);
-	return;
-      }
-    } else if (tg && *tg) {
-      if (c->user && !strcasecmp(tg, c->user)) {
-	if (host && *host) {
-	  if (!strcasecmp(host, c->host))
-            IProtoSEND(c, 0x03, s);
-	} else
-          IProtoSEND(c, 0x03, s);
-      }
-    } else if (host && *host) {
-      if (!strcasecmp(host, c->host))
-        IProtoSEND(c, 0x03, s);
-    } else
-      IProtoSEND(c, 0x03, s);
-  } foreach_ipr_conn_end;
+	foreach_ipr_conn (NULL) {
+		if (!c->authenticated) continue;
+		if (id >= 0) {
+			if (id == c->id) {
+				IProtoSEND(c, 0x03, s);
+				return;
+			}
+		} else if (tg && *tg) {
+			if (c->user && !strcasecmp(tg, c->user)) {
+				if (host && *host) {
+					if (!strcasecmp(host, c->host)) IProtoSEND(c, 0x03, s);
+				} else {
+					IProtoSEND(c, 0x03, s);
+				}
+			}
+		} else if (host && *host) {
+			if (!strcasecmp(host, c->host)) IProtoSEND(c, 0x03, s);
+		} else {
+			IProtoSEND(c, 0x03, s);
+		}
+	} foreach_ipr_conn_end;
 }
 
 
@@ -1055,6 +1050,8 @@ void TakeOverRequest(struct connection *conn, char *d) {
 }
 
 void CancelPromptRequest(struct connection *conn, char *d) {
+	pdebug("CancelPromptRequest()\n");
+
 	if (conn != connection) return;
 	if (conn && conn->authenticated < 2) return;
   	if (CommandMode == CM_PROMPT) {
@@ -1065,6 +1062,8 @@ void CancelPromptRequest(struct connection *conn, char *d) {
 }
 
 void LoginPromptRequest(struct connection *conn, char *d) {
+	pdebug("LoginPromptRequest()\n");
+
 	if (LoggedIn) return;
 	if (conn && conn->authenticated < 2) return;
 	SetMaster(conn);
