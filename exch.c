@@ -573,22 +573,18 @@ void CheckChr(struct connection *c, int Chr)
 }
 
 
-void
-GotNotify(struct connection *c, char *msg)
-{
-  char str[1024];
+void GotNotify(struct connection *c, char *msg) {
+	char str[1024];
 
-  snprintf(str, 1024, "[ewrecv] [notify] %s\n", msg);
-  AddEStr(str, 0, 0);
+	snprintf(str, 1024, "[ewrecv] [notify] %s\n", msg);
+	AddEStr(str, 0, 0);
 }
 
-void
-GotPrivMsg(struct connection *c, char *from, int id, char *host, char *msg, char *d)
-{
-  char str[1024];
+void GotPrivMsg(struct connection *c, char *from, int id, char *host, char *msg, char *d) {
+	char str[1024];
 
-  snprintf(str, 1024, "[ewrecv] [%s@%s:%d->] %s\n", from, host, id, msg);
-  AddEStr(str, 0, 0);
+	snprintf(str, 1024, "[ewrecv] [%s@%s:%d->] %s\n", from, host, id, msg);
+	AddEStr(str, 0, 0);
 }
 
 void
@@ -636,9 +632,7 @@ GotUserConnect(struct connection *c, int flags, char *user_, char *host, char *i
   }
 }
 
-void
-GotUserDisconnect(struct connection *c, char *user_, char *host, char *id_, char *d)
-{
+void GotUserDisconnect(struct connection *c, char *user_, char *host, char *id_, char *d) {
   char str[1024];
   int id = atoi(id_);
 
@@ -660,38 +654,32 @@ GotUserDisconnect(struct connection *c, char *user_, char *host, char *id_, char
   AddEStr(str, 0, 0);
 }
 
-void
-ColPrompt()
-{
-  ActCol = COL_PROMPT;
-  if (UsingColor) {
-    wattron(CUAWindow, ATT_PROMPT);
-    SetBright(CUAWindow, COL_PROMPT);
-  }
+void ColPrompt() {
+	ActCol = COL_PROMPT;
+  	if (UsingColor) {
+		wattron(CUAWindow, ATT_PROMPT);
+		SetBright(CUAWindow, COL_PROMPT);
+	}
 }
 
-void
-GotPromptStart(struct connection *c, char *d) {
-  if (FilterFdIn >= 0 && FilterFdOut >= 0) {
-    AddToFilterQueue('^');
-    AddToFilterQueue('P');
-  } else {
-    ColPrompt();
-  }
+void GotPromptStart(struct connection *c, char *d) {
+	if (FilterFdIn >= 0 && FilterFdOut >= 0) {
+		AddToFilterQueue('^');
+		AddToFilterQueue('P');
+	} else {
+		ColPrompt();
+	}
 }
 
-void
-ColTerm()
-{
-  ActCol = COL_TERM;
-  if (UsingColor) {
-    wattron(CUAWindow, ATT_TERM);
-    SetBright(CUAWindow, COL_TERM);
-  }
+void ColTerm() {
+	ActCol = COL_TERM;
+	if (UsingColor) {
+		wattron(CUAWindow, ATT_TERM);
+		SetBright(CUAWindow, COL_TERM);
+	}
 }
 
-void
-GotPromptEnd(struct connection *c, char type, char *job, char *d) {
+void GotPromptEnd(struct connection *c, char type, char *job, char *d) {
   if (FilterFdIn >= 0 && FilterFdOut >= 0) {
     AddToFilterQueue('^');
     AddToFilterQueue('T');
