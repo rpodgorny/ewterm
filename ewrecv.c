@@ -1347,7 +1347,7 @@ int main(int argc, char *argv[]) {
       continue;
     }
     
-    if (! strcmp(argv[ac], "-h") || ! strcmp(argv[ac], "--help")) {
+    if (!strcmp(argv[ac], "-h") || !strcmp(argv[ac], "--help")) {
       printf("\nUsage:\t%s [-h|--help] [-c|--cuadev <cuadev>] [-s|--speed <speed>]\n", argv[0]);
       printf("\t[-f|--logfile <file>] [-L|--daylog] [-p|--printlog] [-r|--rawfile <file>]\n");
       printf("\t[-H|--host <host>[:<port>]] [-P|--port <port>] [-w|--password <pwd>]\n");
@@ -1372,67 +1372,67 @@ int main(int argc, char *argv[]) {
       exit(1);
     }
 
-    if (! strcmp(argv[ac], "-c") || ! strcmp(argv[ac], "--cuadev")) {
+    if (!strcmp(argv[ac], "-c") || !strcmp(argv[ac], "--cuadev")) {
       swp = 1;
       continue;
     }
 
-    if (! strcmp(argv[ac], "-s") || ! strcmp(argv[ac], "--speed")) {
+    if (!strcmp(argv[ac], "-s") || !strcmp(argv[ac], "--speed")) {
       swp = 2;
       continue;
     }
 
-    if (! strcmp(argv[ac], "-f") || ! strcmp(argv[ac], "--logfile")) {
+    if (!strcmp(argv[ac], "-f") || !strcmp(argv[ac], "--logfile")) {
       swp = 3;
       continue;
     }
 
-    if (! strcmp(argv[ac], "-L") || ! strcmp(argv[ac], "--daylog")) {
+    if (!strcmp(argv[ac], "-L") || !strcmp(argv[ac], "--daylog")) {
       DailyLog = 1;
       continue;
     }
 
-    if (! strcmp(argv[ac], "-p") || ! strcmp(argv[ac], "--printlog")) {
+    if (!strcmp(argv[ac], "-p") || !strcmp(argv[ac], "--printlog")) {
       PrintLog = 1;
       continue;
     }
 
-    if (! strcmp(argv[ac], "-r") || ! strcmp(argv[ac], "--rawfile")) {
+    if (!strcmp(argv[ac], "-r") || !strcmp(argv[ac], "--rawfile")) {
       swp = 5;
       continue;
     }
 
-    if (! strcmp(argv[ac], "-H") || ! strcmp(argv[ac], "--host")) {
+    if (!strcmp(argv[ac], "-H") || !strcmp(argv[ac], "--host")) {
       swp = 4;
       continue;
     }
 
-    if (! strcmp(argv[ac], "-P") || ! strcmp(argv[ac], "--port")) {
+    if (!strcmp(argv[ac], "-P") || !strcmp(argv[ac], "--port")) {
       swp = 6;
       continue;
     }
 
-    if (! strcmp(argv[ac], "-w") || ! strcmp(argv[ac], "--password")) {
+    if (!strcmp(argv[ac], "-w") || !strcmp(argv[ac], "--password")) {
       swp = 7;
       continue;
     }
 
-    if (! strcmp(argv[ac], "-W") || ! strcmp(argv[ac], "--ropassword")) {
+    if (!strcmp(argv[ac], "-W") || !strcmp(argv[ac], "--ropassword")) {
       swp = 8;
       continue;
     }
 
-    if (! strcmp(argv[ac], "-g") || ! strcmp(argv[ac], "--fg")) {
+    if (!strcmp(argv[ac], "-g") || !strcmp(argv[ac], "--fg")) {
       ForkOut = 0;
       continue;
     }
 
-    if (! strcmp(argv[ac], "-S") || ! strcmp(argv[ac], "--silent")) {
+    if (!strcmp(argv[ac], "-S") || !strcmp(argv[ac], "--silent")) {
       Silent = 1;
       continue;
     }
 
-    if (! strcmp(argv[ac], "-v") || ! strcmp(argv[ac], "--verbose")) {
+    if (!strcmp(argv[ac], "-v") || !strcmp(argv[ac], "--verbose")) {
       Verbose = 1;
       continue;
     }
