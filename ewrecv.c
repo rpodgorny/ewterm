@@ -660,7 +660,8 @@ void ProcessExchangeChar(char Chr) {
 			} foreach_ipr_conn_end;
 
 			if (!Prompt) {
-				char *lastlinet = Lines[LastLine]; int linelent = LineLen;
+				char *lastlinet = Lines[LastLine];
+				int linelent = LineLen;
 				while (*lastlinet == ' ') lastlinet++, linelent--;
 
 				if (linelent == 1 && lastlinet[linelent - 1] == '<') {
