@@ -138,34 +138,33 @@ void ColCmd() {
 
 /* Prompt detected (finished prompt chunk) */
 void ProcessPrompt() {
-  if (InBurst || (connection && connection->fwmode == FWD_IN))
-    /* prompt handling forbidden in burst */
-    return;
+	/* prompt handling forbidden in burst */
+	if (InBurst || (connection && connection->fwmode == FWD_IN)) return;
 
-  if (FilterFdIn >= 0 && FilterFdOut >= 0) {
-    AddToFilterQueue('^');
-    AddToFilterQueue('C');
-  } else {
-    ColCmd();
-  }
+	if (FilterFdIn >= 0 && FilterFdOut >= 0) {
+		AddToFilterQueue('^');
+		AddToFilterQueue('C');
+	} else {
+		ColCmd();
+	}
 
-  if (!InputRequest) {
-    if (PendingCmd) {
-      /* Send command in the queue */
-      pdebug("ProcessPrompt() sending command %s\n", PendingCmd);
-      AddStr(PendingCmd, ConvertMode, 1);
-      AddStr("\n", 0, 1);
-      strcpy(LastCmd, PendingCmd);
-      free(PendingCmd);
-      PendingCmd = NULL;
-    } else {
-      /* Dummy command for first prompt */
-      AddStr("STATSSP:OST=UNA;\n", 0, 1);
-    }
-  }
+	if (!InputRequest) {
+		if (PendingCmd) {
+			/* Send command in the queue */
+			pdebug("ProcessPrompt() sending command %s\n", PendingCmd);
+			AddStr(PendingCmd, ConvertMode, 1);
+			AddStr("\n", 0, 1);
+			strcpy(LastCmd, PendingCmd);
+			free(PendingCmd);
+			PendingCmd = NULL;
+		} else {
+			/* Dummy command for first prompt */
+			AddStr("STATSSP:OST=UNA;\n", 0, 1);
+		}
+	}
 
-  if (CUAWindow) RedrawStatus();
-  RefreshLogTxt();
+	if (CUAWindow) RedrawStatus();
+	RefreshLogTxt();
 }
 
 void CancelCommand() {
@@ -516,7 +515,6 @@ void AddCommandToQueue(char *Command, char Convert) {
 		AddEStr("Some command is already queued!\n", 0, 0);
 	} else {
 		/* Add to queue */
-
 		if (connection && LoggedOff && !InputRequest) {
 			if (AutoLogOn == '1') {
 				StartLogOn();
