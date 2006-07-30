@@ -917,22 +917,22 @@ void ProcessExchangeChar(char Chr) {
 void AnnounceUser(struct connection *conn, int opcode);
 
 void DestroyConnection(struct connection *conn) {
-  AnnounceUser(conn, 0x06);
+	AnnounceUser(conn, 0x06);
 
-  close(conn->Fd);
-  if (conn == connection) {
-    if (conn->next != conn) {
-      connection = conn->next;
-      if (LoggedIn && !(connection->authenticated < 2))
-        IProtoSEND(connection, 0x04, "RW");
-    } else
-      connection = NULL;
-  }
-  delete_from_list(conn);
-  FreeConnection(conn);
+	close(conn->Fd);
+	if (conn == connection) {
+		if (conn->next != conn) {
+			connection = conn->next;
+			if (LoggedIn && !(connection->authenticated < 2)) IProtoSEND(connection, 0x04, "RW");
+		} else {
+			connection = NULL;
+		}
+	}
+	delete_from_list(conn);
+	FreeConnection(conn);
 
-  /* Force rebuild of the fd tables. */
-  Reselect = 1;
+	/* Force rebuild of the fd tables. */
+	Reselect = 1;
 }
 
 void ErrorConnection(struct connection *conn) {
