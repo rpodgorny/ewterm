@@ -807,54 +807,54 @@ void AuthFailed(struct connection *c) {
 }
 
 struct connection *MkConnection(int SockFd) {
-  static struct conn_handlers h = {
-    /* 2.1a */
-    (int(*)(struct connection *, char)) CheckChr,
-    NULL,
-    NULL,
-    GotNotify,
-    NULL,
+	static struct conn_handlers h = {
+		/* 2.1a */
+		(int(*)(struct connection *, char)) CheckChr,
+		NULL,
+		NULL,
+		GotNotify,
+		NULL,
 
-    /* 2.1b */
-    GotFwMode,
-    GotUserConnect,
-    GotUserDisconnect,
+		/* 2.1b */
+		GotFwMode,
+		GotUserConnect,
+		GotUserDisconnect,
 
-    /* 2.2a */
-    GotPromptStart,
-    GotPromptEnd,
-    GotLoginError,
-    GotLoginSuccess,
-    GotLogout,
-    GotJob,
-    GotMask,
-    GotHeader,
+		/* 2.2a */
+		GotPromptStart,
+		GotPromptEnd,
+		GotLoginError,
+		GotLoginSuccess,
+		GotLogout,
+		GotJob,
+		GotMask,
+		GotHeader,
 
-    /* 2.3a */
-    GotPrivMsg,
+		/* 2.3a */
+		GotPrivMsg,
 
-    /* 2.1a */
-    NULL,
-    NULL,
+		/* 2.1a */
+		NULL,
+		NULL,
 
-    /* 2.2a */
-    NULL,
-    NULL,
-    NULL,
-    NULL,
+		/* 2.2a */
+		NULL,
+		NULL,
+		NULL,
+		NULL,
 
-    /* 0.5pre3 */
-    GotCRAM,
+		/* 0.5pre3 */
+		GotCRAM,
 
-    /* 0.5rc2 */
-    NULL,
+		/* 0.5rc2 */
+		NULL,
 
-    /* 0.5pre3 */
-    NULL,
-    AuthFailed,
-  };
-  connection = MakeConnection(SockFd, &h);
-  return connection;
+		/* 0.5pre3 */
+		NULL,
+		AuthFailed,
+	};
+	connection = MakeConnection(SockFd, &h);
+	return connection;
 }
 
 void AttachConnection() {
