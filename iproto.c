@@ -7,6 +7,8 @@
 #include "iproto.h"
 #include "md5.h"
 
+#include "ewterm.h"
+
 char ConnPassword[128];
 char ROConnPassword[128];
 
@@ -645,22 +647,22 @@ ProcessIProtoChar(struct connection *conn, unsigned char Chr) {
   conn->IProtoPacketLen = 0;
 }
 
-void
-TestIProtoChar(struct connection *conn, char Chr)
-{
-  if (Chr >= DC1 && Chr <= DC4) {
-    ProcessIProtoChar(conn, Chr);
-  } else if (conn->IProtoState == IPR_HANDSHAKE
-	  || conn->IProtoState == IPR_DC1
-	  || conn->IProtoState == IPR_DC4) {
-    if (conn->IProtoState == IPR_HANDSHAKE) {
-      /* We're in handhsake but didn't get DC1. Bah. */
-      if (conn->handlers->AuthFailed) conn->handlers->AuthFailed(conn);
-      conn->authenticated = 0;
-    }
-    conn->handlers->RecvChar(conn, Chr);
-  } else {
-    conn->IProtoPacket = ShrinkBuffer(conn->IProtoPacket, conn->IProtoPacketLen);
-    conn->IProtoPacket[conn->IProtoPacketLen++] = Chr;
-  }
+void TestIProtoChar(struct connection *conn, char Chr) {
+	pdebug("TestIProtoChar() %c/x%x\n", Chr, Chr);
+
+	if (Chr >= DC1 && Chr <= DC4) {
+		ProcessIProtoChar(conn, Chr);
+	} else if (conn->IProtoState == IPR_HANDSHAKE
+	|| conn->IProtoState == IPR_DC1
+	|| conn->IProtoState == IPR_DC4) {
+		if (conn->IProtoState == IPR_HANDSHAKE) {
+			/* We're in handhsake but didn't get DC1. Bah. */
+			if (conn->handlers->AuthFailed) conn->handlers->AuthFailed(conn);
+			conn->authenticated = 0;
+		}
+		conn->handlers->RecvChar(conn, Chr);
+	} else {
+		conn->IProtoPacket = ShrinkBuffer(conn->IProtoPacket, conn->IProtoPacketLen);
+		conn->IProtoPacket[conn->IProtoPacketLen++] = Chr;
+	}
 }
