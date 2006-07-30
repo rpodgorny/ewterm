@@ -91,10 +91,10 @@ int CuaSpeed;
 int CuaFd = -1;
 
 enum {
-  CM_READY,	/* exchange is ready */
-  CM_BUSY,	/* exchange output in progress */
-  CM_PBUSY,	/* exchange prompt output in progress */
-  CM_PROMPT,	/* exchange prompt ready */
+	CM_READY, /* exchange is ready */
+	CM_BUSY, /* exchange output in progress */
+	CM_PBUSY, /* exchange prompt output in progress */
+	CM_PROMPT, /* exchange prompt ready */
 } CommandMode = 0;
 
 int WantPrompt = 0; /* get prompt when CMD_READY */
@@ -124,11 +124,11 @@ int Silent = 0, Verbose = 0;
 void ReopenLogFile(), UpdateDailyLogFName(struct tm *tm), CheckDailyLog();
 
 #define	log_msg(fmt...) {\
-    if (DailyLog) CheckDailyLog(); \
-    if (LogFl1) { fprintf(LogFl1, fmt); fflush(LogFl1); }\
-    if (LogFl2) { fprintf(LogFl2, fmt); fflush(LogFl2); }\
-    if (LogRaw) { fprintf(LogRaw, fmt); fflush(LogRaw); }\
-    if (! Silent && stderr != LogFl2) { fprintf(stderr, fmt); fflush(stderr); }\
+	if (DailyLog) CheckDailyLog(); \
+	if (LogFl1) { fprintf(LogFl1, fmt); fflush(LogFl1); }\
+	if (LogFl2) { fprintf(LogFl2, fmt); fflush(LogFl2); }\
+	if (LogRaw) { fprintf(LogRaw, fmt); fflush(LogRaw); }\
+	if (! Silent && stderr != LogFl2) { fprintf(stderr, fmt); fflush(stderr); }\
 }
 
 
@@ -153,35 +153,35 @@ static char *wl = "4z";
 /* Terminal thingies */
 
 static struct termios tios_line = {
-  IGNBRK | IGNPAR,
-  0,
-  CREAD | CLOCAL,
-  ICANON,
-  N_TTY,
-  { 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 0, 0 }
+	IGNBRK | IGNPAR,
+	0,
+	CREAD | CLOCAL,
+	ICANON,
+	N_TTY,
+	{ 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 0, 0 }
 };
 
 static struct termios tios_raw = {
-  IGNBRK | IGNPAR,
-  0,
-  CREAD | CLOCAL,
-  0,
-  N_TTY,
-  { 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+	IGNBRK | IGNPAR,
+	0,
+	CREAD | CLOCAL,
+	0,
+	N_TTY,
+	{ 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 };
 
 struct config_record {
-  struct config_record *next;
-  char channel[64];
-  char port[64];
-  byte available;
-  byte csize;
-  byte parity;
-  byte stops;
-  ulg baud;
-  byte linemode;
-  byte shake;
-  byte crnli, crnlo;
+	struct config_record *next;
+	char channel[64];
+	char port[64];
+	byte available;
+	byte csize;
+	byte parity;
+	byte stops;
+	ulg baud;
+	byte linemode;
+	byte shake;
+	byte crnli, crnlo;
 } ConfRec;
 
 
@@ -197,33 +197,31 @@ struct config_record {
 
 
 
-void
-Done(int Err)
-{
+void Done(int Err) {
 #ifdef LOCKDIR
-  if ((LockName[0] != 0) && (LockName[0] != 10)) {
-    remove(LockName);
-    LockName[0] = 0;
-  }
+	if ((LockName[0] != 0) && (LockName[0] != 10)) {
+		remove(LockName);
+		LockName[0] = 0;
+	}
 #endif /* LOCKDIR */
 
-  if (CuaFd >= 0) { close(CuaFd); CuaFd = -1; }
-  if (SockFd >= 0) { close(SockFd); SockFd = -1; }
-  unlink(SockName);
+	if (CuaFd >= 0) { close(CuaFd); CuaFd = -1; }
+	if (SockFd >= 0) { close(SockFd); SockFd = -1; }
+	unlink(SockName);
 
-  {
-    char *time_s;
-    time_t tv;
-    
-    tv = time(NULL); time_s = ctime(&tv);
-    log_msg("--- ewrecv: end session (%d) at %s\n", Err, time_s);
-  }
+	{
+		char *time_s;
+		time_t tv;
 
-  if (LogFl1) fclose(LogFl1);
-  if (LogFl2) fclose(LogFl2);
-  if (LogRaw) fclose(LogRaw);
+		tv = time(NULL); time_s = ctime(&tv);
+		log_msg("--- ewrecv: end session (%d) at %s\n", Err, time_s);
+	}
 
-  exit(Err);
+	if (LogFl1) fclose(LogFl1);
+	if (LogFl2) fclose(LogFl2);
+	if (LogRaw) fclose(LogRaw);
+
+	exit(Err);
 }
 
 
@@ -235,192 +233,169 @@ Done(int Err)
  *
  */
 
-int
-set_baud_rate(struct termios *t, int rate)
-{
-  int i;
+int set_baud_rate(struct termios *t, int rate) {
+	int i;
 
-  switch (rate) {
-    case 50: i=B50; break;
-    case 75: i=B75; break;
-    case 110: i=B110; break;
-    case 134: i=B134; break;
-    case 150: i=B150; break;
-    case 200: i=B200; break;
-    case 300: i=B300; break;
-    case 600: i=B600; break;
-    case 1200: i=B1200; break;
-    case 1800: i=B1800; break;
-    case 2400: i=B2400; break;
-    case 4800: i=B4800; break;
-    case 9600: i=B9600; break;
-    case 19200: i=B19200; break;
-    case 38400: i=B38400; break;
-    case 57600: i=B57600; break;
-    case 115200: i=B115200; break;
-    case 230400: i=B230400; break;
-/*    case 460800: i=B460800; break; */
-    default: return -1;
-  }
-  t->c_cflag = (t->c_cflag & ~CBAUD) | i;
-  return 0;
+	switch (rate) {
+		case 50: i=B50; break;
+		case 75: i=B75; break;
+		case 110: i=B110; break;
+		case 134: i=B134; break;
+		case 150: i=B150; break;
+		case 200: i=B200; break;
+		case 300: i=B300; break;
+		case 600: i=B600; break;
+		case 1200: i=B1200; break;
+		case 1800: i=B1800; break;
+		case 2400: i=B2400; break;
+		case 4800: i=B4800; break;
+		case 9600: i=B9600; break;
+		case 19200: i=B19200; break;
+		case 38400: i=B38400; break;
+		case 57600: i=B57600; break;
+		case 115200: i=B115200; break;
+		case 230400: i=B230400; break;
+/*		case 460800: i=B460800; break; */
+		default: return -1;
+	}
+	t->c_cflag = (t->c_cflag & ~CBAUD) | i;
+	return 0;
 }
 
-static void
-parse_io_mode(struct config_record *r, char *baud, char *flags)
-{
-  wl = wl;
-  sscanf(baud, "%ld", &r->baud);
-  if (strlen(flags) == 6)
-    if ((flags[0] == '7' || flags[0] == '8')
-     && (flags[1] == 'N' || flags[1] == 'E' || flags[1] == 'O')
-     && (flags[2] == '1' || flags[2] == '2')
-     && (flags[3] == 'H' || flags[3] == 'S' || flags[3] == 'N')
-     && (flags[4] == 'C' || flags[4] == 'N' || flags[4] == 'B')
-     && (flags[5] == 'C' || flags[5] == 'N' || flags[5] == 'B')) {
-       r->csize = flags[0] - '0';
-       r->parity = flags[1];
-       r->stops = flags[2] - '0';
-       r->shake = flags[3];
-       r->crnli = flags[4];
-       r->crnlo = flags[5];
-       return;
-    }
-//  fprintf(stderr, "%s: ", flags);
+static void parse_io_mode(struct config_record *r, char *baud, char *flags) {
+	wl = wl;
+	sscanf(baud, "%ld", &r->baud);
+	if (strlen(flags) == 6) {
+		if ((flags[0] == '7' || flags[0] == '8')
+		&& (flags[1] == 'N' || flags[1] == 'E' || flags[1] == 'O')
+		&& (flags[2] == '1' || flags[2] == '2')
+		&& (flags[3] == 'H' || flags[3] == 'S' || flags[3] == 'N')
+		&& (flags[4] == 'C' || flags[4] == 'N' || flags[4] == 'B')
+		&& (flags[5] == 'C' || flags[5] == 'N' || flags[5] == 'B')) {
+			r->csize = flags[0] - '0';
+			r->parity = flags[1];
+			r->stops = flags[2] - '0';
+			r->shake = flags[3];
+			r->crnli = flags[4];
+			r->crnlo = flags[5];
+			return;
+		}
+	}
 }
 
-void
-init_port(int Handle, struct config_record *r)
-{
-  struct termios *t;
-  int Ret;
+void init_port(int Handle, struct config_record *r) {
+	struct termios *t;
+	int Ret;
 
-  t = r->linemode==1 ? &tios_line : &tios_raw;
-  t->c_cflag |= (r->csize == 8) ? CS8 : CS7;
-  if (r->parity != 'N') t->c_cflag |= PARENB;
-  if (r->parity == 'O') t->c_cflag |= PARODD;
-  if (r->stops == 2) t->c_cflag |= CSTOPB;
-  if (r->shake == 'H') t->c_cflag |= CRTSCTS;
-  else if (r->shake == 'S') {
-    t->c_iflag = IXON;
-    t->c_cc[VSTART] = 0x11;
-    t->c_cc[VSTOP] = 0x13;
-  }
-  if (r->linemode == 1)
-   switch (r->crnli) {
-      case 'N':
-        t->c_iflag |= INLCR;
-        break;
-      case 'B':
-        t->c_iflag |= ICRNL;
-        break;
-   }
+	t = r->linemode==1 ? &tios_line : &tios_raw;
+	t->c_cflag |= (r->csize == 8) ? CS8 : CS7;
+	if (r->parity != 'N') t->c_cflag |= PARENB;
+	if (r->parity == 'O') t->c_cflag |= PARODD;
+	if (r->stops == 2) t->c_cflag |= CSTOPB;
+	if (r->shake == 'H') {
+		t->c_cflag |= CRTSCTS;
+	} else if (r->shake == 'S') {
+		t->c_iflag = IXON;
+		t->c_cc[VSTART] = 0x11;
+		t->c_cc[VSTOP] = 0x13;
+	}
+	if (r->linemode == 1) {
+		switch (r->crnli) {
+			case 'N': t->c_iflag |= INLCR; break;
+			case 'B': t->c_iflag |= ICRNL; break;
+		}
+	}
 
-  if (set_baud_rate(t, r->baud)) fprintf(stderr, "Invalid baud rate\r\n");
-  t->c_cflag |= HUPCL;				/* Hangup on close */
-  Ret = tcsetattr(Handle, TCSANOW, t);
-  if (Ret) {
-    perror("Cannot set termios - tcsetattr()");
-    Done(6);
-  }
+	if (set_baud_rate(t, r->baud)) fprintf(stderr, "Invalid baud rate\r\n");
+	t->c_cflag |= HUPCL; /* Hangup on close */
+	Ret = tcsetattr(Handle, TCSANOW, t);
+	if (Ret) {
+		perror("Cannot set termios - tcsetattr()");
+		Done(6);
+	}
 }
 
 
 
 
-void
-SigTermCaught()
-{
-  /* Quit properly */
-  Done(0);
+void SigTermCaught() {
+	/* Quit properly */
+	Done(0);
 }
 
-void
-SigHupCaught()
-{
-  /* Reopen log file */
-  int OldSilent;
+void SigHupCaught() {
+	/* Reopen log file */
+	int OldSilent;
 
-  OldSilent = Silent;
-  Silent = 0;
+	OldSilent = Silent;
+	Silent = 0;
   
-  {
-    char *time_s;
-    time_t tv;
-    
-    tv = time(NULL); time_s = ctime(&tv);
-    log_msg("--- ewrecv: caught ->HUP at %s\n", time_s);
-  }
+	{
+		char *time_s;
+		time_t tv;
+
+		tv = time(NULL); time_s = ctime(&tv);
+		log_msg("--- ewrecv: caught ->HUP at %s\n", time_s);
+	}
   
-  if (LogFl1) {
-    if (pclose(LogFl1) < 0)
-      log_msg("--- ewrecv: Hey! Cannot pclose lpr!\n");
-  
-    LogFl1 = popen("/usr/bin/lpr", "w");
-    if (! LogFl1)
-      log_msg("--- ewrecv: Hey! Cannot popen lpr!\n");
-  }
+	if (LogFl1) {
+		if (pclose(LogFl1) < 0) log_msg("--- ewrecv: Hey! Cannot pclose lpr!\n");
 
-  ReopenLogFile();
+		LogFl1 = popen("/usr/bin/lpr", "w");
+		if (!LogFl1) log_msg("--- ewrecv: Hey! Cannot popen lpr!\n");
+	}
 
-  if (LogRaw) {
-    fclose(LogRaw);
-    
-    LogRaw = fopen(LogRawName, "a");
-    if (! LogRaw)
-      log_msg("--- ewrecv: Hey! Cannot fopen %s!\n", LogRawName);
-  }
+	ReopenLogFile();
 
-  {
-    char *time_s;
-    time_t tv;
-    
-    tv = time(NULL); time_s = ctime(&tv);
-    log_msg("--- ewrecv: caught HUP-> at %s\n", time_s);
-  } 
+	if (LogRaw) {
+		fclose(LogRaw);
 
-  Silent = OldSilent;
+		LogRaw = fopen(LogRawName, "a");
+		if (!LogRaw) log_msg("--- ewrecv: Hey! Cannot fopen %s!\n", LogRawName);
+	}
 
-  signal(SIGHUP, SigHupCaught);
+	{
+		char *time_s;
+		time_t tv;
+
+		tv = time(NULL); time_s = ctime(&tv);
+		log_msg("--- ewrecv: caught HUP-> at %s\n", time_s);
+	}
+
+	Silent = OldSilent;
+
+	signal(SIGHUP, SigHupCaught);
 }
 
 
 
-void
-ReopenLogFile()
-{
-  if (!LogFl2) return;
+void ReopenLogFile() {
+	if (!LogFl2) return;
 
-  fclose(LogFl2);
+	fclose(LogFl2);
   
-  LogFl2 = fopen(LogFName, "a");
-  if (! LogFl2)
-    log_msg("--- ewrecv: Hey! Cannot fopen %s!\n", LogFName);
+	LogFl2 = fopen(LogFName, "a");
+	if (!LogFl2) log_msg("--- ewrecv: Hey! Cannot fopen %s!\n", LogFName);
 }
 
-void
-UpdateDailyLogFName(struct tm *tm)
-{
-  if (!DailyLog) return;
+void UpdateDailyLogFName(struct tm *tm) {
+	if (!DailyLog) return;
 
-  snprintf(LogFName, 256, "%s/%04d-%02d-%02d", DailyLogFNameTemplate,
-      			tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
+	snprintf(LogFName, 256, "%s/%04d-%02d-%02d", DailyLogFNameTemplate, tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
 }
 
 static int lday;
 
-void
-CheckDailyLog()
-{
-  time_t t = time(NULL);
-  struct tm *tm = localtime(&t);
+void CheckDailyLog() {
+	time_t t = time(NULL);
+	struct tm *tm = localtime(&t);
 
-  if (!DailyLog) return;
+	if (!DailyLog) return;
 
-  if (tm->tm_mday == lday) return;
-  lday = tm->tm_mday;
-  UpdateDailyLogFName(tm);
-  ReopenLogFile();
+	if (tm->tm_mday == lday) return;
+	lday = tm->tm_mday;
+	UpdateDailyLogFName(tm);
+	ReopenLogFile();
 }
 
 
@@ -571,32 +546,30 @@ void ReOpenSerial() {
    */
 
 
-void
-LogCh(char Chr) {
-  if (Chr >= 32 || Chr == 10) {
-    if (DailyLog) CheckDailyLog();
-    if (LogFl1) fputc(Chr, LogFl1);
-    if (LogFl2) fputc(Chr, LogFl2);
-    if (Verbose && stderr && stderr != LogFl2) fputc(Chr, stderr);
-  }
+void LogCh(char Chr) {
+	if (Chr >= 32 || Chr == 10) {
+		if (DailyLog) CheckDailyLog();
+		if (LogFl1) fputc(Chr, LogFl1);
+		if (LogFl2) fputc(Chr, LogFl2);
+		if (Verbose && stderr && stderr != LogFl2) fputc(Chr, stderr);
+	}
 
-  if (LineLen < 255) {
-    Lines[LastLine][LineLen++] = Chr;
-    Lines[LastLine][LineLen] = 0;
-  }
+	if (LineLen < 255) {
+		Lines[LastLine][LineLen++] = Chr;
+		Lines[LastLine][LineLen] = 0;
+	}
 
-  if (Chr == 10) {
-    if (LogFl1) fflush(LogFl1);
-    if (LogFl2) fflush(LogFl2);
-    if (Verbose && stderr && stderr != LogFl2) fflush(stderr);
+	if (Chr == 10) {
+		if (LogFl1) fflush(LogFl1);
+		if (LogFl2) fflush(LogFl2);
+		if (Verbose && stderr && stderr != LogFl2) fflush(stderr);
 
-    /* next line in history */
-    LastLine++;
-    if (LastLine >= HISTLEN)
-      LastLine = 0; /* cycle */
-    Lines[LastLine][0] = 0;
-    LineLen = 0;
-  }
+		/* next line in history */
+		LastLine++;
+		if (LastLine >= HISTLEN) LastLine = 0; /* cycle */
+		Lines[LastLine][0] = 0;
+		LineLen = 0;
+	}
 }
 
 int SendChar(struct connection *c, char Chr) {
