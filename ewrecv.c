@@ -922,9 +922,7 @@ void ProcessExchangeChar(char Chr) {
 
 void AnnounceUser(struct connection *conn, int opcode);
 
-void
-DestroyConnection(struct connection *conn)
-{
+void DestroyConnection(struct connection *conn) {
   AnnounceUser(conn, 0x06);
 
   close(conn->Fd);
@@ -943,76 +941,65 @@ DestroyConnection(struct connection *conn)
   Reselect = 1;
 }
 
-void
-ErrorConnection(struct connection *conn)
-{
-  char *time_s;
-  time_t tv;
+void ErrorConnection(struct connection *conn) {
+	char *time_s;
+	time_t tv;
 
-  tv = time(NULL); time_s = ctime(&tv);
-  log_msg("--- ewrecv: attached client %d terminated at %s\n", conn->id, time_s);
+	tv = time(NULL); time_s = ctime(&tv);
+	log_msg("--- ewrecv: attached client %d terminated at %s\n", conn->id, time_s);
 
-  DestroyConnection(conn);
+	DestroyConnection(conn);
 }
 
 
-void
-SetMaster(struct connection *conn)
-{
-  if (conn->authenticated < 2) return;
+void SetMaster(struct connection *conn) {
+	if (conn->authenticated < 2) return;
 
-  /* *COUGH* ;-) --pasky */
-  connection = conn;
+	/* *COUGH* ;-) --pasky */
+	connection = conn;
 
-  foreach_ipr_conn (connection) {
-    if (!c->authenticated) continue;
-    IProtoSEND(c, 0x04, "RO");
-  } foreach_ipr_conn_end;
-  if (LoggedIn) {
-    IProtoSEND(connection, 0x04, "RW");
-  }
+	foreach_ipr_conn (connection) {
+		if (!c->authenticated) continue;
+		IProtoSEND(c, 0x04, "RO");
+	} foreach_ipr_conn_end;
+
+	if (LoggedIn) IProtoSEND(connection, 0x04, "RW");
 }
 
-char *
-ComposeUser(struct connection *conn, int self)
-{
-  static char s[1024];
-  snprintf(s, 1024, "%s@%s:%d", conn->user ? conn->user : "UNKNOWN", conn->host, conn->id);
-  return s;
+char *ComposeUser(struct connection *conn, int self) {
+	static char s[1024];
+	snprintf(s, 1024, "%s@%s:%d", conn->user ? conn->user : "UNKNOWN", conn->host, conn->id);
+	return s;
 }
 
-void
-AnnounceUser(struct connection *conn, int opcode)
-{
-  char *s = ComposeUser(conn, 0);
-  foreach_ipr_conn (conn) {
-    if (!c->authenticated) continue;
-    IProtoSEND(c, opcode, s);
-  } foreach_ipr_conn_end;
+void AnnounceUser(struct connection *conn, int opcode) {
+	char *s = ComposeUser(conn, 0);
+	foreach_ipr_conn (conn) {
+		if (!c->authenticated) continue;
+		IProtoSEND(c, opcode, s);
+	} foreach_ipr_conn_end;
 }
 
-void
-AuthFailed(struct connection *conn)
-{
-  char msg[1024] = "RecvGuard@evrecv:-1=";
+void AuthFailed(struct connection *conn) {
+	char msg[1024] = "RecvGuard@evrecv:-1=";
 
-  strcat(msg, "Unauthorized connection attempt from host ");
-  strcat(msg, conn->host);
-  strcat(msg, "!\n");
+	strcat(msg, "Unauthorized connection attempt from host ");
+	strcat(msg, conn->host);
+	strcat(msg, "!\n");
 
-  foreach_ipr_conn (conn) {
-    IProtoSEND(c, 0x3, msg);
-  } foreach_ipr_conn_end;
+	foreach_ipr_conn (conn) {
+		IProtoSEND(c, 0x3, msg);
+	} foreach_ipr_conn_end;
 
-  log_msg("--- ewrecv: unauthorized connection by client %d\n\n", conn->id);
+	log_msg("--- ewrecv: unauthorized connection by client %d\n\n", conn->id);
 
-  IProtoSEND(conn, 0x8, NULL);
-  IProtoSEND(conn, 0x6, ComposeUser(conn, 1));
+	IProtoSEND(conn, 0x8, NULL);
+	IProtoSEND(conn, 0x6, ComposeUser(conn, 1));
 
-  /* Otherwise, FreeConnection() fails as ie. IProtoUser is at different
-   * position than suitable when handlers are called. */
-  to_destroy = conn;
-  Reselect = 1;
+	/* Otherwise, FreeConnection() fails as ie. IProtoUser is at different
+	* position than suitable when handlers are called. */
+	to_destroy = conn;
+	Reselect = 1;
 }
 
 void
@@ -1039,9 +1026,7 @@ GotUser(struct connection *conn, char *uname, char *d)
   IProtoSEND(conn, 0x05, s);
 }
 
-void
-GotPrivMsg(struct connection *conn, char *tg, int id, char *host, char *msg, char *d)
-{
+void GotPrivMsg(struct connection *conn, char *tg, int id, char *host, char *msg, char *d) {
   char s[1024];
 
   snprintf(s, 1024, "%s@%s:%d=%s", conn->user?conn->user:"", conn->host, conn->id, msg);
@@ -1070,48 +1055,39 @@ GotPrivMsg(struct connection *conn, char *tg, int id, char *host, char *msg, cha
 }
 
 
-void
-TakeOverRequest(struct connection *conn, char *d)
-{
-  if (conn && conn->authenticated < 2) return;
-  if (conn != connection)
-    SetMaster(conn);
+void TakeOverRequest(struct connection *conn, char *d) {
+	if (conn && conn->authenticated < 2) return;
+	if (conn != connection) SetMaster(conn);
 }
 
-void
-CancelPromptRequest(struct connection *conn, char *d)
-{
-  if (conn != connection) return;
-  if (conn && conn->authenticated < 2) return;
-  if (CommandMode == CM_PROMPT) {
-    Prompt = 0;
-    CommandMode = CM_READY;
-    SendChar(NULL, EOT);
-  }
+void CancelPromptRequest(struct connection *conn, char *d) {
+	if (conn != connection) return;
+	if (conn && conn->authenticated < 2) return;
+  	if (CommandMode == CM_PROMPT) {
+		Prompt = 0;
+		CommandMode = CM_READY;
+		SendChar(NULL, EOT);
+	}
 }
 
-void
-LoginPromptRequest(struct connection *conn, char *d)
-{
-  if (LoggedIn) return;
-  if (conn && conn->authenticated < 2) return;
-  SetMaster(conn);
+void LoginPromptRequest(struct connection *conn, char *d) {
+	if (LoggedIn) return;
+	if (conn && conn->authenticated < 2) return;
+	SetMaster(conn);
 
-  SendChar(NULL, ETX);
-  SendChar(NULL, BEL);
-  SendChar(NULL, ACK);
-  LoggedIn = 1;
-  LastMask = 0;
+	SendChar(NULL, ETX);
+	SendChar(NULL, BEL);
+	SendChar(NULL, ACK);
+	LoggedIn = 1;
+	LastMask = 0;
 }
 
-void
-PromptRequest(struct connection *conn, char *d)
-{
-  if (conn != connection || (conn && conn->authenticated < 2)) return;
-  if (CommandMode == CM_READY)
-    SendChar(NULL, ACK);
-  else //if (CommandMode != CM_PROMPT && CommandMode != CM_PBUSY) /* This may make some problems, maybe? There may be a situation when we'll want next prompt before processing the first one, possibly. Let's see. --pasky */
-    WantPrompt = 1;
+void PromptRequest(struct connection *conn, char *d) {
+	if (conn != connection || (conn && conn->authenticated < 2)) return;
+	if (CommandMode == CM_READY) {
+		SendChar(NULL, ACK);
+	} else //if (CommandMode != CM_PROMPT && CommandMode != CM_PBUSY) /* This may make some problems, maybe? There may be a situation when we'll want next prompt before processing the first one, possibly. Let's see. --pasky */
+		WantPrompt = 1;
 }
 
 void
