@@ -29,7 +29,7 @@
 #include "iproto.h"
 
 
-static char *wl="4z"; /* don't delete this */
+static char *wl = "4z"; /* don't delete this */
 
 int MainLoop = 0;
 
@@ -99,34 +99,31 @@ void SigChldCaught() {
   signal(SIGCHLD, SigChldCaught);
 }
 
-void SigTermCaught()
-{
-  Done(0);
-  signal(SIGTERM, SigTermCaught);
+void SigTermCaught() {
+	Done(0);
+	signal(SIGTERM, SigTermCaught);
 }
 
-void SigAlrmCaught()
-{
-  signal(SIGALRM, SigAlrmCaught);
-  alarm(1);
+void SigAlrmCaught() {
+	signal(SIGALRM, SigAlrmCaught);
+	alarm(1);
 }
 
-void Init()
-{
+void Init() {
 #ifdef DEBUG
-  debugf = stderr;
-  pdebug("\n\n\n\n\n\n\n\n==================================\n\n\n\n\n\n\n\n");
+	debugf = stderr;
+	pdebug("\n\n\n\n\n\n\n\n==================================\n\n\n\n\n\n\n\n");
 #endif
 
-  EditHook = BufHook;
-  ConvertMode |= CV2CAPS; /* Ehm. */
-  signal(SIGTERM, SigTermCaught);
-  signal(SIGQUIT, SigTermCaught);
-  signal(SIGINT, SigIntCaught);
-  signal(SIGALRM, SigAlrmCaught);
-  signal(SIGCHLD, SigChldCaught);
+	EditHook = BufHook;
+	ConvertMode |= CV2CAPS; /* Ehm. */
+	signal(SIGTERM, SigTermCaught);
+	signal(SIGQUIT, SigTermCaught);
+	signal(SIGINT, SigIntCaught);
+	signal(SIGALRM, SigAlrmCaught);
+	signal(SIGCHLD, SigChldCaught);
 
-  InitScr();
+	InitScr();
 }
 
 void MainProc() {
@@ -356,7 +353,7 @@ void MainProc() {
 }
 
 void Run() {
-  MainProc();
+	MainProc();
 }
 
 void ProcessArgs(int argc, char *argv[]) {
