@@ -1152,30 +1152,26 @@ SendBurst(struct connection *conn, char *lines, char *d)
   WriteChar(conn, SI); /* end burst */
 }
 
-void
-SendIntro(struct connection *conn)
-{
-  WriteChar(conn, SO); /* start burst */
+void SendIntro(struct connection *conn) {
+	WriteChar(conn, SO); /* start burst */
 
-  foreach_conn (conn) {
-    if (!c->authenticated) continue;
-    IProtoSEND(conn, 0x05, ComposeUser(c, 0));
-  } foreach_conn_end;
+	foreach_conn (conn) {
+		if (!c->authenticated) continue;
+		IProtoSEND(conn, 0x05, ComposeUser(c, 0));
+	} foreach_conn_end;
 
-  if (LoggedIn == 2)
-    IProtoSEND(conn, 0x43, NULL);
+	if (LoggedIn == 2) IProtoSEND(conn, 0x43, NULL);
 
-  if ((conn != connection && LoggedIn) || conn->authenticated < 2) {
-    IProtoSEND(conn, 0x04, "RO");
-  } else {
-    IProtoSEND(conn, 0x04, "RW");
-  }
+	if ((conn != connection && LoggedIn) || conn->authenticated < 2) {
+		IProtoSEND(conn, 0x04, "RO");
+	} else {
+		IProtoSEND(conn, 0x04, "RW");
+	}
 
-  WriteChar(conn, SI); /* end burst */
+	WriteChar(conn, SI); /* end burst */
 }
 
-struct connection *
-TryAccept(int Fd) {
+struct connection *TryAccept(int Fd) {
   struct connection *conn;
   int NewFd;
   static struct sockaddr_in remote;
