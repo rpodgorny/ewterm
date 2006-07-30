@@ -1132,7 +1132,7 @@ struct connection *TryAccept(int Fd) {
 	static struct sockaddr_in remote;
 	static int remlen;
 
-	NewFd = accept(Fd, (struct sockaddr *) &remote, &remlen);
+	NewFd = accept(Fd, (struct sockaddr *)&remote, &remlen);
 	if (NewFd < 0) {
 		if (errno != EWOULDBLOCK && errno != EINTR) {
 			perror("--- ewrecv: accept() failed");
@@ -1237,9 +1237,7 @@ struct connection *TryAccept(int Fd) {
 		char *S = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 		int i;
 		conn->authstr = malloc(129);
-		for (i = 0; i < 128; i++) {
-			conn->authstr[i] = S[random()%strlen(S)];
-		}
+		for (i = 0; i < 128; i++) conn->authstr[i] = S[random()%strlen(S)];
 		conn->authstr[128] = 0;
 		IProtoASK(conn, 0x02, conn->authstr);
 	}
