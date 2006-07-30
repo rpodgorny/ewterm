@@ -206,74 +206,59 @@ ShrinkBuffer(void *Buf, int Len)
 }
 
 
-void
-StartHandshake(struct connection *conn)
-{
-  WriteChar(conn, DC1);
+void StartHandshake(struct connection *conn) {
+	WriteChar(conn, DC1);
 }
 
 
-struct connection *
-MakeConnection(int Fd, struct conn_handlers *handlers)
-{
-  struct connection *conn = calloc(1, sizeof(struct connection));
+struct connection *MakeConnection(int Fd, struct conn_handlers *handlers) {
+	struct connection *conn = calloc(1, sizeof(struct connection));
 
-  if (!conn) return NULL;
-  if (Fd < 0) {
-    fprintf(stderr, "Internal error: attempted to establish connection with negative Fd %d!\n", Fd);
-    return NULL;
-  }
-  conn->Fd = Fd;
-  conn->IProtoState = IPR_HANDSHAKE;
-  conn->fwmode = FWD_INOUT;
-  conn->handlers = handlers;
-  StartHandshake(conn);
+	if (!conn) return NULL;
+	if (Fd < 0) {
+		fprintf(stderr, "Internal error: attempted to establish connection with negative Fd %d!\n", Fd);
+		return NULL;
+	}
+	conn->Fd = Fd;
+	conn->IProtoState = IPR_HANDSHAKE;
+	conn->fwmode = FWD_INOUT;
+	conn->handlers = handlers;
+	StartHandshake(conn);
 
-  return conn;
+	return conn;
 }
 
-void
-FreeConnection(struct connection *conn)
-{
-  if (conn->user)
-    free(conn->user);
-  if (conn->authstr)
-    free(conn->authstr);
-  if (conn->IProtoPacket)
-    free(conn->IProtoPacket);
-  if (conn->ReadBuffer)
-    free(conn->ReadBuffer);
-  if (conn->WriteBuffer)
-    free(conn->WriteBuffer);
-  free(conn);
+void FreeConnection(struct connection *conn) {
+	if (conn->user) free(conn->user);
+	if (conn->authstr) free(conn->authstr);
+	if (conn->IProtoPacket) free(conn->IProtoPacket);
+	if (conn->ReadBuffer) free(conn->ReadBuffer);
+	if (conn->WriteBuffer) free(conn->WriteBuffer);
+	free(conn);
 }
 
 
-int
-Read(struct connection *conn, void *data, int dlen)
-{
-  int len = dlen > conn->ReadBufferLen ? conn->ReadBufferLen : dlen;
+int Read(struct connection *conn, void *data, int dlen) {
+	int len = dlen > conn->ReadBufferLen ? conn->ReadBufferLen : dlen;
 
-  if (!len) return 0;
-  memcpy(data, conn->ReadBuffer, len);
-  conn->ReadBufferLen -= len;
-  memmove(conn->ReadBuffer, conn->ReadBuffer + len, conn->ReadBufferLen);
-  return len;
+	if (!len) return 0;
+	memcpy(data, conn->ReadBuffer, len);
+	conn->ReadBufferLen -= len;
+	memmove(conn->ReadBuffer, conn->ReadBuffer + len, conn->ReadBufferLen);
+	return len;
 }
 
-int
-DoRead(struct connection *conn)
-{
-  int len;
+int DoRead(struct connection *conn) {
+	int len;
 
-  conn->ReadBuffer = ShrinkBuffer(conn->ReadBuffer, conn->ReadBufferLen);
-  len = BUF_GRAIN - (conn->ReadBufferLen % BUF_GRAIN);
+	conn->ReadBuffer = ShrinkBuffer(conn->ReadBuffer, conn->ReadBufferLen);
+	len = BUF_GRAIN - (conn->ReadBufferLen % BUF_GRAIN);
 
-  len = read(conn->Fd, conn->ReadBuffer + conn->ReadBufferLen, len);
+	len = read(conn->Fd, conn->ReadBuffer + conn->ReadBufferLen, len);
 
-  if (len <= 0) return len;
-  conn->ReadBufferLen += len;
-  return len;
+	if (len <= 0) return len;
+	conn->ReadBufferLen += len;
+	return len;
 }
 
 void Write(struct connection *conn, void *data, int dlen) {
