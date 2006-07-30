@@ -109,18 +109,18 @@ void RefreshLogTxt() {
 int SilentSendChar = 0;
 
 void SendChar(char Chr) {
-  if (! SilentSendChar && (Chr >= 32 || Chr == 10 || Chr == 13)) {
-    if (FilterFdIn >= 0 && FilterFdOut >= 0) {
-      if (Chr == '^') AddToFilterQueue('^');
-      AddToFilterQueue(Chr);
-    } else {
-      AddCh(Chr);
-    }
-  }
+	if (! SilentSendChar && (Chr >= 32 || Chr == 10 || Chr == 13)) {
+		if (FilterFdIn >= 0 && FilterFdOut >= 0) {
+			if (Chr == '^') AddToFilterQueue('^');
+			AddToFilterQueue(Chr);
+		} else {
+			AddCh(Chr);
+		}
+	}
 
-  pdebug("SendChar() %c/%x \n", Chr, Chr);
+	pdebug("SendChar() %c/%x \n", Chr, Chr);
   
-  if (connection) Write(connection, &Chr, 1);
+	if (connection) Write(connection, &Chr, 1);
 }
 
 void ESendChar(char Chr) {
