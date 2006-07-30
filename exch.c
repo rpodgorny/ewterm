@@ -758,116 +758,93 @@ GotPromptEnd(struct connection *c, char type, char *job, char *d) {
   }
 }
 
-void
-GotLoginError(struct connection *c, char *d)
-{
-  ActUsrname[0] = 0; ActPasswd[0] = 0;
-  LoggedOff = 1;
-  RefreshLogTxt();
-  RedrawStatus();
+void GotLoginError(struct connection *c, char *d) {
+	ActUsrname[0] = 0; ActPasswd[0] = 0;
+	LoggedOff = 1;
+	RefreshLogTxt();
+	RedrawStatus();
 }
 
-void
-GotLoginSuccess(struct connection *c, char *d)
-{
-  LoggedOff = 0;
-  RefreshLogTxt();
+void GotLoginSuccess(struct connection *c, char *d) {
+	LoggedOff = 0;
+	RefreshLogTxt();
 }
 
-void
-GotLogout(struct connection *c, char *d)
-{
-  if (LastMask == 7) ActUsrname[0] = 0; /* XXX */
-  ActPasswd[0] = 0;
-  LoggedOff = 1;
-  RefreshLogTxt();
+void GotLogout(struct connection *c, char *d) {
+	if (LastMask == 7) ActUsrname[0] = 0; /* XXX */
+	ActPasswd[0] = 0;
+	LoggedOff = 1;
+	RefreshLogTxt();
 }
 
-void
-GotJob(struct connection *c, char *job, char *d)
-{
-  if (atoi(job) == ActJob) {
-    ActJob = 0;
-    RedrawStatus();
-  }
+void GotJob(struct connection *c, char *job, char *d) {
+	if (atoi(job) == ActJob) {
+		ActJob = 0;
+		RedrawStatus();
+	}
 }
 
-void
-GotMask(struct connection *c, char *mask, char *d)
-{
-  if (LastMask != atoi(mask)) {
-    LastMask = atoi(mask);
-    RedrawStatus();
-  }
+void GotMask(struct connection *c, char *mask, char *d) {
+	if (LastMask != atoi(mask)) {
+		LastMask = atoi(mask);
+		RedrawStatus();
+	}
 }
 
-void
-GotHeader(struct connection *c, char *job, char *omt, char *uname, char *exchange, char *d)
-{
-  strcpy(ActExchange, exchange);
-  if (atoi(job) == ActJob && *uname && *uname != 0 && c->fwmode != FWD_IN && !LoggedOff) strcpy(ActUsrname, uname);
-  if (!strcasecmp(ActUsrname, uname)) {
-    strcpy(ActOMT, omt);
-  }
-  RedrawStatus();
+void GotHeader(struct connection *c, char *job, char *omt, char *uname, char *exchange, char *d) {
+	strcpy(ActExchange, exchange);
+	if (atoi(job) == ActJob && *uname && *uname != 0 && c->fwmode != FWD_IN && !LoggedOff) strcpy(ActUsrname, uname);
+	if (!strcasecmp(ActUsrname, uname)) strcpy(ActOMT, omt);
+	RedrawStatus();
 }
 
-void
-AskForBurst()
-{
-  char l[128] = "";
+void AskForBurst() {
+	char l[128] = "";
 
-  if (BurstLines >= 0) snprintf(l, 128, "%d", BurstLines);
+	if (BurstLines >= 0) snprintf(l, 128, "%d", BurstLines);
 
-  IProtoASK(connection, 0x3f, l);
+	IProtoASK(connection, 0x3f, l);
 }
 
-void SendCRAMPassword()
-{
-  char p[128];
+void SendCRAMPassword() {
+	char p[128];
 
-  ShadowHelp = 0;
-  MD5Sum(connection->authstr, p);
-  IProtoSEND(connection, 0x07, p);
-  free(connection->authstr), connection->authstr = NULL;
+	ShadowHelp = 0;
+	MD5Sum(connection->authstr, p);
+	IProtoSEND(connection, 0x07, p);
+	free(connection->authstr), connection->authstr = NULL;
 
-  UpdateOptions(); /* remember ConnPassword */
+	UpdateOptions(); /* remember ConnPassword */
 
-  AskForBurst();
+	AskForBurst();
 }
 
-void
-GotCRAM(struct connection *c, char *token, char *d)
-{
-  char p[128];
+void GotCRAM(struct connection *c, char *token, char *d) {
+	char p[128];
 
-  if (!*ConnPassword) {
-    c->authstr = strdup(token);
-    DisplayMode |= HIDE;
-    beep();
-    ShadowHelp = 1;
-    GetString(ConnPassword, 29, "Receiver Password", SendCRAMPassword, NULL /* TODO: disconnect? */);
-    return;
-  }
-  MD5Sum(token, p);
-  IProtoSEND(c, 0x07, p);
-  AskForBurst();
+	if (!*ConnPassword) {
+		c->authstr = strdup(token);
+		DisplayMode |= HIDE;
+		beep();
+		ShadowHelp = 1;
+		GetString(ConnPassword, 29, "Receiver Password", SendCRAMPassword, NULL /* TODO: disconnect? */);
+		return;
+	}
+	MD5Sum(token, p);
+	IProtoSEND(c, 0x07, p);
+	AskForBurst();
 }
 
-void
-AuthFailed(struct connection *c)
-{
-  AddEStr("Receiver login failed.", 0, 0);
-  /* Reconnect! */
-  Reconnect = 1;
+void AuthFailed(struct connection *c) {
+	AddEStr("Receiver login failed.", 0, 0);
+	/* Reconnect! */
+	Reconnect = 1;
 
-  *ConnPassword = 0;
-  UpdateOptions();
+	*ConnPassword = 0;
+	UpdateOptions();
 }
 
-struct connection *
-MkConnection(int SockFd)
-{
+struct connection *MkConnection(int SockFd) {
   static struct conn_handlers h = {
     /* 2.1a */
     (int(*)(struct connection *, char)) CheckChr,
@@ -918,37 +895,35 @@ MkConnection(int SockFd)
   return connection;
 }
 
-void
-AttachConnection()
-{
-  struct sockaddr_in addr;
-  int SockFd;
+void AttachConnection() {
+	struct sockaddr_in addr;
+	int SockFd;
 
-  SockFd = socket(PF_INET, SOCK_STREAM, 0);
-  if (SockFd < 0) {
-    perror("socket()");
-    exit(6);
-  }
+	SockFd = socket(PF_INET, SOCK_STREAM, 0);
+	if (SockFd < 0) {
+		perror("socket()");
+		exit(6);
+	}
 
-  addr.sin_family = AF_INET;
-  {
-    struct hostent *host = gethostbyname(HostName);
-    if (!host) {
-      perror("gethostbyname()");
-      exit(6);
-    }
-    addr.sin_addr.s_addr = ((struct in_addr *) host->h_addr)->s_addr;
-  }
-  addr.sin_port = htons(HostPort);
+	addr.sin_family = AF_INET;
+	{
+		struct hostent *host = gethostbyname(HostName);
+		if (!host) {
+			perror("gethostbyname()");
+			exit(6);
+		}
+		addr.sin_addr.s_addr = ((struct in_addr *) host->h_addr)->s_addr;
+	}
+	addr.sin_port = htons(HostPort);
 
-  if (connect(SockFd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-    perror("connect()");
-    exit(6);
-  }
-  connection = MkConnection(SockFd);
+	if (connect(SockFd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+		perror("connect()");
+		exit(6);
+	}
+	connection = MkConnection(SockFd);
 
-  if (!connection) {
-    fprintf(stderr, "Unable to create connection!\n");
-    exit(9);
-  }
+	if (!connection) {
+		fprintf(stderr, "Unable to create connection!\n");
+		exit(9);
+	}
 }
