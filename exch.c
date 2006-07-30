@@ -878,7 +878,7 @@ void AttachConnection() {
 	}
 	addr.sin_port = htons(HostPort);
 
-	if (connect(SockFd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+	if (connect(SockFd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
 		perror("connect()");
 		exit(6);
 	}
