@@ -109,7 +109,7 @@ void RefreshLogTxt() {
 int SilentSendChar = 0;
 
 void SendChar(char Chr) {
-	if (! SilentSendChar && (Chr >= 32 || Chr == 10 || Chr == 13)) {
+	if (!SilentSendChar && (Chr >= 32 || Chr == 10 || Chr == 13)) {
 		if (FilterFdIn >= 0 && FilterFdOut >= 0) {
 			if (Chr == '^') AddToFilterQueue('^');
 			AddToFilterQueue(Chr);
@@ -393,48 +393,44 @@ void StartLogOn() {
 }
 
 void DispOMTUser(struct mml_command *mml) {
-  struct mml_param params[2] = {
-    { "USER", NULL },
-    { "ID", NULL },
-  };
-  int m = 0;
-  int id = -1;
-  char s[256];
+	struct mml_param params[2] = {
+		{ "USER", NULL },
+		{ "ID", NULL },
+	};
+	int m = 0;
+	int id = -1;
+	char s[256];
 
-  sort_mml_command(mml, 2, params);
-  if (params[1].value) id = atoi(params[1].value);
+	sort_mml_command(mml, 2, params);
+	if (params[1].value) id = atoi(params[1].value);
 
-  InBurst = 1;
-  AddEStr("\n\n\n\n\n", 0, 0);
-  {
-    time_t ttime = time(NULL);
-    struct tm *tm = localtime(&ttime);
-    snprintf(s, 256, "%-52s  %02d-%02d-%02d  %02d:%02d:%02d\n",
-	     "OMT/EWTERM/" VERSION,
-	     tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday,
-	     tm->tm_hour, tm->tm_min, tm->tm_sec);
-    AddEStr(s, 0, 0);
-  }
-  AddEStr("\n\n", 0, 0);
-  snprintf(s, 256, "%-64s  EXEC'D\n\n", mml->command);
-  AddEStr(s, 0, 0);
-  AddEStr("USER     HOST                 ID    FLAGS\n", 0, 0);
-  AddEStr("--------+--------------------+-----+-----\n", 0, 0);
-  foreach_user {
-    if ((!params[0].value || !strcasecmp(params[0].value, usr->user)) &&
-	(id < 0 || id == usr->id)) {
-      char s[256];
-      char f[6] = "-----";
-      if (usr->flags & 1) f[0] = 'Y';
-      snprintf(s, 256, "%-8s %-20.20s %-5d %s\n", usr->user, usr->host, usr->id, f);
-      AddEStr(s, 0, 0);
-      m = 1;
-    }
-  } foreach_user_end;
-  if (!m) AddEStr("NO (MORE) DATA FOR DISPLAY AVAILABLE\n", 0, 0);
-  AddEStr("\n", 0, 0);
-  AddEStr("END JOB EXEC'D\n\n", 0, 0);
-  InBurst = 0;
+	InBurst = 1;
+	AddEStr("\n\n\n\n\n", 0, 0);
+	{
+		time_t ttime = time(NULL);
+		struct tm *tm = localtime(&ttime);
+		snprintf(s, 256, "%-52s  %02d-%02d-%02d  %02d:%02d:%02d\n", "OMT/EWTERM/" VERSION, tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+		AddEStr(s, 0, 0);
+	}
+	AddEStr("\n\n", 0, 0);
+	snprintf(s, 256, "%-64s  EXEC'D\n\n", mml->command);
+	AddEStr(s, 0, 0);
+	AddEStr("USER     HOST                 ID    FLAGS\n", 0, 0);
+	AddEStr("--------+--------------------+-----+-----\n", 0, 0);
+	foreach_user {
+		if ((!params[0].value || !strcasecmp(params[0].value, usr->user)) && (id < 0 || id == usr->id)) {
+			char s[256];
+			char f[6] = "-----";
+			if (usr->flags & 1) f[0] = 'Y';
+			snprintf(s, 256, "%-8s %-20.20s %-5d %s\n", usr->user, usr->host, usr->id, f);
+			AddEStr(s, 0, 0);
+			m = 1;
+		}
+	} foreach_user_end;
+	if (!m) AddEStr("NO (MORE) DATA FOR DISPLAY AVAILABLE\n", 0, 0);
+	AddEStr("\n", 0, 0);
+	AddEStr("END JOB EXEC'D\n\n", 0, 0);
+	InBurst = 0;
 }
 
 void EnterOMTMsg(struct mml_command *mml) {
