@@ -425,113 +425,112 @@ CheckDailyLog()
 
 
 
-void
-ReOpenSerial()
-{
-  char *TmpPtr, *FirstPtr;
-  int HisPID = 0;
-  FILE *Fl;
+void ReOpenSerial() {
+	char *TmpPtr, *FirstPtr;
+	int HisPID = 0;
+	FILE *Fl;
 
-  /* Close old cua file and unlock it */
-  if (CuaFd >= 0) {
-    close(CuaFd);
-    CuaFd = -1;
-  }
+	/* Close old cua file and unlock it */
+	if (CuaFd >= 0) {
+		close(CuaFd);
+		CuaFd = -1;
+	}
 #ifdef LOCKDIR
-  if ((LockName[0] != 0) && (LockName[0] != 10)) {
-    remove(LockName);
-    LockName[0] = 0;
-  }
+	if ((LockName[0] != 0) && (LockName[0] != 10)) {
+		remove(LockName);
+		LockName[0] = 0;
+	}
 #endif
 
-  /* Open new file */
-  {
-    /* Lock new */
+	/* Open new file */
+	{
+		/* Lock new */
 
 #ifdef LOCKDIR
 
-    /* Make lock name */
-    TmpPtr = CuaName;
-    FirstPtr = TmpPtr;
-    while(*TmpPtr)
-     if (*(TmpPtr++) == '/') FirstPtr = TmpPtr;
+		/* Make lock name */
+		TmpPtr = CuaName;
+		FirstPtr = TmpPtr;
+		while (*TmpPtr) {
+			if (*(TmpPtr++) == '/') FirstPtr = TmpPtr;
+		}
 
-    sprintf(LockName, "%s/LCK..%s", LOCKDIR, FirstPtr);
-  
-    /* Check for lock */
-    Fl = fopen(LockName, "r");
-    if (Fl) {
-      char Buf[256];
-      char *Locker;
-      
-      /* Look who locked it */
-      fgets(Buf, 256, Fl);
-      /* fscanf(Fl, "%d %s", &HisPID, Locker); */
-      fclose(Fl);
-      Locker = Buf; while (*Locker == ' ' || *Locker == '\t') Locker++;
-      HisPID = atoi(Locker); if (strchr(Locker, ' ')) Locker = strchr(Locker, ' ') + 1; else Locker = "UNKNOWN";
-      fprintf(stderr, "Device already locked by '%s' (PID %d).\r\n", Locker, HisPID);
+		sprintf(LockName, "%s/LCK..%s", LOCKDIR, FirstPtr);
 
-      /* Try if process still exists */
-      if (kill(HisPID, 0) < 0) {
-	if (errno == ESRCH) {
-	  fprintf(stderr, "That process does not exist. Trying to remove... ");
-	  fflush(stderr);
+		/* Check for lock */
+		Fl = fopen(LockName, "r");
+		if (Fl) {
+			char Buf[256];
+			char *Locker;
+
+			/* Look who locked it */
+			fgets(Buf, 256, Fl);
+			/* fscanf(Fl, "%d %s", &HisPID, Locker); */
+			fclose(Fl);
+			Locker = Buf;
+			while (*Locker == ' ' || *Locker == '\t') Locker++;
+			HisPID = atoi(Locker);
+			if (strchr(Locker, ' ')) {
+				Locker = strchr(Locker, ' ') + 1;
+			} else {
+				Locker = "UNKNOWN";
+			}
+			fprintf(stderr, "Device already locked by '%s' (PID %d).\r\n", Locker, HisPID);
+
+			/* Try if process still exists */
+			if (kill(HisPID, 0) < 0) {
+				if (errno == ESRCH) {
+					fprintf(stderr, "That process does not exist. Trying to remove... ");
+					fflush(stderr);
 	
-	  if (remove(LockName) < 0) {
-	    fprintf(stderr, "failed.\r\nremove(LockFile): %s\r\n", strerror(errno));
-	    LockName[0] = 0;
-	    return;
-	  }
-	  else {
-	    fprintf(stderr, "success.\r\n");
-	  }
-	}
-	else {
-	  LockName[0] = 0;
-	  return;
-	}
-      }
-      else {
-	LockName[0] = 0;
-	return;
-      }
-    }
+					if (remove(LockName) < 0) {
+						fprintf(stderr, "failed.\r\nremove(LockFile): %s\r\n", strerror(errno));
+						LockName[0] = 0;
+						return;
+					} else {
+						fprintf(stderr, "success.\r\n");
+					}
+				} else {
+					LockName[0] = 0;
+					return;
+				}
+			} else {
+				LockName[0] = 0;
+				return;
+			}
+		}
 
-    /* Create our lock */
-    Fl = fopen(LockName, "w");
-    if (Fl == 0 && LockName[0]) {
-      fprintf(stderr, "Cannot open lock file: %s !\r\n", strerror(errno));
-      LockName[0] = 0;
-    }
-    else {
-      fprintf(Fl, "%05d %s %s\n", getpid(), "ewterm", getlogin());
-      fclose(Fl);
-    }
+		/* Create our lock */
+		Fl = fopen(LockName, "w");
+		if (Fl == 0 && LockName[0]) {
+			fprintf(stderr, "Cannot open lock file: %s !\r\n", strerror(errno));
+			LockName[0] = 0;
+		} else {
+			fprintf(Fl, "%05d %s %s\n", getpid(), "ewterm", getlogin());
+			fclose(Fl);
+		}
 
-    if (! LockName[0])
-      Done(5);
+		if (!LockName[0]) Done(5);
 
 #endif /* LOCKDIR */
 
-    /* Open modem file itself */
-    if (CuaName) CuaFd = open(CuaName, O_RDWR);
-    if (CuaFd < 0) {
+		/* Open modem file itself */
+		if (CuaName) CuaFd = open(CuaName, O_RDWR);
+		if (CuaFd < 0) {
 
 #ifdef LOCKDIR
-      if ((LockName[0] != 0) && (LockName[0] != 10)) {
-        remove(LockName);
-        LockName[0] = 0;
-      }
+			if ((LockName[0] != 0) && (LockName[0] != 10)) {
+				remove(LockName);
+				LockName[0] = 0;
+			}
 #endif /* LOCKDIR */
 
-      fprintf(stderr, "Aieee... cannot open serial file!\r\n");
-      exit(2);
-    }
-    else {
-      fcntl(CuaFd, F_SETFL, O_NONBLOCK);
-    }
-  }
+			fprintf(stderr, "Aieee... cannot open serial file!\r\n");
+			exit(2);
+		} else {
+			fcntl(CuaFd, F_SETFL, O_NONBLOCK);
+		}
+	}
 }
 
 
