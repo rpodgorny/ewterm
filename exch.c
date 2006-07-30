@@ -212,25 +212,26 @@ void CancelCommand() {
 }
 
 void ForceCommand() {
-  if (!connection) return;
+	if (!connection) return;
 
-  if (connection->fwmode == FWD_IN) {
-    AddEStr("This connection is now for observation only.\n", 0, 0);
-    return;
-  }
+	if (connection->fwmode == FWD_IN) {
+		AddEStr("This connection is now for observation only.\n", 0, 0);
+		return;
+	}
 
-  if (PendingCmd) {
-    SendChar(ACK); InputRequest = 1; /* XXX: MOVE MOVE MOVE! */
-    ProcessPrompt();
+	if (PendingCmd) {
+		SendChar(ACK); InputRequest = 1; /* XXX: MOVE MOVE MOVE! */
+		ProcessPrompt();
 
-    if (PendingCmd) {
-      /* bye, evil command :P */
-      /* we don't get ever here, do we? */
-      strcpy(LastCmd, PendingCmd);
-      free(PendingCmd); PendingCmd = NULL;
-    }
-  } else
-    AddEStr("Nothing to force!\n", 0, 0);
+		if (PendingCmd) {
+			/* bye, evil command :P */
+			/* we don't get ever here, do we? */
+			strcpy(LastCmd, PendingCmd);
+			free(PendingCmd); PendingCmd = NULL;
+		}
+	} else {
+		AddEStr("Nothing to force!\n", 0, 0);
+	}
 }
 
 void DoLogOff() {
