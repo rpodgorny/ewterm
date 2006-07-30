@@ -1303,8 +1303,7 @@ int DeploySocket(char *SockName, int SockPort) {
 
 
 
-int
-main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
   int ac, swp = 0, ForkOut = 1, PrintLog = 0, OldPID;
 
   printf("EWReceiver "VERSION" written by Petr Baudis, 2001, 2002\n");
@@ -1316,10 +1315,10 @@ main(int argc, char *argv[]) {
   
   for (ac = 1; ac < argc; ac++) {
     switch (swp) {
-      case 1:	strncpy(CuaName, argv[ac], CUANSIZE + 1); break;
-      case 2:	strncpy(SpeedBuf, argv[ac], 11); break;
-      case 3:	strncpy(LogFName, argv[ac], 256); break;
-      case 4:	strncpy(SockName, argv[ac], 256);
+      case 1: strncpy(CuaName, argv[ac], CUANSIZE + 1); break;
+      case 2: strncpy(SpeedBuf, argv[ac], 11); break;
+      case 3: strncpy(LogFName, argv[ac], 256); break;
+      case 4: strncpy(SockName, argv[ac], 256);
 		if (strchr(SockName, ':')) {
 		  char *s = strchr(SockName, ':');
 		  *s = 0;
@@ -1327,19 +1326,17 @@ main(int argc, char *argv[]) {
 		  break;
 		}
 		break;
-      case 6:	SockPort = atoi(argv[ac]); break;
-      case 5:	strncpy(LogRawName, argv[ac], 256); break;
-      case 7:	strncpy(ConnPassword, argv[ac], 128);
+      case 6: SockPort = atoi(argv[ac]); break;
+      case 5: strncpy(LogRawName, argv[ac], 256); break;
+      case 7: strncpy(ConnPassword, argv[ac], 128);
 		{
 		  int i;
-
 		  for (i = 0; argv[ac][i]; i++) argv[ac][i] = '*';
 		}
 		break;
-      case 8:	strncpy(ROConnPassword, argv[ac], 128);
+      case 8: strncpy(ROConnPassword, argv[ac], 128);
 		{
 		  int i;
-
 		  for (i = 0; argv[ac][i]; i++) argv[ac][i] = '#';
 		}
 		break;
@@ -1451,8 +1448,7 @@ main(int argc, char *argv[]) {
 
       /* make the path absolute, we will be chdir()ing later */
       strcpy(LogFName2, LogFName);
-      if (! getcwd(LogFName, 256))
-	fprintf(stderr, "Warning! Cannot get cwd - logging may not work properly.\r\n");
+      if (!getcwd(LogFName, 256)) fprintf(stderr, "Warning! Cannot get cwd - logging may not work properly.\r\n");
       strcat(LogFName, "/");
       strcat(LogFName, LogFName2);
     }
@@ -1466,8 +1462,7 @@ main(int argc, char *argv[]) {
       lday = tm->tm_mday;
     }
     LogFl2 = fopen(LogFName, "a");
-    if (! LogFl2)
-      fprintf(stderr, "Warning! Cannot fopen %s!\r\n", LogFName);
+    if (!LogFl2) fprintf(stderr, "Warning! Cannot fopen %s!\r\n", LogFName);
   }
 
   if (LogRawName[0]) {
@@ -1476,21 +1471,19 @@ main(int argc, char *argv[]) {
 
       /* make the path absolute, we will be chdir()ing later */
       strcpy(LogRawName2, LogRawName);
-      if (! getcwd(LogRawName, 256))
+      if (!getcwd(LogRawName, 256))
 	fprintf(stderr, "Warning! Cannot get cwd - logging may not work properly.\r\n");
       strcat(LogRawName, "/");
       strcat(LogRawName, LogRawName2);
     }
 
     LogRaw = fopen(LogRawName, "a");
-    if (! LogRaw)
-      fprintf(stderr, "Warning! Cannot fopen %s!\r\n", LogRawName);
+    if (!LogRaw) fprintf(stderr, "Warning! Cannot fopen %s!\r\n", LogRawName);
   }
 
   if (PrintLog) {
     LogFl1 = popen("/usr/bin/lpr", "w");
-    if (! LogFl1)
-      fprintf(stderr, "Warning! Cannot popen lpr!\r\n");
+    if (!LogFl1) fprintf(stderr, "Warning! Cannot popen lpr!\r\n");
   }
 
   /* install signal handlers */
@@ -1538,7 +1531,8 @@ main(int argc, char *argv[]) {
   /* release from current terminal, start new session etc */
   
   if (chdir("/") < 0) {
-    perror("chdir(\"/\")"); Done(3);
+    perror("chdir(\"/\")");
+	Done(3);
   }
     
   OldPID = getpid();
@@ -1547,15 +1541,12 @@ main(int argc, char *argv[]) {
     fclose(stdout);
     fclose(stderr);
     
-    if (fork())
-      exit(0);
+    if (fork()) exit(0);
     setsid();
-    if (fork())
-      exit(0);
+    if (fork()) exit(0);
     
     stderr = LogFl2; /* redirect stderr to log */
-    if (! stderr)
-      stderr = fopen("/dev/null", "a"); /* or to /dev/null */
+    if (! stderr) stderr = fopen("/dev/null", "a"); /* or to /dev/null */
   }
 
   /* update lock */
@@ -1646,9 +1637,7 @@ main(int argc, char *argv[]) {
       if (errno == EINTR) continue; /* try once more, just some silly signal */
       perror("--- ewrecv: Select failed");
       Done(4);
-    }
-    else {
-
+    } else {
       /* something from terminal */
 
       foreach_conn (NULL) {
@@ -1660,9 +1649,7 @@ main(int argc, char *argv[]) {
 	} else {
 	  char Chr;
 
-	  while (Read(c, &Chr, 1)) {
-	    TestIProtoChar(c, Chr);
-	  }
+	  while (Read(c, &Chr, 1)) TestIProtoChar(c, Chr);
 	}
 
         if (Reselect) goto reselect;
@@ -1674,9 +1661,7 @@ main(int argc, char *argv[]) {
 	if (!FD_ISSET(c->Fd, &WriteQ)) continue;
 
 	errno = 0; /* XXX: Is write() returning 0 an error? */
-	if (DoWrite(c) < 0 && errno != EINTR) {
-	  ErrorConnection(c);
-	}
+	if (DoWrite(c) < 0 && errno != EINTR) ErrorConnection(c);
 
         if (Reselect) goto reselect;
       } foreach_conn_end;
@@ -1695,16 +1680,13 @@ main(int argc, char *argv[]) {
       if (SockFd >= 0 && FD_ISSET(SockFd, &ReadQ)) {
         struct connection *c = TryAccept(SockFd);
 
-	if (c)
-        {
+	if (c) {
           char *time_s;
           time_t tv;
     
           tv = time(NULL); time_s = ctime(&tv);
           log_msg("--- ewrecv: attached client %d@%s connected at %s\n", c->id, c->host, time_s);
-        }
-	else
-        {
+    } else {
           char *time_s;
           time_t tv;
     
@@ -1725,10 +1707,8 @@ main(int argc, char *argv[]) {
 	if (read(CuaFd, &Chr, 1) <= 0 && errno != EINTR) {
 	  perror("--- ewrecv: Read from CuaFd failed");
 	  Done(4);
-	}
-	else {
-	  if (CommandMode == CM_READY)
-	    CommandMode = CM_BUSY;
+	} else {
+	  if (CommandMode == CM_READY) CommandMode = CM_BUSY;
 
 	  ProcessExchangeChar(Chr);
 
