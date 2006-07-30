@@ -51,7 +51,7 @@ struct connection *connection = NULL;
 
 unsigned char ConvertMode = CV2CAPS;
 
-char InBurst = 0;	/* In burst? */
+char InBurst = 0; /* In burst? */
 
 /* Input request is special state of exchange, when it accepts something
  * different than ordinary commands ;-) - like when completing commands
@@ -75,17 +75,17 @@ int WeKnowItIsComing = 0;
 void LogOff(), GetJobData();
 
 struct user {
-  char *user;
-  char *host;
-  int id;
-  int flags;
-  struct user *next;
-  struct user *prev;
+	char *user;
+	char *host;
+	int id;
+	int flags;
+	struct user *next;
+	struct user *prev;
 };
 struct user *user;
 
-#define foreach_user	if (user) { struct user *cxx = user; do { struct user *usr = cxx;
-#define foreach_user_end	cxx = cxx->next; } while (cxx != user); }
+#define foreach_user if (user) { struct user *cxx = user; do { struct user *usr = cxx;
+#define foreach_user_end cxx = cxx->next; } while (cxx != user); }
 
 
 void (*InputRequestHook)() = NULL;
@@ -94,24 +94,21 @@ void (*CancelHook)() = NULL;
 
 
 /* Changes logon/logoff text in the menu */
-void RefreshLogTxt()
-{
-  if (LoggedOff) {
-    MainMenu[8].Text = "LogOn";
-    MainMenu[8].Addr = StartLogOn;
-  }
-  else {
-    MainMenu[8].Text = "LogOff";
-    MainMenu[8].Addr = LogOff;
-  }
-  RedrawKeys();
-  RedrawStatus();
+void RefreshLogTxt() {
+	if (LoggedOff) {
+		MainMenu[8].Text = "LogOn";
+		MainMenu[8].Addr = StartLogOn;
+	} else {
+		MainMenu[8].Text = "LogOff";
+		MainMenu[8].Addr = LogOff;
+	}
+	RedrawKeys();
+	RedrawStatus();
 }
 
 int SilentSendChar = 0;
 
-void
-SendChar(char Chr) {
+void SendChar(char Chr) {
   if (! SilentSendChar && (Chr >= 32 || Chr == 10 || Chr == 13)) {
     if (FilterFdIn >= 0 && FilterFdOut >= 0) {
       if (Chr == '^') AddToFilterQueue('^');
@@ -126,25 +123,21 @@ SendChar(char Chr) {
   if (connection) Write(connection, &Chr, 1);
 }
 
-void
-ESendChar(char Chr) {
-  SilentSendChar = 0;
-  SendChar(Chr);
+void ESendChar(char Chr) {
+	SilentSendChar = 0;
+	SendChar(Chr);
 }
 
-void
-ColCmd()
-{
-  if (UsingColor) {
-    wattron(CUAWindow, ATT_CMD);
-    SetBright(CUAWindow, COL_CMD);
-  }
-  ActCol = COL_CMD;
+void ColCmd() {
+	if (UsingColor) {
+		wattron(CUAWindow, ATT_CMD);
+		SetBright(CUAWindow, COL_CMD);
+	}
+	ActCol = COL_CMD;
 }
 
 /* Prompt detected (finished prompt chunk) */
-void ProcessPrompt()
-{
+void ProcessPrompt() {
   if (InBurst || (connection && connection->fwmode == FWD_IN))
     /* prompt handling forbidden in burst */
     return;
@@ -175,8 +168,7 @@ void ProcessPrompt()
   RefreshLogTxt();
 }
 
-void
-CancelCommand() {
+void CancelCommand() {
   char cmd[256];
 
   if (!connection) return;
@@ -220,8 +212,7 @@ CancelCommand() {
   }
 }
 
-void
-ForceCommand() {
+void ForceCommand() {
   if (!connection) return;
 
   if (connection->fwmode == FWD_IN) {
@@ -243,178 +234,167 @@ ForceCommand() {
     AddEStr("Nothing to force!\n", 0, 0);
 }
 
-void DoLogOff()
-{
-  ActUsrname[0] = 0;
-  ActPasswd[0] = 0;     /* Clear password when logon invoked by user */
+void DoLogOff() {
+	ActUsrname[0] = 0;
+	ActPasswd[0] = 0; /* Clear password when logon invoked by user */
 
-  /* I hope this won't break anytime. --pasky */
-  if (InputRequest) CancelCommand(); /* Quit from EDTS8 ;))) */
-  AddCommandToQueue("ENDSESSION;", 2);
+	/* I hope this won't break anytime. --pasky */
+	if (InputRequest) CancelCommand(); /* Quit from EDTS8 ;))) */
+	AddCommandToQueue("ENDSESSION;", 2);
 
-  RefreshLogTxt();
+	RefreshLogTxt();
 }
 
-void ProceedLogOff()
-{
-  IProtoASK(connection, 0x43, NULL);
-  WeKnowItIsComing = 1;
-  /* We let ewrecv to confirm this, and we will automatically log ourselves
-   * out after that. */
+void ProceedLogOff() {
+	IProtoASK(connection, 0x43, NULL);
+	WeKnowItIsComing = 1;
+	/* We let ewrecv to confirm this, and we will automatically log ourselves out after that. */
 #if 0
-  connection->fwmode = FWD_INOUT; /* for addcommandtoqueue */
-  DoLogOff();
+	connection->fwmode = FWD_INOUT; /* for addcommandtoqueue */
+	DoLogOff();
 #endif
 }
 
-void LogOff()
-{
-  if (!connection) return;
-  if (connection->fwmode == FWD_IN) {
-    AddEStr("Warning, you are in observation mode and want to log off someone other!\n", 0, 0);
-    AskBool("Proceed", ProceedLogOff, NULL);
-  } else
-    DoLogOff();
+void LogOff() {
+	if (!connection) return;
+	if (connection->fwmode == FWD_IN) {
+		AddEStr("Warning, you are in observation mode and want to log off someone other!\n", 0, 0);
+		AskBool("Proceed", ProceedLogOff, NULL);
+	} else {
+		DoLogOff();
+	}
 }
 
-void ELogOff()
-{
-  if (!connection) return;
-  if (connection->fwmode == FWD_IN) {
-    AddEStr("This connection is now for observation only.\n", 0, 0);
-    return;
-  }
+void ELogOff() {
+	if (!connection) return;
+	if (connection->fwmode == FWD_IN) {
+		AddEStr("This connection is now for observation only.\n", 0, 0);
+		return;
+	}
 
-  /* Emergency logoff.. clear queue, reset commandmode etc. */
+	/* Emergency logoff.. clear queue, reset commandmode etc. */
 
-  /* Clear state */
-  LoggedOff = 0; InputRequest = 0;
-  ActJob = 0;
-  /* Throw away pending cmd */
-  if (PendingCmd) free(PendingCmd); PendingCmd = NULL;
+	/* Clear state */
+	LoggedOff = 0; InputRequest = 0;
+	ActJob = 0;
+	/* Throw away pending cmd */
+	if (PendingCmd) free(PendingCmd); PendingCmd = NULL;
 
-  /* Ask for prompt by ourselves */
-  /* XXX: MOVE? */
-  SendChar(ACK);
-  InputRequest = 1;
+	/* Ask for prompt by ourselves */
+	/* XXX: MOVE? */
+	SendChar(ACK);
+	InputRequest = 1;
 
-  LogOff();
+	LogOff();
 }
 
-void StopLogOn()
-{
-  InputRequest = 1; CancelCommand();
-  RefreshLogTxt();
+void StopLogOn() {
+	InputRequest = 1; CancelCommand();
+	RefreshLogTxt();
 }
 
-void DoSendPassword()
-{
-  char *TmpPtr;
+void DoSendPassword() {
+	char *TmpPtr;
 
-  InputRequest = 0;
-  ShadowHelp = 0;
-  TmpPtr = ActPasswd;
-  if (*TmpPtr) exit;
-  SilentSendChar = 1;
-  SendChar(DC4);
-  while(*TmpPtr) SendChar(*TmpPtr++);
-  SendChar(DC1);
-  ESendChar(13);
-  ESendChar(10);
+	InputRequest = 0;
+	ShadowHelp = 0;
+	TmpPtr = ActPasswd;
+	if (*TmpPtr) exit;
+  	SilentSendChar = 1;
+	SendChar(DC4);
+	while (*TmpPtr) SendChar(*TmpPtr++);
+	SendChar(DC1);
+	ESendChar(13);
+	ESendChar(10);
 }
 
-void ChangePassword2()
-{
-  DisplayMode |= HIDE;
-  beep();
-  InputRequest = 1;
-  ShadowHelp = 1;
-  GetString(ActPasswd, 29, "Password", DoSendPassword, CancelCommand);
+void ChangePassword2() {
+	DisplayMode |= HIDE;
+	beep();
+	InputRequest = 1;
+	ShadowHelp = 1;
+	GetString(ActPasswd, 29, "Password", DoSendPassword, CancelCommand);
 }
 
-void DoSendCommonPassword()
-{
-  char *TmpPtr;
+void DoSendCommonPassword() {
+	char *TmpPtr;
 
-  ShadowHelp = 0;
-  InputRequest = 0;
-  TmpPtr = ActCommonPasswd;
-  if (*TmpPtr) exit;
-  SilentSendChar = 1;
-  SendChar(DC4);
-  while(*TmpPtr) SendChar(*TmpPtr++);
-  SendChar(DC1);
-  ESendChar(13);
-  ESendChar(10);
+  	ShadowHelp = 0;
+	InputRequest = 0;
+	TmpPtr = ActCommonPasswd;
+	if (*TmpPtr) exit;
+	SilentSendChar = 1;
+	SendChar(DC4);
+	while (*TmpPtr) SendChar(*TmpPtr++);
+	SendChar(DC1);
+	ESendChar(13);
+	ESendChar(10);
 }
 
-void ChangeCommonPassword()
-{
-  DisplayMode |= HIDE;
-  beep();
-  ActCommonPasswd[0] = 0;
-  InputRequest = 1;
-  ShadowHelp = 1;
-  GetString(ActCommonPasswd, 29, "Password", DoSendCommonPassword, CancelCommand);
+void ChangeCommonPassword() {
+	DisplayMode |= HIDE;
+	beep();
+	ActCommonPasswd[0] = 0;
+	InputRequest = 1;
+	ShadowHelp = 1;
+	GetString(ActCommonPasswd, 29, "Password", DoSendCommonPassword, CancelCommand);
 }
 
-void DoSendUsername()
-{
-  char *TmpPtr;
+void DoSendUsername() {
+	char *TmpPtr;
 
-  InputRequest = 0;
-  ShadowHelp = 0;
-  TmpPtr = ActUsrname;
-  if (*TmpPtr) exit;
-  while(*TmpPtr) ESendChar(toupper(*TmpPtr++));
-  ESendChar(13);
-  ESendChar(10);
+	InputRequest = 0;
+	ShadowHelp = 0;
+	TmpPtr = ActUsrname;
+	if (*TmpPtr) exit;
+	while (*TmpPtr) ESendChar(toupper(*TmpPtr++));
+	ESendChar(13);
+	ESendChar(10);
 }
 
-void ChangeUsername2()
-{
-  beep();
-  InputRequest = 1;
-  ShadowHelp = 1;
-  GetString(ActUsrname, 9, "Username", DoSendUsername, CancelCommand);
+void ChangeUsername2() {
+	beep();
+	InputRequest = 1;
+	ShadowHelp = 1;
+	GetString(ActUsrname, 9, "Username", DoSendUsername, CancelCommand);
 }
 
-void SendUsername()
-{
-  if (ActUsrname[0] == 0) ChangeUsername2();
-  else DoSendUsername();
+void SendUsername() {
+	if (ActUsrname[0] == 0) {
+		ChangeUsername2();
+	} else {
+		DoSendUsername();
+	}
 }
 
-void SendPassword()
-{
-  if (ActPasswd[0] == 0) ChangePassword2();
-  else DoSendPassword();
+void SendPassword() {
+	if (ActPasswd[0] == 0) {
+		ChangePassword2();
+	} else {
+		DoSendPassword();
+	}
 }
 
-void SendCommonPassword()
-{
-  ChangeCommonPassword();
+void SendCommonPassword() {
+	ChangeCommonPassword();
 }
 
 
-void StartLogOn()
-{
-  if (!connection) return;
+void StartLogOn() {
+	if (!connection) return;
 
-  if (connection->fwmode == FWD_IN) {
-    AddEStr("This connection is now for observation only.\n", 0, 0);
-    return;
-  }
+	if (connection->fwmode == FWD_IN) {
+		AddEStr("This connection is now for observation only.\n", 0, 0);
+		return;
+	}
 
-  MainMenu[8].Text = "Stop";
-  MainMenu[8].Addr = StopLogOn;
-  RedrawKeys();
-  IProtoASK(connection, 0x41, NULL);
+	MainMenu[8].Text = "Stop";
+	MainMenu[8].Addr = StopLogOn;
+	RedrawKeys();
+	IProtoASK(connection, 0x41, NULL);
 }
 
-void
-DispOMTUser(struct mml_command *mml)
-{
+void DispOMTUser(struct mml_command *mml) {
   struct mml_param params[2] = {
     { "USER", NULL },
     { "ID", NULL },
@@ -453,16 +433,13 @@ DispOMTUser(struct mml_command *mml)
       m = 1;
     }
   } foreach_user_end;
-  if (!m)
-    AddEStr("NO (MORE) DATA FOR DISPLAY AVAILABLE\n", 0, 0);
+  if (!m) AddEStr("NO (MORE) DATA FOR DISPLAY AVAILABLE\n", 0, 0);
   AddEStr("\n", 0, 0);
   AddEStr("END JOB EXEC'D\n\n", 0, 0);
   InBurst = 0;
 }
 
-void
-EnterOMTMsg(struct mml_command *mml)
-{
+void EnterOMTMsg(struct mml_command *mml) {
   struct mml_param params[3] = {
     { "USER", NULL },
     { "ID", NULL },
@@ -510,8 +487,7 @@ EnterOMTMsg(struct mml_command *mml)
   free(msg);
 }
 
-void AddCommandToQueue(char *Command, char Convert)
-{
+void AddCommandToQueue(char *Command, char Convert) {
   struct mml_command *mml;
   pdebug("AddCommandToQueue() %s (|%c)\n", Command, Convert);
 
