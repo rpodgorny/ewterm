@@ -134,8 +134,7 @@ void Init()
   InitScr();
 }
 
-void MainProc()
-{
+void MainProc() {
   ActMenu = (void *)&MainMenu;
   TabHook = Dummy;
   EnterHook = CmdEnterHook;
@@ -155,15 +154,13 @@ void MainProc()
   AddStr("EWTerm "VERSION" written by Petr Baudis, 2001, 2002, 2003\n\n", 0, 0);
   AddStr("Press F1 for help\n\n", 0, 0);
   
-  if (BadOpt) {
-    AddEStr("WARNING: Couldn't read option file: Bad version\n\n", 0, 0);
-  }
+  if (BadOpt) AddEStr("WARNING: Couldn't read option file: Bad version\n\n", 0, 0);
 
   LoadHistory();
   InitFilter();
   
   alarm(1);
-  while(1) {
+  for (;;) {
     void draw_form_windows();
     int MaxFd;
     fd_set ReadQ;
@@ -196,8 +193,7 @@ void MainProc()
     if (Reconnect) {
       close(connection->Fd);
       FreeConnection(connection);
-      /* To prevent floods. I know, this should be rather handled by ewrecv, but
-       * that would be nontrivial. */
+      /* To prevent floods. I know, this should be rather handled by ewrecv, but that would be nontrivial. */
       sleep(2);
       AttachConnection();
       Reconnect = 0;
@@ -213,9 +209,7 @@ void MainProc()
     if (connection) {
       FD_SET(connection->Fd, &ReadQ);
       if (connection->Fd > MaxFd) MaxFd = connection->Fd;
-      if (connection->WriteBuffer) {
-	FD_SET(connection->Fd, &WriteQ);
-      }
+      if (connection->WriteBuffer) FD_SET(connection->Fd, &WriteQ);
     }
 
     if (FilterFdOut >= 0) {
@@ -237,18 +231,15 @@ void MainProc()
       AddEStr(estr, 0, 0);
       sleep(1);
       Done(1);
-    }
-    else {
-
+    } else {
       /* User input */
-
       if (FD_ISSET(0, &ReadQ)) {
 	int Key = 0;
 
 	Key = wgetch(ActEditWindow);
-	if (Key == ERR)
+	if (Key == ERR) {
 	  usleep(50000);
-	else {
+	} else {
 	  static int EscPressed = 0;
 
 	  if (Key == 127) Key = 8;
@@ -369,14 +360,11 @@ void MainProc()
   }
 }
 
-void Run()
-{
+void Run() {
   MainProc();
 }
 
-void
-ProcessArgs(int argc, char *argv[])
-{
+void ProcessArgs(int argc, char *argv[]) {
   static int been_here;
   int ac, swp = 0;
 
@@ -427,40 +415,24 @@ ProcessArgs(int argc, char *argv[])
       printf("profile\tSpecific options file ~/.ewterm.options.<profile>\n\n");
       printf("Please report bugs to <pasky@ji.cz>.\n");
       exit(1);
-    }
-    else
-    if (! strcmp(argv[ac], "-c") || ! strcmp(argv[ac], "--connect")) {
+    } else if (! strcmp(argv[ac], "-c") || ! strcmp(argv[ac], "--connect")) {
       swp = 1;
-    }
-    else
-    if (! strcmp(argv[ac], "-p") || ! strcmp(argv[ac], "--port")) {
+    } else if (! strcmp(argv[ac], "-p") || ! strcmp(argv[ac], "--port")) {
       swp = 2;
-    }
-    else
-    if (! strcmp(argv[ac], "-w") || ! strcmp(argv[ac], "--password")) {
+    } else if (! strcmp(argv[ac], "-w") || ! strcmp(argv[ac], "--password")) {
       swp = 3;
-    }
-    else
-    if (! strcmp(argv[ac], "-l") || ! strcmp(argv[ac], "--alone")) {
+    } else if (! strcmp(argv[ac], "-l") || ! strcmp(argv[ac], "--alone")) {
       connection = (void *) 0x1; /* EHM */
-    }
-    else
-    if (! strcmp(argv[ac], "-m") || ! strcmp(argv[ac], "--forcemono")) {
+    } else if (! strcmp(argv[ac], "-m") || ! strcmp(argv[ac], "--forcemono")) {
       ForceMono = '1';
-    }
-    else
-    if (! strcmp(argv[ac], "-b") || ! strcmp(argv[ac], "--burst")) {
+    } else if (! strcmp(argv[ac], "-b") || ! strcmp(argv[ac], "--burst")) {
       swp = 4;
-    }
-    else
-    if (argv[ac][0] == '-') {
+    } else if (argv[ac][0] == '-') {
       fprintf(stderr, "Unknown option \"%s\". Use -h or --help to get list of all the\n", argv[ac]);
       fprintf(stderr, "available options.\n");
       exit(1);
-    }
-    else if (!been_here) {
-      if (*Profile)
-	fprintf(stderr, "Warning: overriding previously specified profile %s.\n", Profile);
+    } else if (!been_here) {
+      if (*Profile) fprintf(stderr, "Warning: overriding previously specified profile %s.\n", Profile);
       printf("Using profile %s...\n", argv[ac]);
       strcpy(Profile, argv[ac]);
     }
