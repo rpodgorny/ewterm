@@ -38,23 +38,22 @@ void BoolYes();
 void BoolNo();
 
 struct MenuEntry BoolMenu[10] = {
-  {"", 0, NULL},
-  {"", 0, NULL},
-  {"", 0, NULL},
-  {"", 0, NULL},
-  {"", 0, NULL},
-  {"", 0, NULL},
-  {"", 0, NULL},
-  {"", 0, NULL},
-  {0, 0, BoolYes},
-  {"Cancel", 0, BoolNo}
+	{"", 0, NULL},
+	{"", 0, NULL},
+	{"", 0, NULL},
+	{"", 0, NULL},
+	{"", 0, NULL},
+	{"", 0, NULL},
+	{"", 0, NULL},
+	{"", 0, NULL},
+	{0, 0, BoolYes},
+	{"Cancel", 0, BoolNo}
 };
 
 
 
 /* Recreates (and updates) windows/panels according to current display mode */
-void RecreateWindows()
-{
+void RecreateWindows() {
   int i;
 
   if (CUAPanel) del_panel(CUAPanel);
@@ -116,15 +115,14 @@ void RecreateWindows()
   RedrawKeys();
 }
 
-void DrawBox(WINDOW *Win, int x, int y, int w, int h)
-{
+void DrawBox(WINDOW *Win, int x, int y, int w, int h) {
   int i;
 
-  for(i=x;i<(w+x);i++) {
+  for (i = x; i < w+x; i++) {
     mvwaddch(Win, y, i, ACS_HLINE);
     mvwaddch(Win, y+h-1, i, ACS_HLINE);
   }
-  for(i=y;i<(h+y);i++) {
+  for (i = y; i < h+y; i++) {
     mvwaddch(Win, i, x, ACS_VLINE);
     mvwaddch(Win, i, x+w-1, ACS_VLINE);
   }
@@ -134,8 +132,7 @@ void DrawBox(WINDOW *Win, int x, int y, int w, int h)
   mvwaddch(Win, y+h-1, x+w-1, ACS_LRCORNER);
 }
 
-void NewWindow(int w, int h, char *Title, WINDOW **WindowPtr, PANEL **PanelPtr)
-{
+void NewWindow(int w, int h, char *Title, WINDOW **WindowPtr, PANEL **PanelPtr) {
   #define WPtr *WindowPtr
 
   WPtr = newwin(h+2, w+2, (CUALines-h)/2-1, (COLS-w)/2-1);
@@ -144,7 +141,7 @@ void NewWindow(int w, int h, char *Title, WINDOW **WindowPtr, PANEL **PanelPtr)
   keypad(WPtr, TRUE);
   *PanelPtr = (void *)new_panel(WPtr);
 
-  if ((WPtr != 0) && (Title != 0)) {
+  if (WPtr != 0 && Title != 0) {
     if (UsingColor) {
       wattron(WPtr, ATT_WIN);
       SetBright(WPtr, COL_WIN);
@@ -159,65 +156,55 @@ void NewWindow(int w, int h, char *Title, WINDOW **WindowPtr, PANEL **PanelPtr)
 }
 
 /* Asks bool value in non-modal mode */
-void AskBool(char *YesText, void (*YesRout)(), void (*NoRout)())
-{
-  UserYes = YesRout;
-  UserNo = NoRout;
-  IsNonModal = 1;
-  BoolMenu[8].Text = YesText;
-  SetMenu(BoolMenu, 1);
+void AskBool(char *YesText, void (*YesRout)(), void (*NoRout)()) {
+	UserYes = YesRout;
+	UserNo = NoRout;
+	IsNonModal = 1;
+	BoolMenu[8].Text = YesText;
+	SetMenu(BoolMenu, 1);
 }
 
-void BoolYes()
-{
-  IsNonModal = 0;
-  SetMenu(0, 0);
-  if (UserYes)
-    UserYes();
-  UserYes = NULL;
+void BoolYes() {
+	IsNonModal = 0;
+	SetMenu(0, 0);
+	if (UserYes) UserYes();
+	UserYes = NULL;
 }
 
-void BoolNo()
-{
-  IsNonModal = 0;
-  SetMenu(0, 0);
-  if (UserNo)
-    UserNo();
-  UserNo = NULL;
+void BoolNo() {
+	IsNonModal = 0;
+	SetMenu(0, 0);
+	if (UserNo)	UserNo();
+	UserNo = NULL;
 }
 
-void DoQuit()
-{
-  DoneQuit();
+void DoQuit() {
+	DoneQuit();
 }
 
-void AskQuit()
-{
-  AskBool("Really quit", DoQuit, NULL);
+void AskQuit() {
+	AskBool("Really quit", DoQuit, NULL);
 }
 
 /* Dummy function */
-void Dummy()
-{
+void Dummy() {
 }
 
-void InitScr()
-{
-  initscr();
-  MainW = stdscr;
-  savetty();
-  nonl();
-  noecho();
-  raw();
-  clear();
-  keypad(stdscr, TRUE);
-  scrollok(stdscr, FALSE);
-  intrflush(stdscr, FALSE);
-  meta(stdscr, TRUE);
-  refresh();
+void InitScr() {
+	initscr();
+	MainW = stdscr;
+	savetty();
+	nonl();
+	noecho();
+	raw();
+	clear();
+	keypad(stdscr, TRUE);
+	scrollok(stdscr, FALSE);
+	intrflush(stdscr, FALSE);
+	meta(stdscr, TRUE);
+	refresh();
 
-  if (ForceMono == '1') DenyColors = 1;
+	if (ForceMono == '1') DenyColors = 1;
 
-  if ((has_colors()) && (!DenyColors))
-    CreatePairs();
+	if ((has_colors()) && (!DenyColors)) CreatePairs();
 }
