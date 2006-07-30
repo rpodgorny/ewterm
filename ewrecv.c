@@ -198,6 +198,8 @@ struct config_record {
 
 
 void Done(int Err) {
+	pdebug("Done() %d\n", Err);
+
 #ifdef LOCKDIR
 	if ((LockName[0] != 0) && (LockName[0] != 10)) {
 		remove(LockName);
@@ -370,6 +372,8 @@ void SigHupCaught() {
 
 
 void ReopenLogFile() {
+	pdebug("ReopenLogFile()\n");
+
 	if (!LogFl2) return;
 
 	fclose(LogFl2);
@@ -404,6 +408,8 @@ void ReOpenSerial() {
 	char *TmpPtr, *FirstPtr;
 	int HisPID = 0;
 	FILE *Fl;
+
+	pdebug("ReOpenSerial()\n");
 
 	/* Close old cua file and unlock it */
 	if (CuaFd >= 0) {
@@ -547,6 +553,8 @@ void ReOpenSerial() {
 
 
 void LogCh(char Chr) {
+	pdebug("LogCh() %c/x%x\n", Chr, Chr);
+
 	if (Chr >= 32 || Chr == 10) {
 		if (DailyLog) CheckDailyLog();
 		if (LogFl1) fputc(Chr, LogFl1);
@@ -573,6 +581,8 @@ void LogCh(char Chr) {
 }
 
 int SendChar(struct connection *c, char Chr) {
+	pdebug("SendChar() %c/x%x\n", Chr, Chr);
+
 	if (LoggedIn && c && c != connection) return -1;
 
 	if (c && c->authenticated < 2) return -1;
@@ -1228,6 +1238,8 @@ int DeploySocket(char *SockName, int SockPort) {
 	struct sockaddr_in addr;
 	int SockFd, opt;
 
+	pdebug("DeploySocket()\n");
+
 	SockFd = socket(PF_INET, SOCK_STREAM, 0);
 	if (SockFd < 0) {
 		perror("socket()");
@@ -1280,8 +1292,7 @@ int main(int argc, char *argv[]) {
 
   printf("EWReceiver "VERSION" written by Petr Baudis, 2001, 2002\n");
 
-  /* process options */
-  
+  /* process options */  
   strcpy(CuaName, DEFDEVICE);
   strcpy(SpeedBuf, DEFSPEED);
   
@@ -1411,7 +1422,6 @@ int main(int argc, char *argv[]) {
   }
  
   /* open log files */
-
   StartLog();
 
   if (LogFName[0]) {
