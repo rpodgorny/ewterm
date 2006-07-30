@@ -124,13 +124,13 @@ void CmdEnterHook() {
 	Ptr = ActHist;
 	LineChanged();
 
-	if ((((OldActHist == 0) && ((LastLine != Ptr) || (LastLine == 0))) || ((LastLine == ActHist) && (ClearLastLine))) && (strlen(LineBuf) > CmdHistLen)) {
+	if (((OldActHist == 0 && (LastLine != Ptr || LastLine == 0)) || (LastLine == ActHist && ClearLastLine)) && strlen(LineBuf) > CmdHistLen) {
 		AddLineToBuffer(0, COMMAND);
 	}
 
 	ActHist = 0;
 
-	if (OldActHist && (HistoryMode[0] != 'B')) DontGoUp = 1;  /* Just display actual history entry */
+	if (OldActHist && HistoryMode[0] != 'B') DontGoUp = 1;  /* Just display actual history entry */
 
 	LineBPos = LineBLen;
 	InsertChr(13);
