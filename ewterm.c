@@ -44,52 +44,47 @@ int Reconnect = 0;
 
 /* Functions */
 
-void Done(int Err)
-{
-  doupdate();
+void Done(int Err) {
+	doupdate();
 
-  if (CUAWindow) SaveHistory();
+	if (CUAWindow) SaveHistory();
 
-  if (!LoggedOff && connection->fwmode != FWD_IN) {
-    if (!Err) {
-      AddEStr("You need to log yourself off before quit!\n", 0, 0);
-      return;
-    }
-    else {
-      AddEStr("Error happenned and I can't log you off!\n", 0, 0);
-      sleep(2);
-    }
-  }
+	if (!LoggedOff && connection->fwmode != FWD_IN) {
+		if (!Err) {
+			AddEStr("You need to log yourself off before quit!\n", 0, 0);
+			return;
+		} else {
+			AddEStr("Error happenned and I can't log you off!\n", 0, 0);
+			sleep(2);
+		}
+	}
 
-  DoneFilter();
+	DoneFilter();
 
-  if (CUAPanel) del_panel(CUAPanel);
-  if (CUAWindow) delwin(CUAWindow);
-  if (InfoPanel) del_panel(InfoPanel);
-  if (InfoWindow) delwin(InfoWindow);
+	if (CUAPanel) del_panel(CUAPanel);
+	if (CUAWindow) delwin(CUAWindow);
+	if (InfoPanel) del_panel(InfoPanel);
+	if (InfoWindow) delwin(InfoWindow);
 
-  clear();
-  refresh();
-  wait(0);
-  resetty();
-  /* if (!Err) refresh(); */
-  endwin();
+	clear();
+	refresh();
+	wait(0);
+	resetty();
+	/* if (!Err) refresh(); */
+	endwin();
 
-  exit(Err);
+	exit(Err);
 }
 
-void DoneQuit()
-{
-  Done(0);
+void DoneQuit() {
+	Done(0);
 }
 
-void SigIntCaught()
-{
-  /* debug purpuoses ;-) */
+void SigIntCaught() {
+	/* debug purposes ;-) */
 }
 
-void SigChldCaught()
-{
+void SigChldCaught() {
   int status = 0;
 
   if (wait(&status) >= 0 && WIFEXITED(status) && WEXITSTATUS(status)) {
