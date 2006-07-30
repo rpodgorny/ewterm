@@ -130,7 +130,7 @@ void CmdEnterHook() {
 
 	ActHist = 0;
 
-	if (OldActHist && HistoryMode[0] != 'B') DontGoUp = 1;  /* Just display actual history entry */
+	if (OldActHist && HistoryMode[0] != 'B') DontGoUp = 1; /* Just display actual history entry */
 
 	LineBPos = LineBLen;
 	InsertChr(13);
@@ -146,8 +146,7 @@ void CmdEnterHook() {
 }
 
 /* Hook for 'command line' editing */
-void BufHook(int Res)
-{
+void BufHook(int Res) {
   if ((Res < 256) && (IsNonModal)) return;
 
   if (Res == 13) Res = 10;
