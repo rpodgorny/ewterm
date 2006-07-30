@@ -85,18 +85,17 @@ void SigIntCaught() {
 }
 
 void SigChldCaught() {
-  int status = 0;
+	int status = 0;
 
-  if (wait(&status) >= 0 && WIFEXITED(status) && WEXITSTATUS(status)) {
-	  char s[256];
+	if (wait(&status) >= 0 && WIFEXITED(status) && WEXITSTATUS(status)) {
+		char s[256];
 
-	  snprintf(s, 256, "Error: child exited with error code %d!\n",
-				WEXITSTATUS(status));
-	  /* XXX: Reentrancy? */
-	  AddEStr(s, 0, 0);
-  }
-  /* Restore handles */
-  signal(SIGCHLD, SigChldCaught);
+		snprintf(s, 256, "Error: child exited with error code %d!\n", WEXITSTATUS(status));
+		/* XXX: Reentrancy? */
+		AddEStr(s, 0, 0);
+	}
+	/* Restore handles */
+	signal(SIGCHLD, SigChldCaught);
 }
 
 void SigTermCaught() {
@@ -127,229 +126,227 @@ void Init() {
 }
 
 void MainProc() {
-  ActMenu = (void *)&MainMenu;
-  TabHook = Dummy;
-  EnterHook = CmdEnterHook;
-  UpHook = PrevHistoryCommand;
-  DownHook = NextHistoryCommand;
-  PgUpHook = DefPgUpHook;
-  PgDownHook = Dummy;
-  HomeHook = EditHome;
-  EndHook = EditEnd;
-  EditBuf = LineBuf;
-  LineBSize = 255;
-  LineWSize = COLS;
-  EditXOff = 0;
+	ActMenu = (void *)&MainMenu;
+	TabHook = Dummy;
+	EnterHook = CmdEnterHook;
+	UpHook = PrevHistoryCommand;
+  	DownHook = NextHistoryCommand;
+	PgUpHook = DefPgUpHook;
+  	PgDownHook = Dummy;
+	HomeHook = EditHome;
+	EndHook = EditEnd;
+	EditBuf = LineBuf;
+	LineBSize = 255;
+	LineWSize = COLS;
+	EditXOff = 0;
 
-  RecreateWindows();
+	RecreateWindows();
   
-  AddStr("EWTerm "VERSION" written by Petr Baudis, 2001, 2002, 2003\n\n", 0, 0);
-  AddStr("Press F1 for help\n\n", 0, 0);
+	AddStr("EWTerm "VERSION" written by Petr Baudis, 2001, 2002, 2003\n\n", 0, 0);
+	AddStr("Press F1 for help\n\n", 0, 0);
   
-  if (BadOpt) AddEStr("WARNING: Couldn't read option file: Bad version\n\n", 0, 0);
+	if (BadOpt) AddEStr("WARNING: Couldn't read option file: Bad version\n\n", 0, 0);
 
-  LoadHistory();
-  InitFilter();
+	LoadHistory();
+	InitFilter();
   
-  alarm(1);
-  for (;;) {
-    void draw_form_windows();
-    int MaxFd;
-    fd_set ReadQ;
-    fd_set WriteQ;
+	alarm(1);
+	for (;;) {
+		void draw_form_windows();
+		int MaxFd;
+		fd_set ReadQ;
+		fd_set WriteQ;
 
-    MainLoop = 1;
+		MainLoop = 1;
   
-    if ((!(DisplayMode & OTHERWINDOW) || (DisplayMode & HELPSHOWN)) && (UpdateCUAW)) {
-      wnoutrefresh(CUAWindow);
-      UpdateCUAW = 0;
-    }
+		if ((!(DisplayMode & OTHERWINDOW) || (DisplayMode & HELPSHOWN)) && (UpdateCUAW)) {
+			wnoutrefresh(CUAWindow);
+			UpdateCUAW = 0;
+		}
 
-    RedrawStatus(); /* clock; we get here by the alarm(1) every second */
+		RedrawStatus(); /* clock; we get here by the alarm(1) every second */
 
-    /* If HELPSHOWN but not active, we need to draw ActEditWindow as last! */
-    if ((ShadowHelp || !(DisplayMode & OTHERWINDOW)) && (DisplayMode & HELPSHOWN)) draw_form_windows();
+		/* If HELPSHOWN but not active, we need to draw ActEditWindow as last! */
+		if ((ShadowHelp || !(DisplayMode & OTHERWINDOW)) && (DisplayMode & HELPSHOWN)) draw_form_windows();
     
-    if (!(DisplayMode & NOEDIT)) RefreshEdit();
-    wmove(ActEditWindow, EditYOff, LineBPos+EditXOff-LineWOff);
-    wnoutrefresh(ActEditWindow);
+		if (!(DisplayMode & NOEDIT)) RefreshEdit();
+		wmove(ActEditWindow, EditYOff, LineBPos+EditXOff-LineWOff);
+		wnoutrefresh(ActEditWindow);
 
-    if (!ShadowHelp && ((DisplayMode & OTHERWINDOW) && (DisplayMode & HELPSHOWN))) draw_form_windows();
+		if (!ShadowHelp && ((DisplayMode & OTHERWINDOW) && (DisplayMode & HELPSHOWN))) draw_form_windows();
 
-    doupdate();
+		doupdate();
 
-    MainLoop = 0;
+		MainLoop = 0;
 
-    /* prepare for select */
+		/* prepare for select */
 
-    if (Reconnect) {
-      close(connection->Fd);
-      FreeConnection(connection);
-      /* To prevent floods. I know, this should be rather handled by ewrecv, but that would be nontrivial. */
-      sleep(2);
-      AttachConnection();
-      Reconnect = 0;
-    }
+		if (Reconnect) {
+			close(connection->Fd);
+			FreeConnection(connection);
+			/* To prevent floods. I know, this should be rather handled by ewrecv, but that would be nontrivial. */
+			sleep(2);
+			AttachConnection();
+			Reconnect = 0;
+		}
 
-    MaxFd = 0;
-    
-    FD_ZERO(&ReadQ);
-    FD_ZERO(&WriteQ);
-    
-    FD_SET(0, &ReadQ);
+		MaxFd = 0;
 
-    if (connection) {
-      FD_SET(connection->Fd, &ReadQ);
-      if (connection->Fd > MaxFd) MaxFd = connection->Fd;
-      if (connection->WriteBuffer) FD_SET(connection->Fd, &WriteQ);
-    }
+		FD_ZERO(&ReadQ);
+		FD_ZERO(&WriteQ);
 
-    if (FilterFdOut >= 0) {
-      FD_SET(FilterFdOut, &ReadQ);
-      if (FilterFdOut > MaxFd) MaxFd = FilterFdOut;
-    }
-    if (FilterFdIn >= 0 && FilterQueueLen) {
-      FD_SET(FilterFdIn, &WriteQ);
-      if (FilterFdIn > MaxFd) MaxFd = FilterFdIn;
-    }
+		FD_SET(0, &ReadQ);
 
-    /* select */
+		if (connection) {
+			FD_SET(connection->Fd, &ReadQ);
+			if (connection->Fd > MaxFd) MaxFd = connection->Fd;
+			if (connection->WriteBuffer) FD_SET(connection->Fd, &WriteQ);
+		}
 
-    if (select(MaxFd + 1, &ReadQ, &WriteQ, 0, 0) < 0) {
-      char estr[256];
+		if (FilterFdOut >= 0) {
+			FD_SET(FilterFdOut, &ReadQ);
+			if (FilterFdOut > MaxFd) MaxFd = FilterFdOut;
+		}
+		if (FilterFdIn >= 0 && FilterQueueLen) {
+			FD_SET(FilterFdIn, &WriteQ);
+			if (FilterFdIn > MaxFd) MaxFd = FilterFdIn;
+		}
 
-      if (errno == EINTR) continue; /* alarm */
-      sprintf(estr, "Select failed: %s\n", strerror(errno));
-      AddEStr(estr, 0, 0);
-      sleep(1);
-      Done(1);
-    } else {
-      /* User input */
-      if (FD_ISSET(0, &ReadQ)) {
-	int Key = 0;
+		/* select */
+		if (select(MaxFd + 1, &ReadQ, &WriteQ, 0, 0) < 0) {
+			char estr[256];
 
-	Key = wgetch(ActEditWindow);
-	if (Key == ERR) {
-	  usleep(50000);
-	} else {
-	  static int EscPressed = 0;
+			if (errno == EINTR) continue; /* alarm */
+			sprintf(estr, "Select failed: %s\n", strerror(errno));
+			AddEStr(estr, 0, 0);
+			sleep(1);
+			Done(1);
+		} else {
+			/* User input */
+			if (FD_ISSET(0, &ReadQ)) {
+				int Key = 0;
 
-	  if (Key == 127) Key = 8;
-	  if ((Key == 27) && (!EscPressed)) EscPressed = 1;
-	  else {
-	    if (EscPressed) {
-	      Key = ProcessEscKey(Key);
-	      EscPressed = 0;
-	    }
-	    if (Key != 0) {
-	      if ((DisplayMode & OTHERWINDOW) && (!(DisplayMode & HELPSHOWN) || ShadowHelp)) BufHook(Key);
-	      else EditHook(Key);
-	    }
-	  }
-	}
-      }
+				Key = wgetch(ActEditWindow);
+				if (Key == ERR) {
+					usleep(50000);
+				} else {
+					static int EscPressed = 0;
 
-      /* Exchange input */
+					if (Key == 127) Key = 8;
+					if ((Key == 27) && (!EscPressed)) {
+						EscPressed = 1;
+					} else {
+						if (EscPressed) {
+							Key = ProcessEscKey(Key);
+							EscPressed = 0;
+						}
+						if (Key != 0) {
+							if ((DisplayMode & OTHERWINDOW) && (!(DisplayMode & HELPSHOWN) || ShadowHelp)) {
+								BufHook(Key);
+							} else {
+								EditHook(Key);
+							}
+						}
+					}
+				}
+			}
+
+			/* Exchange input */
       
-      if (connection && FD_ISSET(connection->Fd, &ReadQ)) {
-	errno = 0;
-	if (DoRead(connection) <= 0) {
-	  char estr[256];
-	  sprintf(estr, "Read from fd failed: %s\n", strerror(errno));
-	  AddEStr(estr, 0, 0);
-	  sleep(1);
-	  Done(1);
-	}
-	else {
-	  int Chr;
+			if (connection && FD_ISSET(connection->Fd, &ReadQ)) {
+				errno = 0;
+				if (DoRead(connection) <= 0) {
+					char estr[256];
+					sprintf(estr, "Read from fd failed: %s\n", strerror(errno));
+					AddEStr(estr, 0, 0);
+					sleep(1);
+					Done(1);
+				} else {
+					int Chr;
 
-	  while (Read(connection, &Chr, 1)) {
-	    pdebug("MainProc() proc char %c\n", Chr);
+					while (Read(connection, &Chr, 1)) {
+						pdebug("MainProc() proc char %c\n", Chr);
 
-	    /* check if Chr hasn't any special meaning */
-	    TestIProtoChar(connection, Chr);
-	    
-	    if (! (DisplayMode & OTHERWINDOW)) RedrawStatus();
-	  }
-	}
-      }
+						/* check if Chr hasn't any special meaning */
+						TestIProtoChar(connection, Chr);
 
-      /* Exchange output */
+						if (! (DisplayMode & OTHERWINDOW)) RedrawStatus();
+					}
+				}
+			}
+
+			/* Exchange output */
       
-      if (connection && FD_ISSET(connection->Fd, &WriteQ)) {
-	if (DoWrite(connection) < 0) {
-	  char estr[256];
-	  sprintf(estr, "Write to fd failed: %s\n", strerror(errno));
-	  AddEStr(estr, 0, 0);
-	  sleep(1);
-	  Done(1);
-	}
-      }
+			if (connection && FD_ISSET(connection->Fd, &WriteQ)) {
+				if (DoWrite(connection) < 0) {
+					char estr[256];
+					sprintf(estr, "Write to fd failed: %s\n", strerror(errno));
+					AddEStr(estr, 0, 0);
+					sleep(1);
+					Done(1);
+				}
+			}
 
-      /* Filter input */
+			/* Filter input */
       
-      if (FilterFdOut >= 0 && FD_ISSET(FilterFdOut, &ReadQ)) {
-	char Buf[256]; int BufLen;
+			if (FilterFdOut >= 0 && FD_ISSET(FilterFdOut, &ReadQ)) {
+				char Buf[256]; int BufLen;
 
-	if ((BufLen = read(FilterFdOut, Buf, 255)) < 0) {
-	  char estr[256];
-	  sprintf(estr, "Read from fd failed: %s\n", strerror(errno));
-	  AddEStr(estr, 0, 0);
-	  sleep(1);
-	  Done(1);
+				if ((BufLen = read(FilterFdOut, Buf, 255)) < 0) {
+					char estr[256];
+					sprintf(estr, "Read from fd failed: %s\n", strerror(errno));					AddEStr(estr, 0, 0);
+					sleep(1);
+					Done(1);
+				} else {
+					int Pos = 0, Chr;
+
+					Buf[BufLen] = 0;
+
+					while ((Chr = Buf[Pos++])) {
+						static int carrot;
+
+						pdebug("MainProc() proc filter char (carrot %d) %d : =%c=\n", carrot, Chr, Chr);
+
+						if (carrot) {
+							switch (Chr) {
+								case 'T': ColTerm(); break;
+								case 'P': ColPrompt(); break;
+								case 'C': ColCmd(); break;
+								case '^':
+								default: AddCh(Chr); break;
+							}
+							carrot = 0;
+							continue;
+						}
+
+						if (Chr == '^') {
+							carrot = 1;
+							continue;
+						}
+
+						AddCh(Chr);
+					}
+				}
+			}
+
+			/* Exchange output */
+
+			if (FilterFdIn >= 0 && FD_ISSET(FilterFdIn, &WriteQ)) {
+				int WroteLen;
+
+				if ((WroteLen = write(FilterFdIn, FilterQueue, FilterQueueLen)) < 0) {
+					char estr[256];
+					sprintf(estr, "Write to fd failed: %s\n", strerror(errno));
+					AddEStr(estr, 0, 0);
+					sleep(1);
+					Done(1);
+				}
+
+				FilterQueueLen -= WroteLen;
+				memmove(FilterQueue, FilterQueue + WroteLen, FilterQueueLen);
+			}
+		}
 	}
-	else {
-	  int Pos = 0, Chr;
-
-	  Buf[BufLen] = 0;
-
-	  while ((Chr = Buf[Pos++])) {
-	    static int carrot;
-
-	    pdebug("MainProc() proc filter char (carrot %d) %d : =%c=\n", carrot, Chr, Chr);
-
-	    if (carrot) {
-	      switch (Chr) {
-		case 'T': ColTerm(); break;
-		case 'P': ColPrompt(); break;
-		case 'C': ColCmd(); break;
-		case '^':
-		default :
-			  AddCh(Chr);
-			  break;
-	      }
-	      carrot = 0;
-	      continue;
-	    }
-
-	    if (Chr == '^') {
-	      carrot = 1;
-	      continue;
-	    }
-
-	    AddCh(Chr);
-	  }
-	}
-      }
-
-      /* Exchange output */
-      
-      if (FilterFdIn >= 0 && FD_ISSET(FilterFdIn, &WriteQ)) {
-	int WroteLen;
-
-	if ((WroteLen = write(FilterFdIn, FilterQueue, FilterQueueLen)) < 0) {
-	  char estr[256];
-	  sprintf(estr, "Write to fd failed: %s\n", strerror(errno));
-	  AddEStr(estr, 0, 0);
-	  sleep(1);
-	  Done(1);
-	}
-
-	FilterQueueLen -= WroteLen;
-	memmove(FilterQueue, FilterQueue + WroteLen, FilterQueueLen);
-      }
-    }
-  }
 }
 
 void Run() {
