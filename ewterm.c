@@ -357,80 +357,83 @@ void Run() {
 }
 
 void ProcessArgs(int argc, char *argv[]) {
-  static int been_here;
-  int ac, swp = 0;
+	static int been_here;
+	int ac, swp = 0;
 
-  for (ac = 1; ac < argc; ac++) {
-    switch (swp) {
-      case 1:	
-		if (strchr(argv[ac], '!')) {
-		  char *s = strchr(argv[ac], '!');
-		  *s = 0;
-		  strncpy(ConnPassword, s + 1, 128);
+	for (ac = 1; ac < argc; ac++) {
+		switch (swp) {
+			case 1:
+				if (strchr(argv[ac], '!')) {
+					char *s = strchr(argv[ac], '!');
+					*s = 0;
+					strncpy(ConnPassword, s + 1, 128);
+				}
+				if (strchr(argv[ac], ':')) {
+					char *s = strchr(argv[ac], ':');
+					*s = 0;
+					HostPort = atoi(s + 1);
+					*HostPortStr = 0;
+				}
+				strncpy(HostName, argv[ac], 256);
+				break;
+			case 2:
+				HostPort = atoi(argv[ac]);
+				*HostPortStr = 0;
+				break;
+			case 3:
+				strncpy(ConnPassword, argv[ac], 128);
+				strcpy(argv[ac], "*");
+				break;
+			case 4:
+				BurstLines = atoi(argv[ac]);
+				*BurstLinesStr = 0;
+				break;
 		}
-		if (strchr(argv[ac], ':')) {
-		  char *s = strchr(argv[ac], ':');
-		  *s = 0;
-		  HostPort = atoi(s + 1);
-		  *HostPortStr = 0;
+
+		if (swp) {
+			swp = 0;
+			continue;
 		}
-		strncpy(HostName, argv[ac], 256);
-		break;
-      case 2:	HostPort = atoi(argv[ac]);
-		*HostPortStr = 0;
-		break;
-      case 3:	strncpy(ConnPassword, argv[ac], 128);
-		strcpy(argv[ac], "*");
-		break;
-      case 4:	BurstLines = atoi(argv[ac]);
-		*BurstLinesStr = 0;
-		break;
-    }
 
-    if (swp) {
-      swp = 0;
-      continue;
-    }
+		if (! strcmp(argv[ac], "-h") || ! strcmp(argv[ac], "--help")) {
+			printf("\nUsage:\t%s [-h|--help] [-c|--connect <host>[:<port>][!<password>]]\n", argv[0]);
+			printf("\t[-p|--port <port>] [-w|--password <password>] [-l|--alone]\n");
+			printf("\t[-m|--forcemono] [-b|--burst <lines>] [<profile>]\n\n");
+			printf("Parameters override values from config file which override defaults.\n\n");
+			printf("-h\tDisplay this help\n");
+			printf("-c\tConnect to <host> (defaults to %s)\n", HostName);
+			printf("-p\tConnect to <port> (defaults to %d)\n", HostPort);
+			printf("-w\tUse <password> when connecting to ewrecv\n");
+			printf("-l\tDon't attach to ewrecv (for testing, doesn't send exchange anything)\n");
+			printf("-m\tForce mono mode\n");
+			printf("-b\tBurst length; <lines> negative is full burst, zero is no burst.\n");
+			printf("profile\tSpecific options file ~/.ewterm.options.<profile>\n\n");
+			printf("Please report bugs to <pasky@ji.cz>.\n");
+			exit(1);
+		} else if (! strcmp(argv[ac], "-c") || ! strcmp(argv[ac], "--connect")) {
+			swp = 1;
+		} else if (! strcmp(argv[ac], "-p") || ! strcmp(argv[ac], "--port")) {
+			swp = 2;
+		} else if (! strcmp(argv[ac], "-w") || ! strcmp(argv[ac], "--password")) {
+			swp = 3;
+		} else if (! strcmp(argv[ac], "-l") || ! strcmp(argv[ac], "--alone")) {
+			connection = (void *) 0x1; /* EHM */
+		} else if (! strcmp(argv[ac], "-m") || ! strcmp(argv[ac], "--forcemono")) {
+			ForceMono = '1';
+		} else if (! strcmp(argv[ac], "-b") || ! strcmp(argv[ac], "--burst")) {
+			swp = 4;
+		} else if (argv[ac][0] == '-') {
+			fprintf(stderr, "Unknown option \"%s\". Use -h or --help to get list of all the\n", argv[ac]);
+			fprintf(stderr, "available options.\n");
+			exit(1);
+		} else if (!been_here) {
+			if (*Profile) fprintf(stderr, "Warning: overriding previously specified profile %s.\n", Profile);
+			printf("Using profile %s...\n", argv[ac]);
+			strcpy(Profile, argv[ac]);
+		}
+	}
 
-    if (! strcmp(argv[ac], "-h") || ! strcmp(argv[ac], "--help")) {
-      printf("\nUsage:\t%s [-h|--help] [-c|--connect <host>[:<port>][!<password>]]\n", argv[0]);
-      printf("\t[-p|--port <port>] [-w|--password <password>] [-l|--alone]\n");
-      printf("\t[-m|--forcemono] [-b|--burst <lines>] [<profile>]\n\n");
-      printf("Parameters override values from config file which override defaults.\n\n");
-      printf("-h\tDisplay this help\n");
-      printf("-c\tConnect to <host> (defaults to %s)\n", HostName);
-      printf("-p\tConnect to <port> (defaults to %d)\n", HostPort);
-      printf("-w\tUse <password> when connecting to ewrecv\n");
-      printf("-l\tDon't attach to ewrecv (for testing, doesn't send exchange anything)\n");
-      printf("-m\tForce mono mode\n");
-      printf("-b\tBurst length; <lines> negative is full burst, zero is no burst.\n");
-      printf("profile\tSpecific options file ~/.ewterm.options.<profile>\n\n");
-      printf("Please report bugs to <pasky@ji.cz>.\n");
-      exit(1);
-    } else if (! strcmp(argv[ac], "-c") || ! strcmp(argv[ac], "--connect")) {
-      swp = 1;
-    } else if (! strcmp(argv[ac], "-p") || ! strcmp(argv[ac], "--port")) {
-      swp = 2;
-    } else if (! strcmp(argv[ac], "-w") || ! strcmp(argv[ac], "--password")) {
-      swp = 3;
-    } else if (! strcmp(argv[ac], "-l") || ! strcmp(argv[ac], "--alone")) {
-      connection = (void *) 0x1; /* EHM */
-    } else if (! strcmp(argv[ac], "-m") || ! strcmp(argv[ac], "--forcemono")) {
-      ForceMono = '1';
-    } else if (! strcmp(argv[ac], "-b") || ! strcmp(argv[ac], "--burst")) {
-      swp = 4;
-    } else if (argv[ac][0] == '-') {
-      fprintf(stderr, "Unknown option \"%s\". Use -h or --help to get list of all the\n", argv[ac]);
-      fprintf(stderr, "available options.\n");
-      exit(1);
-    } else if (!been_here) {
-      if (*Profile) fprintf(stderr, "Warning: overriding previously specified profile %s.\n", Profile);
-      printf("Using profile %s...\n", argv[ac]);
-      strcpy(Profile, argv[ac]);
-    }
-  }
-
-  been_here = 1;
+	been_here = 1;
 }
 
 int main(int argc, char **argv) {
