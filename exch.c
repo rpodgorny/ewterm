@@ -168,47 +168,45 @@ void ProcessPrompt() {
 }
 
 void CancelCommand() {
-  char cmd[256];
+	char cmd[256];
 
-  if (!connection) return;
+	if (!connection) return;
 
-  ShadowHelp = 0;
+	ShadowHelp = 0;
 
-  if (CancelHook) {
-    CancelHook();
-    return;
-  }
+	if (CancelHook) {
+		CancelHook();
+		return;
+	}
 
-  if (connection->fwmode == FWD_IN) {
-    AddEStr("This connection is now for observation only.\n", 0, 0);
-    return;
-  }
+	if (connection->fwmode == FWD_IN) {
+		AddEStr("This connection is now for observation only.\n", 0, 0);
+		return;
+	}
 
-  if (InputRequest) {
-    InputRequest = 0;
-    IProtoASK(connection, 0x42, NULL);
-    return;
-  }
+	if (InputRequest) {
+		InputRequest = 0;
+		IProtoASK(connection, 0x42, NULL);
+		return;
+	}
 
-  if (!ActJob) {
-    AddEStr("Nothing to cancel!\n", 0, 0);
-    return;
-  }
+	if (!ActJob) {
+		AddEStr("Nothing to cancel!\n", 0, 0);
+		return;
+	}
 
-  PendingCmd = NULL; /* we are more important. definitively. */
+	PendingCmd = NULL; /* we are more important. definitively. */
 
-  pdebug("LastCmd %s\n", LastCmd);
-  if (!strncasecmp(LastCmd, "DISP", 4) || !strncasecmp(LastCmd, "STAT", 4)) {
-    sprintf(cmd, "STOPDISP:JN=%d;\n", ActJob);
-    AddCommandToQueue(cmd, 2);
-  } else
-  if (!strncasecmp(LastCmd, "EXECCMDFILE", 11)) {
-    sprintf(cmd, "STOPJOB:JN=%d;\n", ActJob);
-    AddCommandToQueue(cmd, 2);
-  } else
-  {
-    AddEStr("Cancel action not specified!\n", 0, 0);
-  }
+	pdebug("LastCmd %s\n", LastCmd);
+	if (!strncasecmp(LastCmd, "DISP", 4) || !strncasecmp(LastCmd, "STAT", 4)) {
+		sprintf(cmd, "STOPDISP:JN=%d;\n", ActJob);
+		AddCommandToQueue(cmd, 2);
+	} else if (!strncasecmp(LastCmd, "EXECCMDFILE", 11)) {
+		sprintf(cmd, "STOPJOB:JN=%d;\n", ActJob);
+		AddCommandToQueue(cmd, 2);
+	} else {
+		AddEStr("Cancel action not specified!\n", 0, 0);
+	}
 }
 
 void ForceCommand() {
