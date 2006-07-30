@@ -43,88 +43,87 @@ void HelpGotoHelp(), HelpGotoIndex(), HelpGotoParent(), HelpGotoCmdHelp(), HelpS
 void HideHelp(), HideForms(), FromForms(), ToForms();
 
 struct MenuEntry FormsMenu[10] = {
-  {"Opt Help", 0, HelpGotoHelp},
-  {"Root", 0, HelpGotoIndex},
-  {"Parent", 0, HelpGotoParent},
-  {"", 0, NULL},
-  {"", 0, NULL},
-  {"", 0, NULL},
-  {"Buffer", 0, FromForms},
-  {"Cmd Help", 0, HelpGotoCmdHelp},
-  {"Send", 0, HelpSend},
-  {"Back", 0, HideForms} 
+	{"Opt Help", 0, HelpGotoHelp},
+	{"Root", 0, HelpGotoIndex},
+	{"Parent", 0, HelpGotoParent},
+	{"", 0, NULL},
+	{"", 0, NULL},
+	{"", 0, NULL},
+	{"Buffer", 0, FromForms},
+	{"Cmd Help", 0, HelpGotoCmdHelp},
+	{"Send", 0, HelpSend},
+	{"Back", 0, HideForms} 
 };
 
 struct MenuEntry HelpMenu[10] = {
-  {"", 0, NULL},
-  {"", 0, NULL},
-  {"Back", 0, HideHelp},
-  {"", 0, NULL},
-  {"", 0, NULL},
-  {"", 0, NULL},
-  {"", 0, NULL},
-  {"", 0, NULL},
-  {"", 0, NULL},
-  {"Back", 0, HideHelp}
+	{"", 0, NULL},
+	{"", 0, NULL},
+	{"Back", 0, HideHelp},
+	{"", 0, NULL},
+	{"", 0, NULL},
+	{"", 0, NULL},
+	{"", 0, NULL},
+	{"", 0, NULL},
+	{"", 0, NULL},
+	{"Back", 0, HideHelp}
 };
 
-void HelpEditHook(int Key)
-{
-  char Type;
+void HelpEditHook(int Key) {
+	pdebug("HelpEditHook()\n");
 
-  Type = 0;
-  if (Key < 256) Type = 1;
-  else switch(Key) {
-    case KEY_LEFT:
-    case KEY_RIGHT:
-    case KEY_UP:
-    case KEY_DOWN:
-    case KEY_HOME:
-    case KEY_END:
-    case KEY_PPAGE:
-    case KEY_NPAGE:
-    case KEY_IC:
-    case '\t':
-    case KEY_BACKSPACE:
-    case KEY_ENTER:
-    case KEY_F(9): /* XXX */
-      Type = 1;
-      break;
-  }
-  if ((Type == 1) && (!IsNonModal)) {
-    if (in_help)
-      end_loop_help(Key);
-    else
-      end_loop(Key);
+	char Type;
 
-    if (HelpWindow) {
-      /* in_help value may be different here ? */
-      if (in_help)
-	start_loop_help();
-      else
-	start_loop();
-    }
-  } else {
-    ProcessSpecialKey(Key);
-  }
+	Type = 0;
+	if (Key < 256) {
+		Type = 1;
+	} else switch(Key) {
+		case KEY_LEFT:
+		case KEY_RIGHT:
+		case KEY_UP:
+		case KEY_DOWN:
+		case KEY_HOME:
+		case KEY_END:
+		case KEY_PPAGE:
+		case KEY_NPAGE:
+		case KEY_IC:
+		case '\t':
+		case KEY_BACKSPACE:
+		case KEY_ENTER:
+		case KEY_F(9): /* XXX */
+			Type = 1;
+			break;
+	}
+	if (Type == 1 && !IsNonModal) {
+		if (in_help) {
+			end_loop_help(Key);
+		} else {
+			end_loop(Key);
+		}
+
+		if (HelpWindow) {
+			/* in_help value may be different here ? */
+			if (in_help) {
+				start_loop_help();
+			} else {
+				start_loop();
+			}
+		}
+	} else {
+		ProcessSpecialKey(Key);
+	}
 }
 
-void
-MkHelpWin()
-{
-  NewWindow(COLS-2, CUALines-2, NULL, &HelpWindow, &HelpPanel);
-  top_panel(HelpPanel);
+void MkHelpWin() {
+	NewWindow(COLS-2, CUALines-2, NULL, &HelpWindow, &HelpPanel);
+	top_panel(HelpPanel);
 }
 
-void
-DelHelpWin()
-{
-  del_panel(HelpPanel);
-  delwin(HelpWindow);
+void DelHelpWin() {
+	del_panel(HelpPanel);
+	delwin(HelpWindow);
 }
 
-void ShowHelp()
-{
+void ShowHelp() {
   if (HelpPanel) {
     beep();
     return;
@@ -167,8 +166,7 @@ void ShowHelp()
   start_loop();
 }
 
-void HideForms()
-{
+void HideForms() {
   done_forms();
   forms_active = 0;
   DelHelpWin();
@@ -185,8 +183,7 @@ void HideForms()
   RedrawKeys();
 }
 
-void FromForms()
-{
+void FromForms() {
   EditHook = HOldEditHook;
   DisplayMode = HOldDMode|HELPSHOWN;
 
@@ -198,8 +195,7 @@ void FromForms()
   forms_active = 0;
 }
 
-void ToForms()
-{
+void ToForms() {
   forms_active = 1;
   forms_border_arrow('^');
 
@@ -216,53 +212,46 @@ void ToForms()
   touchwin(InfoWindow);
 }
 
-void HelpGotoCmdHelp()
-{
-  if (goto_show_help(node, NULL)<0) return;
-  in_help = 1;
-  SetMenu(HelpMenu, 1);
-  RedrawKeys();
+void HelpGotoCmdHelp() {
+	if (goto_show_help(node, NULL)<0) return;
+	in_help = 1;
+	SetMenu(HelpMenu, 1);
+	RedrawKeys();
 }
 
-void HelpGotoHelp()
-{
-  if (goto_show_help(node, afield)<0) return;
-  in_help = 1;
-  SetMenu(HelpMenu, 1);
-  RedrawKeys();
+void HelpGotoHelp() {
+	if (goto_show_help(node, afield)<0) return;
+	in_help = 1;
+	SetMenu(HelpMenu, 1);
+	RedrawKeys();
 }
 
-void HideHelp()
-{
-  done_show_help();
-  in_help = 0;
+void HideHelp() {
+	done_show_help();
+	in_help = 0;
 
-  SetMenu(0, 0);
+	SetMenu(0, 0);
 
-  back_from_help();
-  start_loop();
+	back_from_help();
+	start_loop();
 }
 
-void HelpGotoIndex()
-{
-  goto_node("OMEXCH");
-  start_loop();
+void HelpGotoIndex() {
+	goto_node("OMEXCH");
+	start_loop();
 }
 
-void HelpGotoParent()
-{
-  goto_parent(node);
-  start_loop();
+void HelpGotoParent() {
+	goto_parent(node);
+	start_loop();
 }
 
-void HelpBackHist()
-{
+void HelpBackHist() {
 #if 0
-  GotoBackHist();
+	GotoBackHist();
 #endif
 }
 
-void HelpSend()
-{
-  HelpEditHook(KEY_F(9));
+void HelpSend() {
+	HelpEditHook(KEY_F(9));
 }
