@@ -600,44 +600,37 @@ LogCh(char Chr) {
   }
 }
 
-int
-SendChar(struct connection *c, char Chr) {
-  if (LoggedIn && c && c != connection)
-    return -1;
+int SendChar(struct connection *c, char Chr) {
+	if (LoggedIn && c && c != connection) return -1;
 
-  if (c && c->authenticated < 2)
-    return -1;
+	if (c && c->authenticated < 2) return -1;
 
-  if (Chr > 32 || Chr == 10 || Chr == 8 || Chr == 13)
-    LogChar(Chr);
+	if (Chr > 32 || Chr == 10 || Chr == 8 || Chr == 13) LogChar(Chr);
 
-  if (Chr == 13)
-    Chr = 10;
+	if (Chr == 13) Chr = 10;
   
-  if (Chr == 10)
-    Chr = ETX; /* end of text */
+	if (Chr == 10) Chr = ETX; /* end of text */
   
-  pdebug("SendChar() %c/x%x \n", Chr, Chr);
+	pdebug("SendChar() %c/x%x \n", Chr, Chr);
 
-  pdebug("%p(%d)\n", c, c?c->IProtoState:-1);
-  if (c && c->IProtoState != IPR_DC4) {
-    foreach_conn (c) {
-      if (!c->authenticated) continue;
-      Write(c, &Chr, 1);
-    } foreach_conn_end;
-  }
+	pdebug("%p(%d)\n", c, c?c->IProtoState:-1);
+	if (c && c->IProtoState != IPR_DC4) {
+		foreach_conn (c) {
+			if (!c->authenticated) continue;
+			Write(c, &Chr, 1);
+		} foreach_conn_end;
+	}
 
-  if (CuaFd < 0) return 1;
+	if (CuaFd < 0) return 1;
 
-  if (WriteBufLen >= WRITEBUF_MAX - 1) {
-	 log_msg("--- ewrecv: write [%x] error, write buffer full! (over %d)\n",
-		 Chr, WRITEBUF_MAX);
-	 return 0;
-  }
+	if (WriteBufLen >= WRITEBUF_MAX - 1) {
+		log_msg("--- ewrecv: write [%x] error, write buffer full! (over %d)\n", Chr, WRITEBUF_MAX);
+		return 0;
+	}
 
-  WriteBuf[WriteBufLen++] = Chr;
+	WriteBuf[WriteBufLen++] = Chr;
 
-  return 1;
+	return 1;
 }
 
 int LastMask = 0;
