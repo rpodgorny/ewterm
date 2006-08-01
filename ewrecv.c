@@ -761,8 +761,8 @@ void ProcessExchangeChar(char Chr) {
 			if (Header) {
 				int ActJob; char ActOMT[6] = ""; char Usrname[10] = "";
 				char *job = lastlinet;
-				char *omt = job+13;
-				char *mask= omt+20;
+				char *omt = job + 13;
+				char *mask= omt + 20;
 
 				Header = 0;
 
@@ -1689,11 +1689,11 @@ int main(int argc, char *argv[]) {
 					} foreach_conn_end;
 				}
 			}
-     
+
 			/* something to cua */
 			if (CuaFd >= 0 && FD_ISSET(CuaFd, &WriteQ)) {
 				int written;
-	
+
 				written = write(CuaFd, WriteBuf, WriteBufLen);
 				if (written < 0) {
 					if (errno == EINTR) {
