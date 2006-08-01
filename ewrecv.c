@@ -1295,433 +1295,424 @@ int DeploySocket(char *SockName, int SockPort) {
 
 
 int main(int argc, char *argv[]) {
-  int ac, swp = 0, ForkOut = 1, PrintLog = 0, OldPID;
+	int ac, swp = 0, ForkOut = 1, PrintLog = 0, OldPID;
 
-  printf("EWReceiver "VERSION" written by Petr Baudis, 2001, 2002\n");
+	printf("EWReceiver "VERSION" written by Petr Baudis, 2001, 2002\n");
 
-  /* process options */  
-  strcpy(CuaName, DEFDEVICE);
-  strcpy(SpeedBuf, DEFSPEED);
+	/* process options */  
+	strcpy(CuaName, DEFDEVICE);
+	strcpy(SpeedBuf, DEFSPEED);
   
-  for (ac = 1; ac < argc; ac++) {
-    switch (swp) {
-      case 1: strncpy(CuaName, argv[ac], CUANSIZE + 1); break;
-      case 2: strncpy(SpeedBuf, argv[ac], 11); break;
-      case 3: strncpy(LogFName, argv[ac], 256); break;
-      case 4: strncpy(SockName, argv[ac], 256);
-		if (strchr(SockName, ':')) {
-		  char *s = strchr(SockName, ':');
-		  *s = 0;
-		  SockPort = atoi(s + 1);
-		  break;
+	for (ac = 1; ac < argc; ac++) {
+		switch (swp) {
+			case 1: strncpy(CuaName, argv[ac], CUANSIZE + 1); break;
+			case 2: strncpy(SpeedBuf, argv[ac], 11); break;
+			case 3: strncpy(LogFName, argv[ac], 256); break;
+			case 4:
+				strncpy(SockName, argv[ac], 256);
+				if (strchr(SockName, ':')) {
+					char *s = strchr(SockName, ':');
+					*s = 0;
+					SockPort = atoi(s + 1);
+					break;
+				}
+				break;
+			case 6: SockPort = atoi(argv[ac]); break;
+			case 5: strncpy(LogRawName, argv[ac], 256); break;
+			case 7:
+				strncpy(ConnPassword, argv[ac], 128);
+				{
+					int i;
+					for (i = 0; argv[ac][i]; i++) argv[ac][i] = '*';
+				}
+				break;
+			case 8:
+				strncpy(ROConnPassword, argv[ac], 128);
+				{
+					int i;
+					for (i = 0; argv[ac][i]; i++) argv[ac][i] = '#';
+				}
+				break;
 		}
-		break;
-      case 6: SockPort = atoi(argv[ac]); break;
-      case 5: strncpy(LogRawName, argv[ac], 256); break;
-      case 7: strncpy(ConnPassword, argv[ac], 128);
-		{
-		  int i;
-		  for (i = 0; argv[ac][i]; i++) argv[ac][i] = '*';
-		}
-		break;
-      case 8: strncpy(ROConnPassword, argv[ac], 128);
-		{
-		  int i;
-		  for (i = 0; argv[ac][i]; i++) argv[ac][i] = '#';
-		}
-		break;
-    }
 
-    if (swp) {
-      swp = 0;
-      continue;
-    }
+		if (swp) {
+			swp = 0;
+			continue;
+		}
     
-    if (!strcmp(argv[ac], "-h") || !strcmp(argv[ac], "--help")) {
-      printf("\nUsage:\t%s [-h|--help] [-c|--cuadev <cuadev>] [-s|--speed <speed>]\n", argv[0]);
-      printf("\t[-f|--logfile <file>] [-L|--daylog] [-p|--printlog] [-r|--rawfile <file>]\n");
-      printf("\t[-H|--host <host>[:<port>]] [-P|--port <port>] [-w|--password <pwd>]\n");
-      printf("\t[-W|--ropassword <pwd>] [-g|--fg] [-S|--silent] [-v|--verbose]\n\n");
-      printf("-h\tDisplay this help\n");
-      printf("-c\tConnect to <cuadev> cua device (defaults to %s)\n", DEFDEVICE);
-      printf("-s\tSet <speed> speed on cua device (defaults to %s)\n", DEFSPEED);
-      printf("-f\tLog to file <file>\n");
-      printf("-L\tTake -f parameter as directory name and log each day to separate\n");
-      printf("\tfile, each one named <file>/YYYY-MM-DD\n");
-      printf("-p\tLog to printer through lpr\n");
-      printf("-r\tLog raw traffic to file <file> (useful only for debugging)\n");
-      printf("-H\tBind listening socket to addr <host> (defaults to %s)\n", SockName);
-      printf("-P\tBind listening socket to port <port> (defaults to %d)\n", SockPort);
-      printf("-w\tPassword required for the clients to authenticate\n");
-      printf("-W\tPassword required for the clients to authenticate for R/O access\n");
-      printf("-g\tStay in foreground, don't fork() away\n");
-      printf("-S\tDon't log to stderr (makes sense only with -g)\n");
-      printf("\t(unless error occurs while logs reopening)\n");
-      printf("-v\tLog even normal traffic to stderr (is meaningful only with -g)\n\n");
-      printf("Please report bugs to <pasky@ji.cz>.\n");
-      exit(1);
-    }
+		if (!strcmp(argv[ac], "-h") || !strcmp(argv[ac], "--help")) {
+			printf("\nUsage:\t%s [-h|--help] [-c|--cuadev <cuadev>] [-s|--speed <speed>]\n", argv[0]);
+			printf("\t[-f|--logfile <file>] [-L|--daylog] [-p|--printlog] [-r|--rawfile <file>]\n");
+			printf("\t[-H|--host <host>[:<port>]] [-P|--port <port>] [-w|--password <pwd>]\n");
+			printf("\t[-W|--ropassword <pwd>] [-g|--fg] [-S|--silent] [-v|--verbose]\n\n");
+			printf("-h\tDisplay this help\n");
+			printf("-c\tConnect to <cuadev> cua device (defaults to %s)\n", DEFDEVICE);
+			printf("-s\tSet <speed> speed on cua device (defaults to %s)\n", DEFSPEED);
+			printf("-f\tLog to file <file>\n");
+			printf("-L\tTake -f parameter as directory name and log each day to separate\n");
+			printf("\tfile, each one named <file>/YYYY-MM-DD\n");
+			printf("-p\tLog to printer through lpr\n");
+			printf("-r\tLog raw traffic to file <file> (useful only for debugging)\n");
+			printf("-H\tBind listening socket to addr <host> (defaults to %s)\n", SockName);
+			printf("-P\tBind listening socket to port <port> (defaults to %d)\n", SockPort);
+			printf("-w\tPassword required for the clients to authenticate\n");
+			printf("-W\tPassword required for the clients to authenticate for R/O access\n");
+			printf("-g\tStay in foreground, don't fork() away\n");
+			printf("-S\tDon't log to stderr (makes sense only with -g)\n");
+			printf("\t(unless error occurs while logs reopening)\n");
+			printf("-v\tLog even normal traffic to stderr (is meaningful only with -g)\n\n");
+			printf("Please report bugs to <pasky@ji.cz>.\n");
+			exit(1);
+		}
 
-    if (!strcmp(argv[ac], "-c") || !strcmp(argv[ac], "--cuadev")) {
-      swp = 1;
-      continue;
-    }
+		if (!strcmp(argv[ac], "-c") || !strcmp(argv[ac], "--cuadev")) {
+			swp = 1;
+			continue;
+		}
 
-    if (!strcmp(argv[ac], "-s") || !strcmp(argv[ac], "--speed")) {
-      swp = 2;
-      continue;
-    }
+		if (!strcmp(argv[ac], "-s") || !strcmp(argv[ac], "--speed")) {
+			swp = 2;
+			continue;
+		}
 
-    if (!strcmp(argv[ac], "-f") || !strcmp(argv[ac], "--logfile")) {
-      swp = 3;
-      continue;
-    }
+		if (!strcmp(argv[ac], "-f") || !strcmp(argv[ac], "--logfile")) {
+			swp = 3;
+			continue;
+		}
 
-    if (!strcmp(argv[ac], "-L") || !strcmp(argv[ac], "--daylog")) {
-      DailyLog = 1;
-      continue;
-    }
+		if (!strcmp(argv[ac], "-L") || !strcmp(argv[ac], "--daylog")) {
+			DailyLog = 1;
+			continue;
+		}
 
-    if (!strcmp(argv[ac], "-p") || !strcmp(argv[ac], "--printlog")) {
-      PrintLog = 1;
-      continue;
-    }
+		if (!strcmp(argv[ac], "-p") || !strcmp(argv[ac], "--printlog")) {
+			PrintLog = 1;
+			continue;
+		}
 
-    if (!strcmp(argv[ac], "-r") || !strcmp(argv[ac], "--rawfile")) {
-      swp = 5;
-      continue;
-    }
+		if (!strcmp(argv[ac], "-r") || !strcmp(argv[ac], "--rawfile")) {
+			swp = 5;
+			continue;
+		}
 
-    if (!strcmp(argv[ac], "-H") || !strcmp(argv[ac], "--host")) {
-      swp = 4;
-      continue;
-    }
+		if (!strcmp(argv[ac], "-H") || !strcmp(argv[ac], "--host")) {
+			swp = 4;
+			continue;
+		}
 
-    if (!strcmp(argv[ac], "-P") || !strcmp(argv[ac], "--port")) {
-      swp = 6;
-      continue;
-    }
+		if (!strcmp(argv[ac], "-P") || !strcmp(argv[ac], "--port")) {
+			swp = 6;
+			continue;
+		}
 
-    if (!strcmp(argv[ac], "-w") || !strcmp(argv[ac], "--password")) {
-      swp = 7;
-      continue;
-    }
+		if (!strcmp(argv[ac], "-w") || !strcmp(argv[ac], "--password")) {
+			swp = 7;
+			continue;
+		}
 
-    if (!strcmp(argv[ac], "-W") || !strcmp(argv[ac], "--ropassword")) {
-      swp = 8;
-      continue;
-    }
+		if (!strcmp(argv[ac], "-W") || !strcmp(argv[ac], "--ropassword")) {
+			swp = 8;
+			continue;
+		}
 
-    if (!strcmp(argv[ac], "-g") || !strcmp(argv[ac], "--fg")) {
-      ForkOut = 0;
-      continue;
-    }
+		if (!strcmp(argv[ac], "-g") || !strcmp(argv[ac], "--fg")) {
+			ForkOut = 0;
+			continue;
+		}
 
-    if (!strcmp(argv[ac], "-S") || !strcmp(argv[ac], "--silent")) {
-      Silent = 1;
-      continue;
-    }
+		if (!strcmp(argv[ac], "-S") || !strcmp(argv[ac], "--silent")) {
+			Silent = 1;
+			continue;
+		}
 
-    if (!strcmp(argv[ac], "-v") || !strcmp(argv[ac], "--verbose")) {
-      Verbose = 1;
-      continue;
-    }
-  }
+		if (!strcmp(argv[ac], "-v") || !strcmp(argv[ac], "--verbose")) {
+			Verbose = 1;
+			continue;
+		}
+	}
  
-  /* open log files */
-  StartLog();
+	/* open log files */
+	StartLog();
 
-  if (LogFName[0]) {
-    if (LogFName[0] != '/') {
-      char LogFName2[256];
+	if (LogFName[0]) {
+		if (LogFName[0] != '/') {
+			char LogFName2[256];
 
-      /* make the path absolute, we will be chdir()ing later */
-      strcpy(LogFName2, LogFName);
-      if (!getcwd(LogFName, 256)) fprintf(stderr, "Warning! Cannot get cwd - logging may not work properly.\r\n");
-      strcat(LogFName, "/");
-      strcat(LogFName, LogFName2);
-    }
+			/* make the path absolute, we will be chdir()ing later */
+			strcpy(LogFName2, LogFName);
+			if (!getcwd(LogFName, 256)) fprintf(stderr, "Warning! Cannot get cwd - logging may not work properly.\r\n");
+			strcat(LogFName, "/");
+			strcat(LogFName, LogFName2);
+		}
 
-    if (DailyLog) {
-      time_t t = time(NULL);
-      struct tm *tm = localtime(&t);
+		if (DailyLog) {
+			time_t t = time(NULL);
+			struct tm *tm = localtime(&t);
 
-      strcpy(DailyLogFNameTemplate, LogFName);
-      UpdateDailyLogFName(tm);
-      lday = tm->tm_mday;
-    }
-    LogFl2 = fopen(LogFName, "a");
-    if (!LogFl2) fprintf(stderr, "Warning! Cannot fopen %s!\r\n", LogFName);
-  }
+			strcpy(DailyLogFNameTemplate, LogFName);
+			UpdateDailyLogFName(tm);
+			lday = tm->tm_mday;
+		}
+		LogFl2 = fopen(LogFName, "a");
+		if (!LogFl2) fprintf(stderr, "Warning! Cannot fopen %s!\r\n", LogFName);
+	}
 
-  if (LogRawName[0]) {
-    if (LogRawName[0] != '/') {
-      char LogRawName2[256];
+	if (LogRawName[0]) {
+		if (LogRawName[0] != '/') {
+			char LogRawName2[256];
 
-      /* make the path absolute, we will be chdir()ing later */
-      strcpy(LogRawName2, LogRawName);
-      if (!getcwd(LogRawName, 256))
-	fprintf(stderr, "Warning! Cannot get cwd - logging may not work properly.\r\n");
-      strcat(LogRawName, "/");
-      strcat(LogRawName, LogRawName2);
-    }
+			/* make the path absolute, we will be chdir()ing later */
+			strcpy(LogRawName2, LogRawName);
+			if (!getcwd(LogRawName, 256)) fprintf(stderr, "Warning! Cannot get cwd - logging may not work properly.\r\n");
+			strcat(LogRawName, "/");
+			strcat(LogRawName, LogRawName2);
+		}
 
-    LogRaw = fopen(LogRawName, "a");
-    if (!LogRaw) fprintf(stderr, "Warning! Cannot fopen %s!\r\n", LogRawName);
-  }
+		LogRaw = fopen(LogRawName, "a");
+		if (!LogRaw) fprintf(stderr, "Warning! Cannot fopen %s!\r\n", LogRawName);
+	}
 
-  if (PrintLog) {
-    LogFl1 = popen("/usr/bin/lpr", "w");
-    if (!LogFl1) fprintf(stderr, "Warning! Cannot popen lpr!\r\n");
-  }
+	if (PrintLog) {
+		LogFl1 = popen("/usr/bin/lpr", "w");
+		if (!LogFl1) fprintf(stderr, "Warning! Cannot popen lpr!\r\n");
+	}
 
-  /* install signal handlers */
-  signal(SIGTERM, SigTermCaught);
-  signal(SIGQUIT, SigTermCaught);
-  signal(SIGINT, SigTermCaught);
-  signal(SIGHUP, SigHupCaught);
-  signal(SIGPIPE, SIG_IGN);
+	/* install signal handlers */
+	signal(SIGTERM, SigTermCaught);
+	signal(SIGQUIT, SigTermCaught);
+	signal(SIGINT, SigTermCaught);
+	signal(SIGHUP, SigHupCaught);
+	signal(SIGPIPE, SIG_IGN);
 
-  /* open cua device */
-  if (CuaName && *CuaName) {
-    int Tmp;
+	/* open cua device */
+	if (CuaName && *CuaName) {
+		int Tmp;
 
-    ReOpenSerial();
+		ReOpenSerial();
 
-    while (!Tmp) {
-      Tmp = atoi(SpeedBuf);
+		while (!Tmp) {
+			Tmp = atoi(SpeedBuf);
 
-      switch (Tmp) {
-        case 300:
-        case 2400:
-        case 9600:
-        case 19200:
-        case 38400:
-        case 57600:
-          CuaSpeed = Tmp;
-          break;
-        default:
-          fprintf(stderr, "--- ewrecv: Invalid speed given! Switching to default.\r\n");
-	  Tmp = 0;
-	  strcpy(SpeedBuf, DEFSPEED);
-      }
-    }
+			switch (Tmp) {
+				case 300:
+				case 2400:
+				case 9600:
+				case 19200:
+				case 38400:
+				case 57600: CuaSpeed = Tmp; break;
+				default:
+					fprintf(stderr, "--- ewrecv: Invalid speed given! Switching to default.\r\n");
+					Tmp = 0;
+					strcpy(SpeedBuf, DEFSPEED);
+			}
+		}
     
-    parse_io_mode(&ConfRec, SpeedBuf, PARAMS);
-    init_port(CuaFd, &ConfRec);
-  }
+		parse_io_mode(&ConfRec, SpeedBuf, PARAMS);
+		init_port(CuaFd, &ConfRec);
+	}
 
-  /* deploy socket */
- 
-  SockFd = DeploySocket(SockName, SockPort);
+	/* deploy socket */
+ 	SockFd = DeploySocket(SockName, SockPort);
 
-  /* release from current terminal, start new session etc */
-  
-  if (chdir("/") < 0) {
-    perror("chdir(\"/\")");
-	Done(3);
-  }
+	/* release from current terminal, start new session etc */
+	if (chdir("/") < 0) {
+		perror("chdir(\"/\")");
+		Done(3);
+	}
     
-  OldPID = getpid();
-  if (ForkOut) {
-    fclose(stdin);
-    fclose(stdout);
-    fclose(stderr);
+	OldPID = getpid();
+	if (ForkOut) {
+		fclose(stdin);
+		fclose(stdout);
+		fclose(stderr);
     
-    if (fork()) exit(0);
-    setsid();
-    if (fork()) exit(0);
+		if (fork()) exit(0);
+		setsid();
+		if (fork()) exit(0);
     
-    stderr = LogFl2; /* redirect stderr to log */
-    if (! stderr) stderr = fopen("/dev/null", "a"); /* or to /dev/null */
-  }
+		stderr = LogFl2; /* redirect stderr to log */
+		if (!stderr) stderr = fopen("/dev/null", "a"); /* or to /dev/null */
+	}
 
-  /* update lock */
-  
+	/* update lock */
 #ifdef LOCKDIR
-  {
-    FILE *Fl;
+	{
+		FILE *Fl;
       
-    Fl = fopen(LockName, "w");
-    if (Fl) {
-      fprintf(Fl, "%05d %s %s\n", getpid(), "ewterm", getlogin());
-      fclose(Fl);
-    }
-  }
+		Fl = fopen(LockName, "w");
+		if (Fl) {
+			fprintf(Fl, "%05d %s %s\n", getpid(), "ewterm", getlogin());
+			fclose(Fl);
+		}
+	}
 #endif
  
   /* delimiters */
-  
 #ifdef DEBUG
-  debugf = stderr;
-  pdebug("\n\n\n\n\n\n\n\n==================================\n\n\n\n\n\n\n\n");
+	debugf = stderr;
+	pdebug("\n\n\n\n\n\n\n\n==================================\n\n\n\n\n\n\n\n");
 #endif
-  {
-    char *time_s;
-    time_t tv;
+	{
+		char *time_s;
+		time_t tv;
     
-    tv = time(NULL); time_s = ctime(&tv);
-    log_msg("--- ewrecv: new session pid %d -> %d at %s\n", OldPID, getpid(), time_s);
-  }
+		tv = time(NULL); time_s = ctime(&tv);
+		log_msg("--- ewrecv: new session pid %d -> %d at %s\n", OldPID, getpid(), time_s);
+	}
 
-  /* first attempt to accept() */
-  TryAccept(SockFd);
+	/* first attempt to accept() */
+	TryAccept(SockFd);
 
 #if 0
-  /* make exchange happy, we are here and alive */
-  SendChar(NULL, ETX);
-  SendChar(NULL, BEL);
-  SendChar(NULL, ACK);
-  SendChar(NULL, EOT);
+	/* make exchange happy, we are here and alive */
+	SendChar(NULL, ETX);
+	SendChar(NULL, BEL);
+	SendChar(NULL, ACK);
+	SendChar(NULL, EOT);
 #endif
 
-  /* select forever */
-  for (;;) {
-    int MaxFd;
-    fd_set ReadQ;
-    fd_set WriteQ;
-    fd_set ErrorQ;
+	/* select forever */
+	for (;;) {
+		int MaxFd;
+		fd_set ReadQ;
+		fd_set WriteQ;
+		fd_set ErrorQ;
 
-    /* prepare for select */
-    Reselect = 0;
+		/* prepare for select */
+		Reselect = 0;
 
-    if (to_destroy && !to_destroy->WriteBufferLen) {
-      DestroyConnection(to_destroy);
-      to_destroy = NULL;
-    }
+		if (to_destroy && !to_destroy->WriteBufferLen) {
+			DestroyConnection(to_destroy);
+			to_destroy = NULL;
+		}
 
-    MaxFd = 0;
+		MaxFd = 0;
 
-    FD_ZERO(&ReadQ);
-    FD_ZERO(&WriteQ);
+		FD_ZERO(&ReadQ);
+		FD_ZERO(&WriteQ);
 
-    foreach_conn (NULL) { /* talking with terminal */
-      FD_SET(c->Fd, &ReadQ);
-      if (c->Fd > MaxFd) MaxFd = c->Fd;
-      if (c->WriteBuffer) FD_SET(c->Fd, &WriteQ);
-      FD_SET(c->Fd, &ErrorQ);
-    } foreach_conn_end;
+		foreach_conn (NULL) { /* talking with terminal */
+			FD_SET(c->Fd, &ReadQ);
+			if (c->Fd > MaxFd) MaxFd = c->Fd;
+			if (c->WriteBuffer) FD_SET(c->Fd, &WriteQ);
+			FD_SET(c->Fd, &ErrorQ);
+		} foreach_conn_end;
 
-    if (SockFd >= 0) { /* listening on socket */
-      FD_SET(SockFd, &ReadQ);
-      if (SockFd > MaxFd) MaxFd = SockFd;
-    }
+		if (SockFd >= 0) { /* listening on socket */
+			FD_SET(SockFd, &ReadQ);
+			if (SockFd > MaxFd) MaxFd = SockFd;
+		}
 
-    if (CuaFd >= 0) { /* talking with EWSD */
-      FD_SET(CuaFd, &ReadQ);
-      if (CuaFd > MaxFd) MaxFd = CuaFd;
-      if (WriteBufLen > 0) FD_SET(CuaFd, &WriteQ);
-    }
+		if (CuaFd >= 0) { /* talking with EWSD */
+			FD_SET(CuaFd, &ReadQ);
+			if (CuaFd > MaxFd) MaxFd = CuaFd;
+			if (WriteBufLen > 0) FD_SET(CuaFd, &WriteQ);
+		}
 
-    /* select */
-    if (select(MaxFd + 1, &ReadQ, &WriteQ, &ErrorQ, 0) < 0) {
-      if (errno == EINTR) continue; /* try once more, just some silly signal */
-      perror("--- ewrecv: Select failed");
-      Done(4);
-    } else {
-      /* something from terminal */
-      foreach_conn (NULL) {
-	if (!FD_ISSET(c->Fd, &ReadQ)) continue;
+		/* select */
+		if (select(MaxFd + 1, &ReadQ, &WriteQ, &ErrorQ, 0) < 0) {
+			if (errno == EINTR) continue; /* try once more, just some silly signal */
+			perror("--- ewrecv: Select failed");
+			Done(4);
+		} else {
+			/* something from terminal */
+			foreach_conn (NULL) {
+				if (!FD_ISSET(c->Fd, &ReadQ)) continue;
 
-	errno = 0;
-	if (DoRead(c) <= 0 && errno != EINTR) {
-	  ErrorConnection(c);
-	} else {
-	  char Chr;
+				errno = 0;
+				if (DoRead(c) <= 0 && errno != EINTR) {
+					ErrorConnection(c);
+				} else {
+					char Chr;
 
-	  while (Read(c, &Chr, 1)) TestIProtoChar(c, Chr);
-	}
+					while (Read(c, &Chr, 1)) TestIProtoChar(c, Chr);
+				}
 
-        if (Reselect) goto reselect;
-      } foreach_conn_end;
+				if (Reselect) goto reselect;
+			} foreach_conn_end;
 
-      /* something to terminal */
-      foreach_conn (NULL) {
-	if (!FD_ISSET(c->Fd, &WriteQ)) continue;
+			/* something to terminal */
+			foreach_conn (NULL) {
+				if (!FD_ISSET(c->Fd, &WriteQ)) continue;
 
-	errno = 0; /* XXX: Is write() returning 0 an error? */
-	if (DoWrite(c) < 0 && errno != EINTR) ErrorConnection(c);
+				errno = 0; /* XXX: Is write() returning 0 an error? */
+				if (DoWrite(c) < 0 && errno != EINTR) ErrorConnection(c);
 
-        if (Reselect) goto reselect;
-      } foreach_conn_end;
+				if (Reselect) goto reselect;
+			} foreach_conn_end;
 
-      /* terminal error */
+			/* terminal error */
+			foreach_conn (NULL) {
+				if (!FD_ISSET(c->Fd, &ErrorQ)) continue;
 
-      foreach_conn (NULL) {
-	if (!FD_ISSET(c->Fd, &ErrorQ)) continue;
+				ErrorConnection(c);
+				goto reselect;
+			} foreach_conn_end;
 
-	ErrorConnection(c);
-	goto reselect;
-      } foreach_conn_end;
+			/* new connection from terminal */
+			if (SockFd >= 0 && FD_ISSET(SockFd, &ReadQ)) {
+				struct connection *c = TryAccept(SockFd);
 
-      /* new connection from terminal */
+				if (c) {
+					char *time_s;
+					time_t tv;
 
-      if (SockFd >= 0 && FD_ISSET(SockFd, &ReadQ)) {
-        struct connection *c = TryAccept(SockFd);
+					tv = time(NULL); time_s = ctime(&tv);
+					log_msg("--- ewrecv: attached client %d@%s connected at %s\n", c->id, c->host, time_s);
+				} else {
+					char *time_s;
+					time_t tv;
 
-	if (c) {
-          char *time_s;
-          time_t tv;
-    
-          tv = time(NULL); time_s = ctime(&tv);
-          log_msg("--- ewrecv: attached client %d@%s connected at %s\n", c->id, c->host, time_s);
-    } else {
-          char *time_s;
-          time_t tv;
-    
-          tv = time(NULL); time_s = ctime(&tv);
-          log_msg("--- ewrecv: attached client ? failed to connect at %s\n", time_s);
-        }
-      }
+					tv = time(NULL); time_s = ctime(&tv);
+					log_msg("--- ewrecv: attached client ? failed to connect at %s\n", time_s);
+				}
+			}
 
-      if (Reselect) goto reselect;
+			if (Reselect) goto reselect;
+
+			/* something from cua */
+			if (CuaFd >= 0 && FD_ISSET(CuaFd, &ReadQ)) {
+				char Chr = 0;
+
+				/* TODO: Use some buffer, we should get huge performance boost. --pasky */
+				if (read(CuaFd, &Chr, 1) <= 0 && errno != EINTR) {
+					perror("--- ewrecv: Read from CuaFd failed");
+					Done(4);
+				} else {
+					if (CommandMode == CM_READY) CommandMode = CM_BUSY;
+
+					ProcessExchangeChar(Chr);
+
+					foreach_conn (NULL) {
+						if (!c->authenticated) continue;
+						Write(c, &Chr, 1);
+					} foreach_conn_end;
+				}
+			}
      
-      /* something from cua */
-      
-      if (CuaFd >= 0 && FD_ISSET(CuaFd, &ReadQ)) {
-	char Chr = 0;
-
-	/* TODO: Use some buffer, we should get huge performance boost. --pasky */
+			/* something to cua */
+			if (CuaFd >= 0 && FD_ISSET(CuaFd, &WriteQ)) {
+				int written;
 	
-	if (read(CuaFd, &Chr, 1) <= 0 && errno != EINTR) {
-	  perror("--- ewrecv: Read from CuaFd failed");
-	  Done(4);
-	} else {
-	  if (CommandMode == CM_READY) CommandMode = CM_BUSY;
+				written = write(CuaFd, WriteBuf, WriteBufLen);
+				if (written < 0) {
+					if (errno == EINTR) {
+						written = 0;
+					} else {
+						perror("--- ewrecv: Write to CuaFd failed");
+						Done(4);
+					}
+				}
 
-	  ProcessExchangeChar(Chr);
-
-	  foreach_conn (NULL) {
-            if (!c->authenticated) continue;
-	    Write(c, &Chr, 1);
-	  } foreach_conn_end;
-	}
-      }
-     
-      /* something to cua */
-      
-      if (CuaFd >= 0 && FD_ISSET(CuaFd, &WriteQ)) {
-	int written;
-	
-	written = write(CuaFd, WriteBuf, WriteBufLen);
-	if (written < 0) {
-	  if (errno == EINTR) {
-	    written = 0;
-	  } else {
-	    perror("--- ewrecv: Write to CuaFd failed");
-	    Done(4);
-	  }
-	}
-
-	/* shrink buffer */
-	WriteBufLen -= written;
-	memmove(WriteBuf, WriteBuf + written, WriteBufLen);
-      }
+				/* shrink buffer */
+				WriteBufLen -= written;
+				memmove(WriteBuf, WriteBuf + written, WriteBufLen);
+			}
 
 reselect:
-      ;
-    }
-  }
+			;
+		}
+	}
 
-  return 99; /* ehm? */
+	return 99; /* ehm? */
 }
