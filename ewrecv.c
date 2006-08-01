@@ -771,7 +771,10 @@ void ProcessExchangeChar(char Chr) {
 				ActJob = atoi(job);
 				if (strlen(job) > 13) {
 					/* We already have it otherwise. */
-					if (omt[0] && omt[0] != ' ') { strncpy(ActOMT, omt, 6); ActOMT[6] = 0; }
+					if (omt[0] && omt[0] != ' ') {
+						strncpy(ActOMT, omt, 6);
+						ActOMT[6] = 0;
+					}
 					if (omt[6] == '/') {
 						strncpy(Usrname, omt + 7, 9);
 						Usrname[9] = 0;
