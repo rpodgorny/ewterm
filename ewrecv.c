@@ -128,14 +128,14 @@ void ReopenLogFile(), UpdateDailyLogFName(struct tm *tm), CheckDailyLog();
 	if (LogFl1) { fprintf(LogFl1, fmt); fflush(LogFl1); }\
 	if (LogFl2) { fprintf(LogFl2, fmt); fflush(LogFl2); }\
 	if (LogRaw) { fprintf(LogRaw, fmt); fflush(LogRaw); }\
-	if (! Silent && stderr != LogFl2) { fprintf(stderr, fmt); fflush(stderr); }\
+	if (!Silent && stderr != LogFl2) { fprintf(stderr, fmt); fflush(stderr); }\
 }
 
 
 /* History */
 
 #ifndef HISTLEN
-#  define HISTLEN 100
+#define HISTLEN 100
 #endif
 
 static char Lines[HISTLEN][256];
@@ -201,14 +201,20 @@ void Done(int Err) {
 	pdebug("Done() %d\n", Err);
 
 #ifdef LOCKDIR
-	if ((LockName[0] != 0) && (LockName[0] != 10)) {
+	if (LockName[0] != 0 && LockName[0] != 10) {
 		remove(LockName);
 		LockName[0] = 0;
 	}
 #endif /* LOCKDIR */
 
-	if (CuaFd >= 0) { close(CuaFd); CuaFd = -1; }
-	if (SockFd >= 0) { close(SockFd); SockFd = -1; }
+	if (CuaFd >= 0) {
+		close(CuaFd);
+		CuaFd = -1;
+	}
+	if (SockFd >= 0) {
+		close(SockFd);
+		SockFd = -1;
+	}
 	unlink(SockName);
 
 	{
@@ -267,21 +273,22 @@ int set_baud_rate(struct termios *t, int rate) {
 static void parse_io_mode(struct config_record *r, char *baud, char *flags) {
 	wl = wl;
 	sscanf(baud, "%ld", &r->baud);
-	if (strlen(flags) == 6) {
-		if ((flags[0] == '7' || flags[0] == '8')
-		&& (flags[1] == 'N' || flags[1] == 'E' || flags[1] == 'O')
-		&& (flags[2] == '1' || flags[2] == '2')
-		&& (flags[3] == 'H' || flags[3] == 'S' || flags[3] == 'N')
-		&& (flags[4] == 'C' || flags[4] == 'N' || flags[4] == 'B')
-		&& (flags[5] == 'C' || flags[5] == 'N' || flags[5] == 'B')) {
-			r->csize = flags[0] - '0';
-			r->parity = flags[1];
-			r->stops = flags[2] - '0';
-			r->shake = flags[3];
-			r->crnli = flags[4];
-			r->crnlo = flags[5];
-			return;
-		}
+
+	if (strlen(flags) != 6) return;
+
+	if ((flags[0] == '7' || flags[0] == '8')
+	&& (flags[1] == 'N' || flags[1] == 'E' || flags[1] == 'O')
+	&& (flags[2] == '1' || flags[2] == '2')
+	&& (flags[3] == 'H' || flags[3] == 'S' || flags[3] == 'N')
+	&& (flags[4] == 'C' || flags[4] == 'N' || flags[4] == 'B')
+	&& (flags[5] == 'C' || flags[5] == 'N' || flags[5] == 'B')) {
+		r->csize = flags[0] - '0';
+		r->parity = flags[1];
+		r->stops = flags[2] - '0';
+		r->shake = flags[3];
+		r->crnli = flags[4];
+		r->crnlo = flags[5];
+		return;
 	}
 }
 
