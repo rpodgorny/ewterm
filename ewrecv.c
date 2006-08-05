@@ -1350,7 +1350,14 @@ int DeploySocket(char *SockName, int SockPort) {
 	return SockFd;
 }
 
-
+void InstallSignals() {
+	/* install signal handlers */
+	signal(SIGTERM, SigTermCaught);
+	signal(SIGQUIT, SigTermCaught);
+	signal(SIGINT, SigTermCaught);
+	signal(SIGHUP, SigHupCaught);
+	signal(SIGPIPE, SIG_IGN);
+}
 
 int main(int argc, char *argv[]) {
 	int ac, swp = 0, ForkOut = 1, PrintLog = 0, OldPID;
@@ -1549,15 +1556,13 @@ int main(int argc, char *argv[]) {
 		if (!LogFl1) fprintf(stderr, "Warning! Cannot popen lpr!\r\n");
 	}
 
-	/* install signal handlers */
-	signal(SIGTERM, SigTermCaught);
-	signal(SIGQUIT, SigTermCaught);
-	signal(SIGINT, SigTermCaught);
-	signal(SIGHUP, SigHupCaught);
-	signal(SIGPIPE, SIG_IGN);
+	InstallSignals();
 
-	/* open cua device */
-	if (CuaName && *CuaName) {
+	if (ConnectName && *ConnectName) {
+		/* open x25 device */
+		ReOpenEthernet();
+	} else if (CuaName && *CuaName) {
+		/* open cua device */
 		int Tmp;
 
 		ReOpenSerial();
@@ -1591,7 +1596,7 @@ int main(int argc, char *argv[]) {
 		perror("chdir(\"/\")");
 		Done(3);
 	}
-    
+
 	OldPID = getpid();
 	if (ForkOut) {
 		fclose(stdin);
