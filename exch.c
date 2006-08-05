@@ -803,7 +803,7 @@ void AuthFailed(struct connection *c) {
 struct connection *MkConnection(int SockFd) {
 	static struct conn_handlers h = {
 		/* 2.1a */
-		(int(*)(struct connection *, char)) CheckChr,
+		(int(*)(struct connection *, char))CheckChr,
 		NULL,
 		NULL,
 		GotNotify,
@@ -868,7 +868,7 @@ void AttachConnection() {
 			perror("gethostbyname()");
 			exit(6);
 		}
-		addr.sin_addr.s_addr = ((struct in_addr *) host->h_addr)->s_addr;
+		addr.sin_addr.s_addr = ((struct in_addr *)host->h_addr)->s_addr;
 	}
 	addr.sin_port = htons(HostPort);
 
