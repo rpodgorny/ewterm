@@ -112,6 +112,11 @@ int SockFd = -1; /* listening socket */
 
 int Reselect = 0;
 
+/* x25 socket */
+char ConnectName[256] = "";
+unsigned int ConnectPort = 9000;
+int ConnectFd = -1;
+
 /* Log files */
 
 FILE *LogFl1 = NULL, *LogFl2 = NULL, *LogRaw = NULL;
@@ -1336,6 +1341,15 @@ int main(int argc, char *argv[]) {
 					for (i = 0; argv[ac][i]; i++) argv[ac][i] = '#';
 				}
 				break;
+			case 9:
+				strncpy(ConnectName, argv[ac], 256);
+				if (strchr(ConnectName, ':')) {
+					char *s = strchr(ConnectName, ':');
+					*s = 0;
+					ConnectPort = atoi(s + 1);
+					break;
+				}
+				break;
 		}
 
 		if (swp) {
@@ -1415,6 +1429,11 @@ int main(int argc, char *argv[]) {
 
 		if (!strcmp(argv[ac], "-W") || !strcmp(argv[ac], "--ropassword")) {
 			swp = 8;
+			continue;
+		}
+
+		if (!strcmp(argv[ac], "-C") || !strcmp(argv[ac], "--connect")) {
+			swp = 9;
 			continue;
 		}
 
