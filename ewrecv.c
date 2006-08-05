@@ -1690,6 +1690,12 @@ int main(int argc, char *argv[]) {
 			if (WriteBufLen > 0) FD_SET(CuaFd, &WriteQ);
 		}
 
+		if (CuaFd >= 0) { /* talking with EWSD (X.25) */
+			FD_SET(ConnectFd, &ReadQ);
+			if (ConnectFd > MaxFd) MaxFd = ConnectFd;
+			if (WriteBufLen > 0) FD_SET(ConnectFd, &WriteQ);
+		}
+
 		/* select */
 		if (select(MaxFd + 1, &ReadQ, &WriteQ, &ErrorQ, 0) < 0) {
 			if (errno == EINTR) continue; /* try once more, just some silly signal */
@@ -1790,6 +1796,7 @@ int main(int argc, char *argv[]) {
 				memmove(WriteBuf, WriteBuf + written, WriteBufLen);
 			}
 
+			/* something from x25 */
 			if (ConnectFd >= 0 && FD_ISSET(ConnectFd, &ReadQ)) {
 				char Chr = 0;
 
@@ -1808,6 +1815,7 @@ int main(int argc, char *argv[]) {
 				}
 			}
 
+			/* something to x25 */
 			if (ConnectFd >= 0 && FD_ISSET(ConnectFd, &WriteQ)) {
 				int written = write(ConnectFd, WriteBuf, WriteBufLen);
 
