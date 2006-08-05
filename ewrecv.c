@@ -580,40 +580,39 @@ void ReOpenEthernet() {
 	}
 }
 
-  /*
-   * (see ewterm's exch.c for human-readable description)
-   * The protocol looks (maybe) like:
-   * 
-   * (close = i'm sending, closes = he's sending)
-   * 
-   * Communication codes:
-   * 
-   * ^B		STX	start of text		not used
-   * 
-   * ^C		ETX	end of text		close[s] sent chunk of data
-   * 
-   * ^D		EOT	end of transmission	cancel actual command
-   * 
-   * ^E		ENQ	enquery			checks if someone is there
-   * 
-   * ^F		ACK	acknowledge		request prompt
-   * 						request input from terminal
-   * 
-   * ^G		BEL	bell			reply to ETX, confirmation
-   * 
-   * ^U		NAK	not acknowledged	client's idle
-   * 						(sending zeroes periodically
-   * 						then, ended with ETX of course)
-   * 						(just now we are doing this
-   * 						in way when we get ENQ, we send
-   * 						NAK, three zeroes and ETX, not
-   * 						sure if it's 100% ok, but hopefully
-   * 						should work ;-)
-   *
-   * 		DC	internal protocol	see iproto.c
-   *
-   */
-
+/*
+ * (see ewterm's exch.c for human-readable description)
+ * The protocol looks (maybe) like:
+ * 
+ * (close = i'm sending, closes = he's sending)
+ * 
+ * Communication codes:
+ * 
+ * ^B		STX	start of text		not used
+ * 
+ * ^C		ETX	end of text		close[s] sent chunk of data
+ * 
+ * ^D		EOT	end of transmission	cancel actual command
+ * 
+ * ^E		ENQ	enquery			checks if someone is there
+ * 
+ * ^F		ACK	acknowledge		request prompt
+ * 						request input from terminal
+ * 
+ * ^G		BEL	bell			reply to ETX, confirmation
+ * 
+ * ^U		NAK	not acknowledged	client's idle
+ * 						(sending zeroes periodically
+ * 						then, ended with ETX of course)
+ * 						(just now we are doing this
+ * 						in way when we get ENQ, we send
+ * 						NAK, three zeroes and ETX, not
+ * 						sure if it's 100% ok, but hopefully
+ * 						should work ;-)
+ *
+ * 		DC	internal protocol	see iproto.c
+ *
+ */
 
 void LogCh(char Chr) {
 	pdebug("LogCh() %c/x%x\n", Chr, Chr);
