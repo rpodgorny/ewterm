@@ -189,19 +189,6 @@ struct config_record {
 	byte crnli, crnlo;
 } ConfRec;
 
-
-
-
-
-/**************************************\
- *
- * functions
- *
-\**************************************/
-
-
-
-
 void Done(int Err) {
 	pdebug("Done() %d\n", Err);
 
@@ -222,6 +209,11 @@ void Done(int Err) {
 	}
 	unlink(SockName);
 
+	if (ConnectFd >= 0) {
+		close(ConnectFd);
+		ConnectFd = -1;
+	}
+
 	{
 		char *time_s;
 		time_t tv;
@@ -237,15 +229,7 @@ void Done(int Err) {
 	exit(Err);
 }
 
-
-
-
-/*
- *
- * Configure serial port
- *
- */
-
+/* Configure serial port */
 int set_baud_rate(struct termios *t, int rate) {
 	int i;
 
@@ -329,9 +313,6 @@ void init_port(int Handle, struct config_record *r) {
 	}
 }
 
-
-
-
 void SigTermCaught() {
 	/* Quit properly */
 	Done(0);
@@ -381,8 +362,6 @@ void SigHupCaught() {
 	signal(SIGHUP, SigHupCaught);
 }
 
-
-
 void ReopenLogFile() {
 	pdebug("ReopenLogFile()\n");
 
@@ -414,8 +393,6 @@ void CheckDailyLog() {
 	ReopenLogFile();
 }
 
-
-
 void ReOpenSerial() {
 	char *TmpPtr, *FirstPtr;
 	int HisPID = 0;
@@ -438,9 +415,7 @@ void ReOpenSerial() {
 	/* Open new file */
 	{
 		/* Lock new */
-
 #ifdef LOCKDIR
-
 		/* Make lock name */
 		TmpPtr = CuaName;
 		FirstPtr = TmpPtr;
@@ -504,13 +479,11 @@ void ReOpenSerial() {
 		}
 
 		if (!LockName[0]) Done(5);
-
 #endif /* LOCKDIR */
 
 		/* Open modem file itself */
 		if (CuaName) CuaFd = open(CuaName, O_RDWR);
 		if (CuaFd < 0) {
-
 #ifdef LOCKDIR
 			if ((LockName[0] != 0) && (LockName[0] != 10)) {
 				remove(LockName);
