@@ -430,8 +430,6 @@ void GetLockInfo(FILE *Fl, int *pid, char *name) {
 }
 
 void ReOpenSerial() {
-	char *TmpPtr, *FirstPtr;
-
 	pdebug("ReOpenSerial()\n");
 
 	/* Close old cua file and unlock it */
@@ -448,11 +446,7 @@ void ReOpenSerial() {
 		/* Lock new */
 #ifdef LOCKDIR
 		/* Make lock name */
-		TmpPtr = CuaName;
-		FirstPtr = TmpPtr;
-		while (*TmpPtr) {
-			if (*(TmpPtr++) == '/') FirstPtr = TmpPtr;
-		}
+		char *FirstPtr = rindex(CuaName, '/');
 
 		sprintf(LockName, "%s/LCK..%s", LOCKDIR, FirstPtr);
 
@@ -513,8 +507,6 @@ void ReOpenSerial() {
 
 /* TODO: Rename this function */
 void ReOpenEthernet() {
-	char *TmpPtr, *FirstPtr;
-
 	pdebug("ReOpenEthernet()\n");
 
 	if (ConnectFd >= 0) {
@@ -530,11 +522,7 @@ void ReOpenEthernet() {
 		/* Lock new */
 #ifdef LOCKDIR
 		/* Make lock name */
-		TmpPtr = CuaName;
-		FirstPtr = TmpPtr;
-		while (*TmpPtr) {
-			if (*(TmpPtr++) == '/') FirstPtr = TmpPtr;
-		}
+		char *FirstPtr = rindex(ConnectName, '/');
 
 		sprintf(LockName, "%s/LCK..%s", LOCKDIR, FirstPtr);
 
