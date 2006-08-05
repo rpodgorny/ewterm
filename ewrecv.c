@@ -1790,6 +1790,40 @@ int main(int argc, char *argv[]) {
 				memmove(WriteBuf, WriteBuf + written, WriteBufLen);
 			}
 
+			if (ConnectFd >= 0 && FD_ISSET(ConnectFd, &ReadQ)) {
+				char Chr = 0;
+
+				if (read(ConnectFd, &Chr, 1) <= 0 && errno != EINTR) {
+					perror("--- ewrecv: Read from ConnectFd failed");
+					Done(4);
+				} else {
+					if (CommandMode == CM_READY) CommandMode = CM_BUSY;
+
+					ProcessExchangeChar(Chr);
+
+					foreach_conn (NULL) {
+						if (!c->authenticated) continue;
+						Write(c, &Chr, 1);
+					} foreach_conn_end;
+				}
+			}
+
+			if (ConnectFd >= 0 && FD_ISSET(ConnectFd, &WriteQ)) {
+				int written = write(ConnectFd, WriteBuf, WriteBufLen);
+
+				if (written > 0) {
+					if (errno == EINTR) {
+						written = 0;
+					} else {
+						perror("--- ewrecv: Write to COnnectFd failed");
+						Done(4);
+					}
+				}
+
+				WriteBufLen -= written;
+				memmove(WriteBuf, WriteBuf + written, WriteBufLen);
+			}
+
 reselect:
 			;
 		}
