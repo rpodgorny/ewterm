@@ -393,6 +393,25 @@ void CheckDailyLog() {
 	ReopenLogFile();
 }
 
+void Lock(FILE *Fl) {
+	/* Create our lock */
+	Fl = fopen(LockName, "w");
+	if (Fl == 0 && LockName[0]) {
+		fprintf(stderr, "Cannot open lock file: %s !\r\n", strerror(errno));
+		LockName[0] = 0;
+	} else {
+		fprintf(Fl, "%05d %s %s\n", getpid(), "ewterm", getlogin());
+		fclose(Fl);
+	}
+}
+
+void Unlock() {
+	if (LockName[0] != 0 && LockName[0] != 10) {
+		remove(LockName);
+		LockName[0] = 0;
+	}
+}
+
 void ReOpenSerial() {
 	char *TmpPtr, *FirstPtr;
 	int HisPID = 0;
@@ -406,10 +425,7 @@ void ReOpenSerial() {
 		CuaFd = -1;
 	}
 #ifdef LOCKDIR
-	if (LockName[0] != 0 && LockName[0] != 10) {
-		remove(LockName);
-		LockName[0] = 0;
-	}
+	Unlock();
 #endif
 
 	/* Open new file */
@@ -468,15 +484,7 @@ void ReOpenSerial() {
 			}
 		}
 
-		/* Create our lock */
-		Fl = fopen(LockName, "w");
-		if (Fl == 0 && LockName[0]) {
-			fprintf(stderr, "Cannot open lock file: %s !\r\n", strerror(errno));
-			LockName[0] = 0;
-		} else {
-			fprintf(Fl, "%05d %s %s\n", getpid(), "ewterm", getlogin());
-			fclose(Fl);
-		}
+		Lock(Fl);
 
 		if (!LockName[0]) Done(5);
 #endif /* LOCKDIR */
@@ -485,10 +493,7 @@ void ReOpenSerial() {
 		if (CuaName) CuaFd = open(CuaName, O_RDWR);
 		if (CuaFd < 0) {
 #ifdef LOCKDIR
-			if (LockName[0] != 0 && LockName[0] != 10) {
-				remove(LockName);
-				LockName[0] = 0;
-			}
+			Unlock();
 #endif /* LOCKDIR */
 
 			fprintf(stderr, "Aieee... cannot open serial file!\r\n");
@@ -512,10 +517,7 @@ void ReOpenEthernet() {
 		ConnectFd = -1;
 	}
 #ifdef LOCKDIR
-	if (LockName[0] != 0 && LockName[0] != 10) {
-		remove(LockName);
-		LockName[0] = 0;
-	}
+	Unlock();
 #endif
 
 	/* Open new file */
@@ -574,15 +576,7 @@ void ReOpenEthernet() {
 			}
 		}
 
-		/* Create our lock */
-		Fl = fopen(LockName, "w");
-		if (Fl == 0 && LockName[0]) {
-			fprintf(stderr, "Cannot open lock file: %s !\r\n", strerror(errno));
-			LockName[0] = 0;
-		} else {
-			fprintf(Fl, "%05d %s %s\n", getpid(), "ewterm", getlogin());
-			fclose(Fl);
-		}
+		Lock(Fl);
 
 		if (!LockName[0]) Done(5);
 #endif /* LOCKDIR */
@@ -590,10 +584,7 @@ void ReOpenEthernet() {
 		if (ConnectName) ConnectFd = open(ConnectName, O_RDWR);
 		if (ConnectFd < 0) {
 #ifdef LOCKDIR
-			if (LockName[0] != 0 && LockName[0] != 10) {
-				remove(LockName);
-				LockName[0] = 0;
-			}
+			Unlock();
 #endif /* LOCKDIR */
 
 			fprintf(stderr, "Aieee... cannot open x25 file!\r\n");
