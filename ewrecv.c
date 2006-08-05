@@ -412,10 +412,25 @@ void Unlock() {
 	}
 }
 
+void GetLockInfo(FILE *Fl, int *pid, char *name) {
+	/* Look who locked it */
+	char Buf[256];
+	fgets(Buf, 256, Fl);
+	/* fscanf(Fl, "%d %s", &HisPID, Locker); */
+
+	char *Locker = Buf;
+	while (*Locker == ' ' || *Locker == '\t') Locker++;
+	*pid = atoi(Locker);
+	if (strchr(Locker, ' ')) {
+		Locker = strchr(Locker, ' ') + 1;
+	} else {
+		Locker = "UNKNOWN";
+	}
+	strcpy(name, Locker);
+}
+
 void ReOpenSerial() {
 	char *TmpPtr, *FirstPtr;
-	int HisPID = 0;
-	FILE *Fl;
 
 	pdebug("ReOpenSerial()\n");
 
@@ -442,23 +457,15 @@ void ReOpenSerial() {
 		sprintf(LockName, "%s/LCK..%s", LOCKDIR, FirstPtr);
 
 		/* Check for lock */
-		Fl = fopen(LockName, "r");
+		FILE *Fl = fopen(LockName, "r");
 		if (Fl) {
-			char Buf[256];
-			char *Locker;
+			int HisPID = 0;
+			char Locker[256];
 
-			/* Look who locked it */
-			fgets(Buf, 256, Fl);
-			/* fscanf(Fl, "%d %s", &HisPID, Locker); */
+			GetLockInfo(Fl, &HisPID, Locker);
+
 			fclose(Fl);
-			Locker = Buf;
-			while (*Locker == ' ' || *Locker == '\t') Locker++;
-			HisPID = atoi(Locker);
-			if (strchr(Locker, ' ')) {
-				Locker = strchr(Locker, ' ') + 1;
-			} else {
-				Locker = "UNKNOWN";
-			}
+
 			fprintf(stderr, "Device already locked by '%s' (PID %d).\r\n", Locker, HisPID);
 
 			/* Try if process still exists */
@@ -507,8 +514,6 @@ void ReOpenSerial() {
 /* TODO: Rename this function */
 void ReOpenEthernet() {
 	char *TmpPtr, *FirstPtr;
-	int HisPID = 0;
-	FILE *Fl;
 
 	pdebug("ReOpenEthernet()\n");
 
@@ -534,23 +539,15 @@ void ReOpenEthernet() {
 		sprintf(LockName, "%s/LCK..%s", LOCKDIR, FirstPtr);
 
 		/* Check for lock */
-		Fl = fopen(LockName, "r");
+		FILE *Fl = fopen(LockName, "r");
 		if (Fl) {
-			char Buf[256];
-			char *Locker;
+			int HisPID = 0;
+			char Locker[256];
 
-			/* Look who locked it */
-			fgets(Buf, 256, Fl);
-			/* fscanf(Fl, "%d %s", &HisPID, Locker); */
+			GetLockInfo(Fl, &HisPID, Locker);
+
 			fclose(Fl);
-			Locker = Buf;
-			while (*Locker == ' ' || *Locker == '\t') Locker++;
-			HisPID = atoi(Locker);
-			if (strchr(Locker, ' ')) {
-				Locker = strchr(Locker, ' ') + 1;
-			} else {
-				Locker = "UNKNOWN";
-			}
+
 			fprintf(stderr, "Device already locked by '%s' (PID %d).\r\n", Locker, HisPID);
 
 			/* Try if process still exists */
