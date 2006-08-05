@@ -535,39 +535,36 @@ void AddCommandToQueue(char *Command, char Convert) {
 	}
 }
 
-void CheckChr(struct connection *c, int Chr)
-{ 
-  static WINDOW *StatWindow;
-  static PANEL *StatPanel;
+void CheckChr(struct connection *c, int Chr) {
+	static WINDOW *StatWindow;
+	static PANEL *StatPanel;
 
-  if (Chr < 32 && Chr != 9 && Chr != 10) {
-    if (Chr == SO) {
-      InBurst = 1;
-      DisplayMode |= OTHERWINDOW;
-      NewWindow(24, 1, "Status", &StatWindow, &StatPanel);
-      mvwaddstr(StatWindow, 1, 1, "Please wait, bursting...");
-      wnoutrefresh(StatWindow);
-      PushEditOptions();
-
-    } else if (Chr == SI) {
-      PopEditOptions();
-      del_panel(StatPanel);
-      delwin(StatWindow);
-      DisplayMode &= ~OTHERWINDOW;
-      InBurst = 0;
-    }
-  } else {
-    /* When something came from the exchange, there can't be pending input
-     * request anymore. */
-    InputRequest = 0;
-    if (FilterFdIn >= 0 && FilterFdOut >= 0) {
-      /* ^ has a special meaning so double it. */
-      if (Chr == '^') AddToFilterQueue('^');
-      AddToFilterQueue(Chr);
-    } else {
-      AddCh(Chr);
-    }
-  }
+	if (Chr < 32 && Chr != 9 && Chr != 10) {
+		if (Chr == SO) {
+			InBurst = 1;
+			DisplayMode |= OTHERWINDOW;
+			NewWindow(24, 1, "Status", &StatWindow, &StatPanel);
+			mvwaddstr(StatWindow, 1, 1, "Please wait, bursting...");
+			wnoutrefresh(StatWindow);
+			PushEditOptions();
+		} else if (Chr == SI) {
+			PopEditOptions();
+			del_panel(StatPanel);
+			delwin(StatWindow);
+			DisplayMode &= ~OTHERWINDOW;
+			InBurst = 0;
+		}
+	} else {
+		/* When something came from the exchange, there can't be pending input request anymore. */
+		InputRequest = 0;
+		if (FilterFdIn >= 0 && FilterFdOut >= 0) {
+			/* ^ has a special meaning so double it. */
+			if (Chr == '^') AddToFilterQueue('^');
+			AddToFilterQueue(Chr);
+		} else {
+			AddCh(Chr);
+		}
+	}
 }
 
 
@@ -585,71 +582,68 @@ void GotPrivMsg(struct connection *c, char *from, int id, char *host, char *msg,
 	AddEStr(str, 0, 0);
 }
 
-void
-GotFwMode(struct connection *c, enum fwmode fwmode, char *d)
-{
-  if (fwmode == FWD_IN)
-    AddEStr("You are now in observer forwarding mode.\n", 0, 0);
-  else if (fwmode == FWD_INOUT) {
-    AddEStr("You are now in master forwarding mode.\n", 0, 0);
-    if (!LoggedOff) {
-      if (!WeKnowItIsComing) {
-      AddEStr("Lo, face the dark part of ewterm. Escaping from les pays inconnus,\n", 0, 0);
-      AddEStr("where only fear and despair lies. Let the sunset lead us.\n", 0, 0);
-      } else WeKnowItIsComing = 0; /* FIXME? */
-      DoLogOff();
-    }
-  } else
-    AddEStr("You are now in unknown forwarding mode.\n", 0, 0);
-  RedrawStatus();
+void GotFwMode(struct connection *c, enum fwmode fwmode, char *d) {
+	if (fwmode == FWD_IN) {
+		AddEStr("You are now in observer forwarding mode.\n", 0, 0);
+	} else if (fwmode == FWD_INOUT) {
+		AddEStr("You are now in master forwarding mode.\n", 0, 0);
+		if (!LoggedOff) {
+			if (!WeKnowItIsComing) {
+				AddEStr("Lo, face the dark part of ewterm. Escaping from les pays inconnus,\n", 0, 0);
+				AddEStr("where only fear and despair lies. Let the sunset lead us.\n", 0, 0);
+			} else {
+				WeKnowItIsComing = 0; /* FIXME? */
+			}
+			DoLogOff();
+		}
+	} else {
+		AddEStr("You are now in unknown forwarding mode.\n", 0, 0);
+	}
+	RedrawStatus();
 }
 
-void
-GotUserConnect(struct connection *c, int flags, char *user_, char *host, char *id_, char *d)
-{
-  char str[1024];
-  int id = atoi(id_);
-  struct user *usr = malloc(sizeof(struct user));
+void GotUserConnect(struct connection *c, int flags, char *user_, char *host, char *id_, char *d) {
+	char str[1024];
+	int id = atoi(id_);
+	struct user *usr = malloc(sizeof(struct user));
 
-  usr->user = strdup(user_); usr->id = id; usr->host = strdup(host); usr->flags = flags;
+	usr->user = strdup(user_); usr->id = id; usr->host = strdup(host); usr->flags = flags;
 
-  if (user) {
-    user->prev->next = usr;
-    usr->prev = user->prev;
-    user->prev = usr;
-    usr->next = user;
-  } else {
-    user = usr;
-    user->next = usr;
-    user->prev = usr;
-  }
+	if (user) {
+		user->prev->next = usr;
+		usr->prev = user->prev;
+		user->prev = usr;
+		usr->next = user;
+	} else {
+		user = usr;
+		user->next = usr;
+		user->prev = usr;
+	}
 
-  if (!(flags & 1)) {
-    snprintf(str, 1024, "[ewrecv] [%s@%s:%d] CONNECT\n", user_, host, id);
-    AddEStr(str, 0, 0);
-  }
+	if (!(flags & 1)) {
+		snprintf(str, 1024, "[ewrecv] [%s@%s:%d] CONNECT\n", user_, host, id);
+		AddEStr(str, 0, 0);
+	}
 }
 
 void GotUserDisconnect(struct connection *c, char *user_, char *host, char *id_, char *d) {
-  char str[1024];
-  int id = atoi(id_);
+	char str[1024];
+	int id = atoi(id_);
 
-  foreach_user {
-    if (!strcasecmp(user_, usr->user) && id == usr->id) {
-      if (usr == user)
-	user = usr->next;
-      if (usr == user)
-	user = NULL;
-      usr->prev->next = usr->next;
-      usr->next->prev = usr->prev;
-      free(usr->user);
-      free(usr);
-      break;
-    }
-  } foreach_user_end;
+	foreach_user {
+		if (!strcasecmp(user_, usr->user) && id == usr->id) {
+			if (usr == user) user = usr->next;
+			if (usr == user) user = NULL;
+			usr->prev->next = usr->next;
+			usr->next->prev = usr->prev;
+			free(usr->user);
+			free(usr);
+			break;
+		}
+	} foreach_user_end;
 
-  snprintf(str, 1024, "[ewrecv] [%s@%s:%d] DISCONNECT\n", user_, host, id);
-  AddEStr(str, 0, 0);
+	snprintf(str, 1024, "[ewrecv] [%s@%s:%d] DISCONNECT\n", user_, host, id);
+	AddEStr(str, 0, 0);
 }
 
 void ColPrompt() {
