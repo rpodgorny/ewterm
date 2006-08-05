@@ -27,7 +27,7 @@ DC2:
 			Example: <DC2><0x01>pasky
 	0x02	Notify - <data> contains message, which should be broadcasted to all other ewterms, if the peer is ewrecv, or shown (highlighted if possible) to the user if the peer is ewterm. Newline is automatically appended to the message when printing it.
 			Example: <DC2><0x02>Hello, people!<DC1>
-     0x80	Unknown ASK - We got ASK we can't understand. <data> contains the ASK packet we can't understand.
+	0x80	Unknown ASK - We got ASK we can't understand. <data> contains the ASK packet we can't understand.
 			Example: <DC2><0x80><0xab>blahblah?!<DC1>
 
 == 2.1b ==
