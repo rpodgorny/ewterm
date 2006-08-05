@@ -1359,6 +1359,51 @@ void InstallSignals() {
 	signal(SIGPIPE, SIG_IGN);
 }
 
+void StartLog2(int PrintLog) {
+	if (LogFName[0]) {
+		if (LogFName[0] != '/') {
+			char LogFName2[256];
+
+			/* make the path absolute, we will be chdir()ing later */
+			strcpy(LogFName2, LogFName);
+			if (!getcwd(LogFName, 256)) fprintf(stderr, "Warning! Cannot get cwd - logging may not work properly.\r\n");
+			strcat(LogFName, "/");
+			strcat(LogFName, LogFName2);
+		}
+
+		if (DailyLog) {
+			time_t t = time(NULL);
+			struct tm *tm = localtime(&t);
+
+			strcpy(DailyLogFNameTemplate, LogFName);
+			UpdateDailyLogFName(tm);
+			lday = tm->tm_mday;
+		}
+		LogFl2 = fopen(LogFName, "a");
+		if (!LogFl2) fprintf(stderr, "Warning! Cannot fopen %s!\r\n", LogFName);
+	}
+
+	if (LogRawName[0]) {
+		if (LogRawName[0] != '/') {
+			char LogRawName2[256];
+
+			/* make the path absolute, we will be chdir()ing later */
+			strcpy(LogRawName2, LogRawName);
+			if (!getcwd(LogRawName, 256)) fprintf(stderr, "Warning! Cannot get cwd - logging may not work properly.\r\n");
+			strcat(LogRawName, "/");
+			strcat(LogRawName, LogRawName2);
+		}
+
+		LogRaw = fopen(LogRawName, "a");
+		if (!LogRaw) fprintf(stderr, "Warning! Cannot fopen %s!\r\n", LogRawName);
+	}
+
+	if (PrintLog) {
+		LogFl1 = popen("/usr/bin/lpr", "w");
+		if (!LogFl1) fprintf(stderr, "Warning! Cannot popen lpr!\r\n");
+	}
+}
+
 int main(int argc, char *argv[]) {
 	int ac, swp = 0, ForkOut = 1, PrintLog = 0, OldPID;
 
@@ -1513,48 +1558,7 @@ int main(int argc, char *argv[]) {
 	/* open log files */
 	StartLog();
 
-	if (LogFName[0]) {
-		if (LogFName[0] != '/') {
-			char LogFName2[256];
-
-			/* make the path absolute, we will be chdir()ing later */
-			strcpy(LogFName2, LogFName);
-			if (!getcwd(LogFName, 256)) fprintf(stderr, "Warning! Cannot get cwd - logging may not work properly.\r\n");
-			strcat(LogFName, "/");
-			strcat(LogFName, LogFName2);
-		}
-
-		if (DailyLog) {
-			time_t t = time(NULL);
-			struct tm *tm = localtime(&t);
-
-			strcpy(DailyLogFNameTemplate, LogFName);
-			UpdateDailyLogFName(tm);
-			lday = tm->tm_mday;
-		}
-		LogFl2 = fopen(LogFName, "a");
-		if (!LogFl2) fprintf(stderr, "Warning! Cannot fopen %s!\r\n", LogFName);
-	}
-
-	if (LogRawName[0]) {
-		if (LogRawName[0] != '/') {
-			char LogRawName2[256];
-
-			/* make the path absolute, we will be chdir()ing later */
-			strcpy(LogRawName2, LogRawName);
-			if (!getcwd(LogRawName, 256)) fprintf(stderr, "Warning! Cannot get cwd - logging may not work properly.\r\n");
-			strcat(LogRawName, "/");
-			strcat(LogRawName, LogRawName2);
-		}
-
-		LogRaw = fopen(LogRawName, "a");
-		if (!LogRaw) fprintf(stderr, "Warning! Cannot fopen %s!\r\n", LogRawName);
-	}
-
-	if (PrintLog) {
-		LogFl1 = popen("/usr/bin/lpr", "w");
-		if (!LogFl1) fprintf(stderr, "Warning! Cannot popen lpr!\r\n");
-	}
+	StartLog2(PrintLog);
 
 	InstallSignals();
 
