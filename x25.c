@@ -27,6 +27,24 @@ struct block {
 	int nchildren;
 };
 
+struct block *toblock(char *data) {
+	struct block *ret = malloc(sizeof(struct block));
+
+	ret->id = *(unsigned char *)data;
+	ret->len = *(unsigned short *)(data+1);
+	ret->data = data+3;
+
+	return ret;
+}
+
+void deleteblock(struct block *b) {
+	int i = 0;
+	for (i = 0; i < b->nchildren; i++) deleteblock(b->children[i]);
+
+	free(b->data);
+	free(b);
+}
+
 struct block *getchild(struct block *parent, char *path) {
 	int ipath[1000];
 	int pathlen = 0;
@@ -44,14 +62,15 @@ struct block *getchild(struct block *parent, char *path) {
 	int depth = 0;
 	while (depth < pathlen) {
 		int i = 0;
-		for (i = 0; i < (*ret).nchildren; i++) {
-			if ((*((*ret).children[i])).id == ipath[depth]) {
-				ret = (*ret).children[i];
+		for (i = 0; i < ret->nchildren; i++) {
+			struct block *child = ret->children[i];
+			if (child->id == ipath[depth]) {
+				ret = ret->children[i];
 			}
 		}
 
 		// not found
-		if (i == (*ret).nchildren) {
+		if (i == ret->nchildren) {
 			ret = NULL;
 			break;
 		}
