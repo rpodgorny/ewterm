@@ -70,7 +70,11 @@ void getpath(struct block *b, char *path) {
 	strcpy(path, "");
 	int i = 0;
 	for (i = pathlen; i > 0; i--) {
-		sprintf(path+strlen(path), "-%d", ipath[i]);
+		if (i == pathlen) {
+			sprintf(path+strlen(path), "%d", ipath[i]);
+		} else {
+			sprintf(path+strlen(path), "-%d", ipath[i]);
+		}
 	}
 }
 
