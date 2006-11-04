@@ -1,4 +1,6 @@
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <strings.h>
 
 struct preamble {
@@ -56,7 +58,20 @@ void deleteblock(struct block *b) {
 }
 
 void getpath(struct block *b, char *path) {
-	// TODO
+	int ipath[1000];
+	int pathlen = 0;
+
+	struct block *ptr = b;
+	while (ptr) {
+		ipath[pathlen++] = ptr->id;
+		ptr = ptr->parent;
+	}
+
+	strcpy(path, "");
+	int i = 0;
+	for (i = pathlen; i > 0; i--) {
+		sprintf(path+strlen(path), "-%d", ipath[i]);
+	}
 }
 
 struct block *getchild(struct block *parent, char *path) {
