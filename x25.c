@@ -25,14 +25,24 @@ struct block {
 
 	struct block *children[1000];
 	int nchildren;
+
+	struct block *parent;
 };
 
-struct block *toblock(char *data) {
+struct block *toblock(struct block *parent, char *data) {
 	struct block *ret = malloc(sizeof(struct block));
 
 	ret->id = *(unsigned char *)data;
 	ret->len = *(unsigned short *)(data+1);
 	ret->data = data+3;
+
+	ret->nchildren = 0;
+	char *ptr = data+3;
+	while (ptr < data+3+ret->len) {
+		ret->children[ret->nchildren++] = toblock(ret, ptr);
+	}
+
+	ret->parent = parent;
 
 	return ret;
 }
@@ -41,8 +51,12 @@ void deleteblock(struct block *b) {
 	int i = 0;
 	for (i = 0; i < b->nchildren; i++) deleteblock(b->children[i]);
 
-	free(b->data);
+	if (b->data) free(b->data);
 	free(b);
+}
+
+void getpath(struct block *b, char *path) {
+	// TODO
 }
 
 struct block *getchild(struct block *parent, char *path) {
