@@ -4,6 +4,7 @@
 #include <linux/x25.h>
 #include <string.h>
 #include <strings.h>
+#include "x25.h"
 
 int main() {
 	int res = 0;

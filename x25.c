@@ -2,36 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include "x25.h"
 
-struct preamble {
-	unsigned char family;
-	unsigned char unk1;
-	unsigned char dir;
-	unsigned char pltype;
-	unsigned short connid;
-	unsigned char subseq;
-	unsigned char unk2;
-	unsigned short unk3;
-	unsigned char tail;
-};
-
-struct pack {
-	struct preamble *pre;
-	struct block *data;
-};
-
-struct block {
-	int id;
-	int len;
-	char *data;
-
-	struct block *children[1000];
-	int nchildren;
-
-	struct block *parent;
-};
-
-struct block *toblock(struct block *parent, char *data) {
+struct block *raw_to_block(char *data, struct block *parent) {
 	struct block *ret = malloc(sizeof(struct block));
 
 	ret->id = *(unsigned char *)data;
@@ -41,8 +14,9 @@ struct block *toblock(struct block *parent, char *data) {
 	ret->nchildren = 0;
 	char *ptr = data+3;
 	while (ptr < data+3+ret->len) {
-		ret->children[ret->nchildren++] = toblock(ret, ptr);
+		ret->children[ret->nchildren++] = raw_to_block(ptr, ret);
 	}
+	if (ret->nchildren > 0) ret->data = NULL;
 
 	ret->parent = parent;
 
@@ -110,4 +84,30 @@ struct block *getchild(struct block *parent, char *path) {
 	}
 
 	return ret;
+}
+
+char *packet_serialize(struct packet *p) {
+	int size = preamble_size(p->pre);
+	size += block_size(p->data);
+
+	char *ret = malloc(size);
+
+	return ret;
+}
+
+int preamble_size(struct preamble *p) {
+	return 11;
+}
+
+int block_size(struct block *b) {
+	int ret = 0;
+
+	if (b->data) {
+		ret += b->len;
+	} else {
+		int i = 0;
+		for (i = 0; i < b->nchildren; i++) ret += block_size(b->children[i]);
+	}
+
+	return ret + 3;
 }
