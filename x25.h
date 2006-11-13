@@ -39,4 +39,5 @@ void packet_delete(struct packet *);
 void preamble_delete(struct preamble *);
 void preamble_print(struct preamble *);
 void block_print(struct block *);
-int hacchildren(char *, int);
+int haschildren(char *, int);
+int packet_serialize(struct packet *, unsigned char *);
