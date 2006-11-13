@@ -30,7 +30,7 @@ struct block {
 struct block *block_deserialize(char *, struct block *);
 struct preamble *preamble_deserialize(char *);
 void block_delete(struct block *);
-void getpath(struct block *, char *);
+void block_getpath(struct block *, char *);
 struct block *getchild(struct block *, char *);
 void block_serialize(struct block *, char *);
 void preamble_serialize(struct preamble *, char *);
