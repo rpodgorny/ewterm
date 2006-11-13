@@ -39,3 +39,4 @@ void packet_delete(struct packet *);
 void preamble_delete(struct preamble *);
 void preamble_print(struct preamble *);
 void block_print(struct block *);
+int hacchildren(char *, int);
