@@ -12,7 +12,9 @@ struct block *block_deserialize(char *data, struct block *parent) {
 
 	ret->id = *(unsigned char *)data;
 	ret->len = ntohs(*(unsigned short *)(data+1));
-	ret->data = data+3;
+
+	ret->data = malloc(ret->len);
+	memcpy(ret->data, data+3, ret->len);
 
 	printf("id: %d, len: %d\n", ret->id, ret->len);
 
@@ -21,7 +23,10 @@ struct block *block_deserialize(char *data, struct block *parent) {
 	while (ptr < data+3+ret->len) {
 		ret->children[ret->nchildren++] = block_deserialize(ptr, ret);
 	}
-	if (ret->nchildren > 0) ret->data = NULL;
+	if (ret->nchildren > 0) {
+		free(ret->data);
+		ret->data = NULL;
+	}
 */
 	ret->parent = parent;
 
@@ -189,6 +194,8 @@ void preamble_delete(struct preamble *p) {
 }
 
 void packet_delete(struct packet *p) {
+	if (!p) return;
+
 	preamble_delete(p->pre);
 	block_delete(p->data);
 	free(p);
