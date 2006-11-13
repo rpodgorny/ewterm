@@ -12,20 +12,19 @@ struct block *block_deserialize(char *data, struct block *parent) {
 
 	ret->id = *(unsigned char *)data;
 	ret->len = ntohs(*(unsigned short *)(data+1));
-
-	ret->data = malloc(ret->len);
-	memcpy(ret->data, data+3, ret->len);
-
+	ret->data = NULL;
 	ret->nchildren = 0;
-/*	char *ptr = data+3;
-	while (ptr < data+3+ret->len) {
-		ret->children[ret->nchildren++] = block_deserialize(ptr, ret);
+
+	if (haschildren(data+3, ret->len)) {
+		char *ptr = data+3;
+		while (ptr < data+3+ret->len) {
+			ret->children[ret->nchildren++] = block_deserialize(ptr, ret);
+		}
+	} else {
+		ret->data = malloc(ret->len);
+		memcpy(ret->data, data+3, ret->len);
 	}
-	if (ret->nchildren > 0) {
-		free(ret->data);
-		ret->data = NULL;
-	}
-*/
+
 	ret->parent = parent;
 
 	return ret;
@@ -60,6 +59,20 @@ void block_getpath(struct block *b, char *path) {
 			sprintf(path+strlen(path), "-%d", ipath[i]);
 		}
 	}
+}
+
+int haschildren(char *buf, int len) {
+	int pos = 3;
+
+	while (pos < len) {
+		int l = ntohs(*(unsigned short *)(buf+pos));
+		if (l == 0) break;
+		pos += l;
+	}
+
+	if (pos == len) return 1;
+
+	return 0;
 }
 
 struct block *getchild(struct block *parent, char *path) {
