@@ -18,7 +18,9 @@ struct block *block_deserialize(char *data, struct block *parent) {
 	if (haschildren(data+3, ret->len)) {
 		char *ptr = data+3;
 		while (ptr < data+3+ret->len) {
-			ret->children[ret->nchildren++] = block_deserialize(ptr, ret);
+			ret->children[ret->nchildren] = block_deserialize(ptr, ret);
+			ptr += ret->children[ret->nchildren]->len + 3;
+			ret->nchildren++;
 		}
 	} else {
 		ret->data = malloc(ret->len);
