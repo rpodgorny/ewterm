@@ -208,7 +208,7 @@ void block_print(struct block *b) {
 	printf("id: %d, len: %d\n", b->id, b->len);
 	
 	char *ptr = b->data;
-	while (ptr) {
+	while (ptr < b->data+3+b->len) {
 		printf("0x%2x ", *ptr);
 		ptr++;
 	}
