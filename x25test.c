@@ -86,7 +86,14 @@ int main() {
 		return 1;
 	}
 
-	write(sock, tmp1, 11);
+	char buf[32];
+
+	int r = 0;
+	while ((r = read(sock, buf, 32)) > 0) {
+		printf("read: %d\n", r);
+	}
+
+	//write(sock, tmp1, 11);
 
 	close(sock);
 
