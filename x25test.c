@@ -86,11 +86,18 @@ int main() {
 		return 1;
 	}
 
-	char buf[32];
+	char buf[32000];
 
 	int r = 0;
-	while ((r = read(sock, buf, 32)) > 0) {
+	for (;;) {
+		r = read(sock, buf, 32000);
 		printf("read: %d\n", r);
+
+		if (r <= 0) break;
+
+		struct packet *p = packet_deserialize(buf);
+		packet_print(p);
+		packet_delete(p);
 	}
 
 	//write(sock, tmp1, 11);
