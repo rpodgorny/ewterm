@@ -127,10 +127,10 @@ struct preamble *preamble_deserialize(char *buf) {
 	ret->unk1 = *(buf+1);
 	ret->dir = *(buf+2);
 	ret->pltype = *(buf+3);
-	ret->connid = ntohs(*(buf+4));
+	ret->connid = ntohs(*(unsigned short *)(buf+4));
 	ret->subseq = *(buf+6);
 	ret->unk2 = *(buf+7);
-	ret->unk3 = ntohs(*(buf+8));
+	ret->unk3 = ntohs(*(unsigned short *)(buf+8));
 	ret->tail = *(buf+10);
 
 	return ret;
@@ -141,10 +141,10 @@ void preamble_serialize(struct preamble *p, char *buf) {
 	*(buf+1) = p->unk1;
 	*(buf+2) = p->dir;
 	*(buf+3) = p->pltype;
-	*(buf+4) = htons(p->connid);
+	*(unsigned short *)(buf+4) = htons(p->connid);
 	*(buf+6) = p->subseq;
 	*(buf+7) = p->unk2;
-	*(buf+8) = htons(p->unk3);
+	*(unsigned short *)(buf+8) = htons(p->unk3);
 	*(buf+10) = p->tail;
 }
 
