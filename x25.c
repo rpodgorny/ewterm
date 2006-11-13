@@ -6,8 +6,6 @@
 #include "x25.h"
 
 struct block *block_deserialize(char *data, struct block *parent) {
-	printf("block_deserialize\n");
-
 	struct block *ret = malloc(sizeof(struct block));
 
 	ret->id = *(unsigned char *)data;
@@ -220,18 +218,23 @@ void preamble_print(struct preamble *p) {
 }
 
 void block_print(struct block *b) {
-	printf("id: %d, len: %d\n", b->id, b->len);
-
 	char path[1000];
 	block_getpath(b, path);
-	printf("path: %s\n", path);
+	printf("path: %s, len: %d\n", path, b->len);
 
 	if (b->data) {
 		printf("data: ");
-
 		unsigned char *ptr = b->data;
 		while (ptr < b->data + b->len) {
 			printf("%02x ", *ptr);
+			ptr++;
+		}
+		printf("\n");
+
+		printf("datac: ");
+		ptr = b->data;
+		while (ptr < b->data + b->len) {
+			printf("%c", *(char *)ptr);
 			ptr++;
 		}
 		printf("\n");
