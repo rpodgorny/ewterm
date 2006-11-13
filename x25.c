@@ -109,16 +109,14 @@ struct block *getchild(struct block *parent, char *path) {
 	return ret;
 }
 
-char *packet_serialize(struct packet *p) {
+int packet_serialize(struct packet *p, unsigned char *buf) {
 	int pre_size = preamble_size(p->pre);
 	int b_size = block_size(p->data);
 
-	char *ret = malloc(pre_size + b_size);
+	preamble_serialize(p->pre, buf);
+	block_serialize(p->data, buf+pre_size);
 
-	preamble_serialize(p->pre, ret);
-	block_serialize(p->data, ret+pre_size);
-
-	return ret;
+	return pre_size+b_size;
 }
 
 int preamble_size(struct preamble *p) {

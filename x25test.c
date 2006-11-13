@@ -86,8 +86,28 @@ int main() {
 		return 1;
 	}
 
-	char buf[32000];
 
+	struct packet *pack = malloc(sizeof(struct packet));
+	pack->pre = malloc(sizeof(struct preamble));
+	pack->pre->family = 0xf1;
+	pack->pre->dir = 0x04;
+	pack->pre->pltype = 0x00;
+	pack->pre->connid = 0x0001;
+	pack->pre->subseq = 0;
+	pack->pre->unk2 = 0;
+	pack->pre->unk3 = 0x01c0;
+	pack->pre->tail = 0;
+
+	pack->data = malloc(sizeof(struct block));
+	pack->data->id = 1;
+	pack->data->len = 10;
+	pack->data->data = malloc(10);
+
+
+	char buf[32000];
+	int l = packet_serialize(pack, buf);
+	write(sock, buf, l);
+	
 	int r = 0;
 	for (;;) {
 		r = read(sock, buf, 32000);
@@ -99,8 +119,6 @@ int main() {
 		packet_print(p);
 		packet_delete(p);
 	}
-
-	//write(sock, tmp1, 11);
 
 	close(sock);
 
