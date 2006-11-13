@@ -87,10 +87,13 @@ struct block *getchild(struct block *parent, char *path) {
 }
 
 char *packet_serialize(struct packet *p) {
-	int size = preamble_size(p->pre);
-	size += block_size(p->data);
+	int pre_size = preamble_size(p->pre);
+	int b_size = block_size(p->data);
 
-	char *ret = malloc(size);
+	char *ret = malloc(pre_size + b_size);
+
+	preamble_serialize(p->pre, ret);
+	block_serialize(p->data, ret+pre_size);
 
 	return ret;
 }
@@ -110,4 +113,35 @@ int block_size(struct block *b) {
 	}
 
 	return ret + 3;
+}
+
+void preamble_serialize(struct preamble *p, char *buf) {
+	*buf = p->family;
+	*(buf+1) = p->unk1;
+	*(buf+2) = p->dir;
+	*(buf+3) = p->pltype;
+	*(buf+4) = p->connid;
+	*(buf+6) = p->subseq;
+	*(buf+7) = p->unk2;
+	*(buf+8) = p->unk3;
+	*(buf+10) = p->tail;
+}
+
+void block_serialize(struct block *b, char *buf) {
+	*buf = b->id;
+
+	if (b->data) {
+		*(buf+1) = b->len;
+		memcpy(buf+3, b->data, b->len);
+	} else {
+		unsigned short len = 0;
+
+		int i = 0;
+		for (i = 0; i < b->nchildren; i++) {
+			block_serialize(b->children[i], buf+3+len);
+			len += block_size(b->children[i]);
+		}
+
+		*(buf+1) = len;
+	}
 }
