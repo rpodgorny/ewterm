@@ -16,8 +16,6 @@ struct block *block_deserialize(char *data, struct block *parent) {
 	ret->data = malloc(ret->len);
 	memcpy(ret->data, data+3, ret->len);
 
-	printf("id: %d, len: %d\n", ret->id, ret->len);
-
 	ret->nchildren = 0;
 /*	char *ptr = data+3;
 	while (ptr < data+3+ret->len) {
@@ -185,6 +183,7 @@ struct packet *packet_deserialize(char *buf) {
 
 void packet_print(struct packet *p) {
 	preamble_print(p->pre);
+	block_print(p->data);
 }
 
 void preamble_delete(struct preamble *p) {
@@ -203,4 +202,14 @@ void packet_delete(struct packet *p) {
 
 void preamble_print(struct preamble *p) {
 	printf("fam: %x, unk1: %x, dir: %x, pltype: %x, connid: %x, subseq: %x, unk2: %x, unk3: %x, tail: %x\n", p->family, p->unk1, p->dir, p->pltype, p->connid, p->subseq, p->unk2, p->unk3, p->tail);
+}
+
+void block_print(struct block *b) {
+	printf("id: %d, len: %d\n", b->id, b->len);
+	
+	char *ptr = b->data;
+	while (ptr) {
+		printf("0x%2x ", *ptr);
+		ptr++;
+	}
 }
