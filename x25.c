@@ -23,9 +23,9 @@ struct block *block_deserialize(char *data, struct block *parent) {
 	return ret;
 }
 
-void deleteblock(struct block *b) {
+void block_delete(struct block *b) {
 	int i = 0;
-	for (i = 0; i < b->nchildren; i++) deleteblock(b->children[i]);
+	for (i = 0; i < b->nchildren; i++) block_delete(b->children[i]);
 
 	if (b->data) free(b->data);
 	free(b);
@@ -173,4 +173,14 @@ struct packet *packet_deserialize(char *buf) {
 
 void packet_print(struct packet *p) {
 	printf("this is a packet\n");
+}
+
+void preamble_delete(struct preamble *p) {
+	free(p);
+}
+
+void packet_delete(struct packet *p) {
+	preamble_delete(p->pre);
+	block_delete(p->data);
+	free(p);
 }
