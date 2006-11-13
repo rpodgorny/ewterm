@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <arpa/inet.h>
 #include "x25.h"
 
 struct block *block_deserialize(char *data, struct block *parent) {
@@ -10,7 +11,7 @@ struct block *block_deserialize(char *data, struct block *parent) {
 	struct block *ret = malloc(sizeof(struct block));
 
 	ret->id = *(unsigned char *)data;
-	ret->len = *(unsigned short *)(data+1);
+	ret->len = ntohs(*(unsigned short *)(data+1));
 	ret->data = data+3;
 
 	printf("id: %d, len: %d\n", ret->id, ret->len);
@@ -124,12 +125,12 @@ struct preamble *preamble_deserialize(char *buf) {
 
 	ret->family = *buf;
 	ret->unk1 = *(buf+1);
-	ret->dir;*(buf+2);
+	ret->dir = *(buf+2);
 	ret->pltype = *(buf+3);
-	ret->connid = *(buf+4);
+	ret->connid = ntohs(*(buf+4));
 	ret->subseq = *(buf+6);
 	ret->unk2 = *(buf+7);
-	ret->unk3 = *(buf+8);
+	ret->unk3 = ntohs(*(buf+8));
 	ret->tail = *(buf+10);
 
 	return ret;
@@ -140,10 +141,10 @@ void preamble_serialize(struct preamble *p, char *buf) {
 	*(buf+1) = p->unk1;
 	*(buf+2) = p->dir;
 	*(buf+3) = p->pltype;
-	*(buf+4) = p->connid;
+	*(buf+4) = htons(p->connid);
 	*(buf+6) = p->subseq;
 	*(buf+7) = p->unk2;
-	*(buf+8) = p->unk3;
+	*(buf+8) = htons(p->unk3);
 	*(buf+10) = p->tail;
 }
 
@@ -151,7 +152,7 @@ void block_serialize(struct block *b, char *buf) {
 	*buf = b->id;
 
 	if (b->data) {
-		*(buf+1) = b->len;
+		*(buf+1) = htons(b->len);
 		memcpy(buf+3, b->data, b->len);
 	} else {
 		unsigned short len = 0;
@@ -162,7 +163,7 @@ void block_serialize(struct block *b, char *buf) {
 			len += block_size(b->children[i]);
 		}
 
-		*(buf+1) = len;
+		*(buf+1) = htons(len);
 	}
 }
 
