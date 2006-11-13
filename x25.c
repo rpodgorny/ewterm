@@ -41,7 +41,7 @@ void block_delete(struct block *b) {
 	free(b);
 }
 
-void getpath(struct block *b, char *path) {
+void block_getpath(struct block *b, char *path) {
 	int ipath[1000];
 	int pathlen = 0;
 
@@ -206,7 +206,11 @@ void preamble_print(struct preamble *p) {
 
 void block_print(struct block *b) {
 	printf("id: %d, len: %d\n", b->id, b->len);
-	
+
+	char path[1000];
+	block_getpath(b, path);
+	printf("path: %s\n", path);
+
 	unsigned char *ptr = b->data;
 	while (ptr < b->data + b->len - 3) {
 		printf("%02x ", *ptr);
