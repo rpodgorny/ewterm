@@ -209,7 +209,7 @@ void block_print(struct block *b) {
 	
 	char *ptr = b->data;
 	while (ptr < b->data+3+b->len) {
-		printf("0x%#x ", *ptr);
+		printf("%#2x ", *ptr);
 		ptr++;
 	}
 	printf("\n");
