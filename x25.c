@@ -207,9 +207,9 @@ void preamble_print(struct preamble *p) {
 void block_print(struct block *b) {
 	printf("id: %d, len: %d\n", b->id, b->len);
 	
-	char *ptr = b->data;
-	while (ptr < b->data+3+b->len) {
-		printf("%#2x ", *ptr);
+	unsigned char *ptr = b->data;
+	while (ptr < b->data + b->len - 3) {
+		printf("%02x ", *ptr);
 		ptr++;
 	}
 	printf("\n");
