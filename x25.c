@@ -4,7 +4,7 @@
 #include <strings.h>
 #include "x25.h"
 
-struct block *raw_to_block(char *data, struct block *parent) {
+struct block *block_deserialize(char *data, struct block *parent) {
 	struct block *ret = malloc(sizeof(struct block));
 
 	ret->id = *(unsigned char *)data;
@@ -14,7 +14,7 @@ struct block *raw_to_block(char *data, struct block *parent) {
 	ret->nchildren = 0;
 	char *ptr = data+3;
 	while (ptr < data+3+ret->len) {
-		ret->children[ret->nchildren++] = raw_to_block(ptr, ret);
+		ret->children[ret->nchildren++] = block_deserialize(ptr, ret);
 	}
 	if (ret->nchildren > 0) ret->data = NULL;
 
@@ -115,6 +115,22 @@ int block_size(struct block *b) {
 	return ret + 3;
 }
 
+struct preamble *preamble_deserialize(char *buf) {
+	struct preamble *ret = malloc(sizeof(struct preamble));
+
+	ret->family = *buf;
+	ret->unk1 = *(buf+1);
+	ret->dir;*(buf+2);
+	ret->pltype = *(buf+3);
+	ret->connid = *(buf+4);
+	ret->subseq = *(buf+6);
+	ret->unk2 = *(buf+7);
+	ret->unk3 = *(buf+8);
+	ret->tail = *(buf+10);
+
+	return ret;
+}
+
 void preamble_serialize(struct preamble *p, char *buf) {
 	*buf = p->family;
 	*(buf+1) = p->unk1;
@@ -144,4 +160,17 @@ void block_serialize(struct block *b, char *buf) {
 
 		*(buf+1) = len;
 	}
+}
+
+struct packet *packet_deserialize(char *buf) {
+	struct packet *ret = malloc(sizeof(struct packet));
+
+	ret->pre = preamble_deserialize(buf);
+	ret->data = block_deserialize(buf+11, NULL);
+
+	return ret;
+}
+
+void packet_print(struct packet *p) {
+	printf("this is a packet\n");
 }

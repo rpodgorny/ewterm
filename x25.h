@@ -27,9 +27,11 @@ struct block {
 	struct block *parent;
 };
 
-struct block *raw_to_block(char *, struct block *);
+struct block *block_deserialize(char *, struct block *);
+struct preamble *preamble_deserialize(char *);
 void deleteblock(struct block *);
 void getpath(struct block *, char *);
 struct block *getchild(struct block *, char *);
 void block_serialize(struct block *, char *);
 void preamble_serialize(struct preamble *, char *);
+void packet_print(struct packet *);
