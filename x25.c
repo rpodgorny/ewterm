@@ -13,7 +13,7 @@ struct block *block_deserialize(char *data, struct block *parent) {
 	ret->len = *(unsigned short *)(data+1);
 	ret->data = data+3;
 
-	printf("id: %d, len: %d", ret->id, ret->len);
+	printf("id: %d, len: %d\n", ret->id, ret->len);
 
 	ret->nchildren = 0;
 /*	char *ptr = data+3;
