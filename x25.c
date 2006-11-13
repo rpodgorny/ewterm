@@ -29,6 +29,8 @@ struct block *block_deserialize(char *data, struct block *parent) {
 }
 
 void block_delete(struct block *b) {
+	if (!b) return;
+
 	int i = 0;
 	for (i = 0; i < b->nchildren; i++) block_delete(b->children[i]);
 
@@ -181,6 +183,8 @@ void packet_print(struct packet *p) {
 }
 
 void preamble_delete(struct preamble *p) {
+	if (!p) return;
+
 	free(p);
 }
 
