@@ -16,12 +16,12 @@ struct block *block_deserialize(char *data, struct block *parent) {
 	printf("id: %d, len: %d", ret->id, ret->len);
 
 	ret->nchildren = 0;
-	char *ptr = data+3;
+/*	char *ptr = data+3;
 	while (ptr < data+3+ret->len) {
 		ret->children[ret->nchildren++] = block_deserialize(ptr, ret);
 	}
 	if (ret->nchildren > 0) ret->data = NULL;
-
+*/
 	ret->parent = parent;
 
 	return ret;
