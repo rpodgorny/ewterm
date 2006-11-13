@@ -54,8 +54,8 @@ void block_getpath(struct block *b, char *path) {
 
 	strcpy(path, "");
 	int i = 0;
-	for (i = pathlen; i > 0; i--) {
-		if (i == pathlen) {
+	for (i = pathlen-1; i >= 0; i--) {
+		if (i == pathlen-1) {
 			sprintf(path+strlen(path), "%d", ipath[i]);
 		} else {
 			sprintf(path+strlen(path), "-%d", ipath[i]);
