@@ -5,11 +5,15 @@
 #include "x25.h"
 
 struct block *block_deserialize(char *data, struct block *parent) {
+	printf("block_deserialize\n");
+
 	struct block *ret = malloc(sizeof(struct block));
 
 	ret->id = *(unsigned char *)data;
 	ret->len = *(unsigned short *)(data+1);
 	ret->data = data+3;
+
+	printf("id: %d, len: %d", ret->id, ret->len);
 
 	ret->nchildren = 0;
 	char *ptr = data+3;
