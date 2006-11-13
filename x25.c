@@ -62,12 +62,12 @@ void block_getpath(struct block *b, char *path) {
 }
 
 int haschildren(char *buf, int len) {
-	int pos = 3;
+	int pos = 0;
 
 	while (pos < len) {
-		int l = ntohs(*(unsigned short *)(buf+pos));
+		int l = ntohs(*(unsigned short *)(buf+1+pos));
 		if (l == 0) break;
-		pos += l;
+		pos += l+3;
 	}
 
 	if (pos == len) return 1;
