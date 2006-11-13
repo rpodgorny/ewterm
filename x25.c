@@ -224,10 +224,17 @@ void block_print(struct block *b) {
 	block_getpath(b, path);
 	printf("path: %s\n", path);
 
-	unsigned char *ptr = b->data;
-	while (ptr < b->data + b->len - 3) {
-		printf("%02x ", *ptr);
-		ptr++;
+	if (b->data) {
+		printf("data: ");
+
+		unsigned char *ptr = b->data;
+		while (ptr < b->data + b->len) {
+			printf("%02x ", *ptr);
+			ptr++;
+		}
+		printf("\n");
+	} else {
+		int i = 0;
+		for (i = 0; i < b->nchildren; i++) block_print(b->children[i]);
 	}
-	printf("\n");
 }
