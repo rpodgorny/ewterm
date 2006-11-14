@@ -6,6 +6,71 @@
 #include <strings.h>
 #include "x25_packet.h"
 
+
+struct packet *login_packet() {
+	struct packet *ret = malloc(sizeof(struct packet));
+	ret->family = 0xf1;
+	ret->dir = 0x04;
+	ret->pltype = 0x00;
+	ret->connid = 0x232e;
+	ret->subseq = 0;
+	ret->unk2 = 0;
+	ret->unk3 = 0x02d7;//// same
+	ret->tail = 0;
+
+	ret->data = malloc(sizeof(struct block));
+	ret->data->id = 1;
+	ret->data->data = NULL;
+
+	char xxx[1024];
+
+	xxx[0] = 0x01;
+	block_addchild(ret->data, "1", xxx, 1);
+
+	xxx[0] = 0;
+	xxx[1] = 0;
+//	xxx[2] = 0;
+//	xxx[3] = 0;
+	*(unsigned short *)(xxx+2) = htons(0); // job nr.
+//	xxx[4] = 0x02;//// same
+//	xxx[5] = 0xd7;//// same
+//	same asi jen pro login
+	*(unsigned short *)(xxx+4) = htons(ret->unk3);
+	xxx[6] = 0x45;//
+	xxx[7] = 0x01;//
+	xxx[8] = 0x20;//
+	xxx[9] = 0x04;
+	block_addchild(ret->data, "2", xxx, 0x0a);
+
+	block_addchild(ret->data, "4-1", "TACPC", 5);
+
+	memset(xxx, 0xff, 0x01b8);
+	block_addchild(ret->data, "4-3-1", xxx, 0x01b8);
+
+	memset(xxx, 0x00, 2);
+	block_addchild(ret->data, "4-3-2-1", xxx, 2);
+
+	block_addchild(ret->data, "4-3-2-2", "RAPO", 4);
+	
+	//block_addchild(pack->data, "4-3-2-3", "061101", 6);
+	//block_addchild(pack->data, "4-3-2-4", "220740", 6);
+
+	memset(xxx, 0x00, 0x2e);
+	time_t t;
+	struct tm *lt;
+	t = time(NULL);
+	lt = localtime(&t);
+	strftime(xxx, 20, "%y%m%d%H%M%S", lt);
+	xxx[0x2c] = 0x00;
+	xxx[0x2d] = 0x06;
+	block_addchild(ret->data, "4-3-2-3", xxx, 0x2e);
+
+	memset(xxx, 0x00, 1);
+	block_addchild(ret->data, "4-3-2-5", xxx, 1);
+
+	return ret;
+}
+
 int main() {
 	int res = 0;
 
@@ -86,61 +151,13 @@ int main() {
 		return 1;
 	}
 
-
-	struct packet *pack = malloc(sizeof(struct packet));
-	pack->family = 0xf1;
-	pack->dir = 0x04;
-	pack->pltype = 0x00;
-	pack->connid = 0x0001;
-	pack->subseq = 0;
-	pack->unk2 = 0;
-	pack->unk3 = 0x01c0;
-	pack->tail = 0;
-
-	pack->data = malloc(sizeof(struct block));
-	pack->data->id = 1;
-	pack->data->data = NULL;
-
-	char xxx[1024];
-
-	xxx[0] = 0x01;
-	block_addchild(pack->data, "1", xxx, 1);
-
-	xxx[0] = 0;
-	xxx[1] = 0;
-	xxx[2] = 0;
-	xxx[3] = 0;
-	xxx[4] = 0x01;
-	xxx[5] = 0xc0;
-	xxx[6] = 0x45;
-	xxx[7] = 0x01;
-	xxx[8] = 0x20;
-	xxx[9] = 0x03;
-	block_addchild(pack->data, "2", xxx, 0x0a);
-
-	block_addchild(pack->data, "4-1", "TACPC", 5);
-
-	memset(xxx, 0xff, 0x01b8);
-	block_addchild(pack->data, "4-3-1", xxx, 0x01b8);
-
-	memset(xxx, 0x00, 2);
-	block_addchild(pack->data, "4-3-2-1", xxx, 2);
-
-	block_addchild(pack->data, "4-3-2-2", "RAPO", 4);
-	
-	//block_addchild(pack->data, "4-3-2-3", "061101", 6);
-	//block_addchild(pack->data, "4-3-2-4", "220740", 6);
-
-	memset(xxx, 0x00, 0x2e);
-	block_addchild(pack->data, "4-3-2-3", xxx, 0x2e);
-
-	memset(xxx, 0x00, 1);
-	block_addchild(pack->data, "4-3-2-5", xxx, 1);
+	struct packet *pack = login_packet();
 
 	packet_print(pack);
 
 	char buf[32000];
 	int l = packet_serialize(pack, buf);
+
 	write(sock, buf, l);
 	
 	int r = 0;
