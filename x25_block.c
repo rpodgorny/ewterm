@@ -75,6 +75,50 @@ int haschildren(unsigned char *buf, int len) {
 	return 0;
 }
 
+void block_addchild(struct block *root, char *path, unsigned char *buf, int len) {
+	int ipath[1000];
+	int pathlen = 0;
+
+	ipath[pathlen++] = atoi(path);
+
+	char *ptr = path;
+	while ((ptr = index(ptr, '-')) != NULL) {
+		ptr++;
+		if (*ptr == 'x') {
+			ipath[pathlen++] = -1;
+		} else {
+			ipath[pathlen++] = atoi(ptr);
+		}
+	}
+
+	// Go find it, create on the run
+	struct block *cur = root;
+	int depth = 0;
+	for (depth = 0; depth < pathlen; depth++) {
+		int i = 0;
+		for (i = 0; i < cur->nchildren; i++) {
+			struct block *child = cur->children[i];
+			if (ipath[depth] == -1 || child->id == ipath[depth]) {
+				cur = cur->children[i];
+			}
+		}
+
+		// not found, create it
+		if (i == cur->nchildren) {
+			cur->children[i] = malloc(sizeof(struct block));
+			cur->children[i]->id = ipath[depth];
+			cur->children[i]->nchildren = 0;
+
+			memcpy(cur->children[i]->data, buf, len);
+			cur->children[i]->len = len;
+
+			cur->nchildren++;
+
+			cur = cur->children[i];
+		}
+	}
+}
+
 struct block *block_getchild(struct block *parent, char *path) {
 	int ipath[1000];
 	int pathlen = 0;
@@ -94,7 +138,7 @@ struct block *block_getchild(struct block *parent, char *path) {
 	// Go find it
 	struct block *ret = parent;
 	int depth = 0;
-	while (depth < pathlen) {
+	for (depth = 0; depth < pathlen; depth++) {
 		int i = 0;
 		for (i = 0; i < ret->nchildren; i++) {
 			struct block *child = ret->children[i];

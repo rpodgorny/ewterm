@@ -9,6 +9,7 @@ struct block {
 	struct block *parent;
 };
 
+void block_addchild(struct block *, char *, unsigned char *, int);
 void block_delete(struct block *);
 struct block *block_deserialize(unsigned char *, struct block *);
 struct block *block_getchild(struct block *, char *);
