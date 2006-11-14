@@ -104,7 +104,9 @@ int main() {
 
 	char xxx[1024];
 	strcpy(xxx, "PATR");
-	block_addchild(pack->data, "x-4-3-2-2", xxx, 4);
+	block_addchild(pack->data, "4-3-2-2", xxx, 4);
+
+	packet_print(pack);
 
 	char buf[32000];
 	int l = packet_serialize(pack, buf);

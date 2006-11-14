@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 #include "x25_block.h"
 
+
 struct block *block_deserialize(unsigned char *buf, struct block *parent) {
 	struct block *ret = malloc(sizeof(struct block));
 
@@ -97,9 +98,9 @@ void block_addchild(struct block *root, char *path, unsigned char *buf, int len)
 	for (depth = 0; depth < pathlen; depth++) {
 		int i = 0;
 		for (i = 0; i < cur->nchildren; i++) {
-			struct block *child = cur->children[i];
-			if (ipath[depth] == -1 || child->id == ipath[depth]) {
+			if (ipath[depth] == -1 || cur->children[i]->id == ipath[depth]) {
 				cur = cur->children[i];
+				break;
 			}
 		}
 
@@ -109,14 +110,20 @@ void block_addchild(struct block *root, char *path, unsigned char *buf, int len)
 			cur->children[i]->id = ipath[depth];
 			cur->children[i]->nchildren = 0;
 
-			memcpy(cur->children[i]->data, buf, len);
-			cur->children[i]->len = len;
+			cur->children[i]->data = NULL;
+			cur->children[i]->len = 0;
+
+			cur->children[i]->parent = cur;
 
 			cur->nchildren++;
 
 			cur = cur->children[i];
 		}
 	}
+
+	cur->data = malloc(len);
+	memcpy(cur->data, buf, len);
+	cur->len = len;
 }
 
 struct block *block_getchild(struct block *parent, char *path) {
@@ -141,9 +148,9 @@ struct block *block_getchild(struct block *parent, char *path) {
 	for (depth = 0; depth < pathlen; depth++) {
 		int i = 0;
 		for (i = 0; i < ret->nchildren; i++) {
-			struct block *child = ret->children[i];
-			if (ipath[depth] == -1 || child->id == ipath[depth]) {
+			if (ipath[depth] == -1 || ret->children[i]->id == ipath[depth]) {
 				ret = ret->children[i];
+				break;
 			}
 		}
 
@@ -156,7 +163,7 @@ struct block *block_getchild(struct block *parent, char *path) {
 
 	return ret;
 }
-
+/*
 int block_size(struct block *b) {
 	int ret = 0;
 
@@ -169,7 +176,7 @@ int block_size(struct block *b) {
 
 	return ret + 3;
 }
-
+*/
 int block_serialize(struct block *b, unsigned char *buf) {
 	int ret = 0;
 
@@ -218,6 +225,8 @@ void block_print(struct block *b) {
 		printf("\n");
 	} else {
 		int i = 0;
-		for (i = 0; i < b->nchildren; i++) block_print(b->children[i]);
+		for (i = 0; i < b->nchildren; i++) {
+			block_print(b->children[i]);
+		}
 	}
 }
