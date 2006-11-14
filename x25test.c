@@ -88,15 +88,14 @@ int main() {
 
 
 	struct packet *pack = malloc(sizeof(struct packet));
-	pack->pre = malloc(sizeof(struct preamble));
-	pack->pre->family = 0xf1;
-	pack->pre->dir = 0x04;
-	pack->pre->pltype = 0x00;
-	pack->pre->connid = 0x0001;
-	pack->pre->subseq = 0;
-	pack->pre->unk2 = 0;
-	pack->pre->unk3 = 0x01c0;
-	pack->pre->tail = 0;
+	pack->family = 0xf1;
+	pack->dir = 0x04;
+	pack->pltype = 0x00;
+	pack->connid = 0x0001;
+	pack->subseq = 0;
+	pack->unk2 = 0;
+	pack->unk3 = 0x01c0;
+	pack->tail = 0;
 
 	pack->data = malloc(sizeof(struct block));
 	pack->data->id = 1;
