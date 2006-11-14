@@ -7,9 +7,7 @@
 
 
 int packet_serialize(struct packet *p, unsigned char *buf) {
-	int pre_size = 11;
-	int b_size = 0;
-	if (p->data) block_size(p->data);
+	int ret = 11;
 
 	*buf = p->family;
 	*(buf+1) = p->unk1;
@@ -21,9 +19,9 @@ int packet_serialize(struct packet *p, unsigned char *buf) {
 	*(unsigned short *)(buf+8) = htons(p->unk3);
 	*(buf+10) = p->tail;
 
-	if (p->data) block_serialize(p->data, buf+pre_size);
+	if (p->data) ret += block_serialize(p->data, buf+11);
 
-	return pre_size+b_size;
+	return ret;
 }
 
 struct packet *packet_deserialize(unsigned char *buf) {
