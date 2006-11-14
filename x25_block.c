@@ -168,7 +168,7 @@ void block_print(struct block *b) {
 		printf("datac: ");
 		ptr = b->data;
 		while (ptr < b->data + b->len) {
-			printf("%c", *(char *)ptr);
+			if (*(char *)ptr >= 0x20) printf("%c", *(char *)ptr);
 			ptr++;
 		}
 		printf("\n");
