@@ -16,15 +16,15 @@ struct block *block_deserialize(unsigned char *buf, struct block *parent) {
 
 	if (haschildren(buf+3, ntohs(*(unsigned short *)(buf+1)))) {
 		unsigned char *ptr = buf+3;
-		while (ptr < buf+3+ret->len) {
+		while (ptr < buf+3+ntohs(*(unsigned short *)(buf+1))) {
 			ret->children[ret->nchildren] = block_deserialize(ptr, ret);
 			ptr += ret->children[ret->nchildren]->len + 3;
 			ret->nchildren++;
 		}
 	} else {
+		ret->len = ntohs(*(unsigned short *)(buf+1));
 		ret->data = malloc(ret->len);
 		memcpy(ret->data, buf+3, ret->len);
-		ret->len = ntohs(*(unsigned short *)(buf+1));
 	}
 
 	ret->parent = parent;
@@ -98,7 +98,8 @@ void block_addchild(struct block *root, char *path, unsigned char *buf, int len)
 	int depth = 0;
 	for (depth = 0; depth < pathlen; depth++) {
 		int i = 0;
-		for (i = 0; i < cur->nchildren; i++) {
+		int nchildren = cur->nchildren;
+		for (i = 0; i < nchildren; i++) {
 			if (ipath[depth] == -1 || cur->children[i]->id == ipath[depth]) {
 				cur = cur->children[i];
 				break;
@@ -106,7 +107,7 @@ void block_addchild(struct block *root, char *path, unsigned char *buf, int len)
 		}
 
 		// not found, create it
-		if (i == cur->nchildren) {
+		if (i == nchildren) {
 			cur->children[i] = malloc(sizeof(struct block));
 			cur->children[i]->id = ipath[depth];
 			cur->children[i]->nchildren = 0;
@@ -148,7 +149,8 @@ struct block *block_getchild(struct block *parent, char *path) {
 	int depth = 0;
 	for (depth = 0; depth < pathlen; depth++) {
 		int i = 0;
-		for (i = 0; i < ret->nchildren; i++) {
+		int nchildren = ret->children;
+		for (i = 0; i < nchildren; i++) {
 			if (ipath[depth] == -1 || ret->children[i]->id == ipath[depth]) {
 				ret = ret->children[i];
 				break;
@@ -156,7 +158,7 @@ struct block *block_getchild(struct block *parent, char *path) {
 		}
 
 		// not found
-		if (i == ret->nchildren) {
+		if (i == nchildren) {
 			ret = NULL;
 			break;
 		}
