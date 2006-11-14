@@ -99,9 +99,12 @@ int main() {
 
 	pack->data = malloc(sizeof(struct block));
 	pack->data->id = 1;
-	pack->data->len = 10;
-	pack->data->data = malloc(10);
+	//pack->data->len = 10;
+	pack->data->data = NULL;
 
+	char xxx[1024];
+	strcpy(xxx, "PATR");
+	block_addchild(pack->data, "x-4-3-2-2", xxx, 4);
 
 	char buf[32000];
 	int l = packet_serialize(pack, buf);
