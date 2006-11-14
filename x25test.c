@@ -103,8 +103,11 @@ int main() {
 	pack->data->data = NULL;
 
 	char xxx[1024];
-	strcpy(xxx, "PATR");
-	block_addchild(pack->data, "4-3-2-2", xxx, 4);
+
+	block_addchild(pack->data, "4-1", "TACPC", 5);
+	block_addchild(pack->data, "4-3-2-2", "PATR", 4);
+	block_addchild(pack->data, "4-3-2-3", "061101", 6);
+	block_addchild(pack->data, "4-3-2-4", "220740", 6);
 
 	packet_print(pack);
 
