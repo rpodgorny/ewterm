@@ -101,12 +101,41 @@ int main() {
 	pack->data->id = 1;
 	pack->data->data = NULL;
 
-	//char xxx[1024];
+	char xxx[1024];
+
+	xxx[0] = 0x01;
+	block_addchild(pack->data, "1", xxx, 1);
+
+	xxx[0] = 0;
+	xxx[1] = 0;
+	xxx[2] = 0;
+	xxx[3] = 0;
+	xxx[4] = 0x01;
+	xxx[5] = 0xc0;
+	xxx[6] = 0x45;
+	xxx[7] = 0x01;
+	xxx[8] = 0x20;
+	xxx[9] = 0x03;
+	block_addchild(pack->data, "2", xxx, 0x0a);
 
 	block_addchild(pack->data, "4-1", "TACPC", 5);
-	block_addchild(pack->data, "4-3-2-2", "PATR", 4);
-	block_addchild(pack->data, "4-3-2-3", "061101", 6);
-	block_addchild(pack->data, "4-3-2-4", "220740", 6);
+
+	memset(xxx, 0xff, 0x01b8);
+	block_addchild(pack->data, "4-3-1", xxx, 0x01b8);
+
+	memset(xxx, 0x00, 2);
+	block_addchild(pack->data, "4-3-2-1", xxx, 2);
+
+	block_addchild(pack->data, "4-3-2-2", "RAPO", 4);
+	
+	//block_addchild(pack->data, "4-3-2-3", "061101", 6);
+	//block_addchild(pack->data, "4-3-2-4", "220740", 6);
+
+	memset(xxx, 0x00, 0x2e);
+	block_addchild(pack->data, "4-3-2-3", xxx, 0x2e);
+
+	memset(xxx, 0x00, 1);
+	block_addchild(pack->data, "4-3-2-5", xxx, 1);
 
 	packet_print(pack);
 
