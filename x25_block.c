@@ -84,7 +84,11 @@ struct block *getchild(struct block *parent, char *path) {
 	char *ptr = path;
 	while ((ptr = index(ptr, '-')) != NULL) {
 		ptr++;
-		ipath[pathlen++] = atoi(ptr);
+		if (*ptr == 'x') {
+			ipath[pathlen++] = -1;
+		} else {
+			ipath[pathlen++] = atoi(ptr);
+		}
 	}
 
 	// Go find it
@@ -94,7 +98,7 @@ struct block *getchild(struct block *parent, char *path) {
 		int i = 0;
 		for (i = 0; i < ret->nchildren; i++) {
 			struct block *child = ret->children[i];
-			if (child->id == ipath[depth]) {
+			if (ipath[depth] == -1 || child->id == ipath[depth]) {
 				ret = ret->children[i];
 			}
 		}
