@@ -5,24 +5,24 @@
 #include <arpa/inet.h>
 #include "x25_block.h"
 
-struct block *block_deserialize(char *data, struct block *parent) {
+struct block *block_deserialize(unsigned char *buf, struct block *parent) {
 	struct block *ret = malloc(sizeof(struct block));
 
-	ret->id = *(unsigned char *)data;
-	ret->len = ntohs(*(unsigned short *)(data+1));
+	ret->id = *buf;
+	ret->len = ntohs(*(unsigned short *)(buf+1));
 	ret->data = NULL;
 	ret->nchildren = 0;
 
-	if (haschildren(data+3, ret->len)) {
-		char *ptr = data+3;
-		while (ptr < data+3+ret->len) {
+	if (haschildren(buf+3, ret->len)) {
+		unsigned char *ptr = buf+3;
+		while (ptr < buf+3+ret->len) {
 			ret->children[ret->nchildren] = block_deserialize(ptr, ret);
 			ptr += ret->children[ret->nchildren]->len + 3;
 			ret->nchildren++;
 		}
 	} else {
 		ret->data = malloc(ret->len);
-		memcpy(ret->data, data+3, ret->len);
+		memcpy(ret->data, buf+3, ret->len);
 	}
 
 	ret->parent = parent;
@@ -61,7 +61,7 @@ void block_getpath(struct block *b, char *path) {
 	}
 }
 
-int haschildren(char *buf, int len) {
+int haschildren(unsigned char *buf, int len) {
 	int pos = 0;
 
 	while (pos < len) {
@@ -121,24 +121,32 @@ int block_size(struct block *b) {
 
 	return ret + 3;
 }
-void block_serialize(struct block *b, char *buf) {
+
+int block_serialize(struct block *b, unsigned char *buf) {
+	int ret = 0;
+
 	*buf = b->id;
 
 	if (b->data) {
 		*(buf+1) = htons(b->len);
 		memcpy(buf+3, b->data, b->len);
+		ret = b->len + 3;
 	} else {
 		unsigned short len = 0;
 
 		int i = 0;
 		for (i = 0; i < b->nchildren; i++) {
-			block_serialize(b->children[i], buf+3+len);
-			len += block_size(b->children[i]);
+			len += block_serialize(b->children[i], buf+3+len);
 		}
 
 		*(buf+1) = htons(len);
+
+		ret = len + 3;
 	}
+
+	return ret;
 }
+
 void block_print(struct block *b) {
 	char path[1000];
 	block_getpath(b, path);
