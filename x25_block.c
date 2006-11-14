@@ -75,7 +75,7 @@ int haschildren(unsigned char *buf, int len) {
 	return 0;
 }
 
-struct block *getchild(struct block *parent, char *path) {
+struct block *block_getchild(struct block *parent, char *path) {
 	int ipath[1000];
 	int pathlen = 0;
 
