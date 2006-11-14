@@ -99,10 +99,9 @@ int main() {
 
 	pack->data = malloc(sizeof(struct block));
 	pack->data->id = 1;
-	//pack->data->len = 10;
 	pack->data->data = NULL;
 
-	char xxx[1024];
+	//char xxx[1024];
 
 	block_addchild(pack->data, "4-1", "TACPC", 5);
 	block_addchild(pack->data, "4-3-2-2", "PATR", 4);
