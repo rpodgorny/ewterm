@@ -14,7 +14,7 @@ struct block *block_deserialize(unsigned char *buf, struct block *parent) {
 	ret->len = 0;
 	ret->nchildren = 0;
 
-	if (haschildren(buf+3, ret->len)) {
+	if (haschildren(buf+3, ntohs(*(unsigned short *)(buf+1)))) {
 		unsigned char *ptr = buf+3;
 		while (ptr < buf+3+ret->len) {
 			ret->children[ret->nchildren] = block_deserialize(ptr, ret);
