@@ -10,8 +10,8 @@ struct block *block_deserialize(unsigned char *buf, struct block *parent) {
 	struct block *ret = malloc(sizeof(struct block));
 
 	ret->id = *buf;
-	ret->len = ntohs(*(unsigned short *)(buf+1));
 	ret->data = NULL;
+	ret->len = 0;
 	ret->nchildren = 0;
 
 	if (haschildren(buf+3, ret->len)) {
@@ -24,6 +24,7 @@ struct block *block_deserialize(unsigned char *buf, struct block *parent) {
 	} else {
 		ret->data = malloc(ret->len);
 		memcpy(ret->data, buf+3, ret->len);
+		ret->len = ntohs(*(unsigned short *)(buf+1));
 	}
 
 	ret->parent = parent;
@@ -163,27 +164,14 @@ struct block *block_getchild(struct block *parent, char *path) {
 
 	return ret;
 }
-/*
-int block_size(struct block *b) {
-	int ret = 0;
 
-	if (b->data) {
-		ret += b->len;
-	} else {
-		int i = 0;
-		for (i = 0; i < b->nchildren; i++) ret += block_size(b->children[i]);
-	}
-
-	return ret + 3;
-}
-*/
 int block_serialize(struct block *b, unsigned char *buf) {
 	int ret = 0;
 
 	*buf = b->id;
 
 	if (b->data) {
-		*(buf+1) = htons(b->len);
+		*(unsigned short *)(buf+1) = htons(b->len);
 		memcpy(buf+3, b->data, b->len);
 		ret = b->len + 3;
 	} else {
@@ -194,7 +182,7 @@ int block_serialize(struct block *b, unsigned char *buf) {
 			len += block_serialize(b->children[i], buf+3+len);
 		}
 
-		*(buf+1) = htons(len);
+		*(unsigned short *)(buf+1) = htons(len);
 
 		ret = len + 3;
 	}
@@ -205,7 +193,7 @@ int block_serialize(struct block *b, unsigned char *buf) {
 void block_print(struct block *b) {
 	char path[1000];
 	block_getpath(b, path);
-	printf("path: %s, len: %d\n", path, b->len);
+	printf("path: %s, len (direct): %d\n", path, b->len);
 
 	if (b->data) {
 		printf("data: ");
