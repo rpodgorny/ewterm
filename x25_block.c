@@ -11,18 +11,17 @@ struct block *block_deserialize(unsigned char *buf, struct block *parent) {
 
 	ret->id = *buf;
 	ret->data = NULL;
-	ret->len = 0;
+	ret->len = ntohs(*(unsigned short *)(buf+1)); // this must be kept during recursion
 	ret->nchildren = 0;
 
-	if (haschildren(buf+3, ntohs(*(unsigned short *)(buf+1)))) {
+	if (haschildren(buf+3, ret->len)) {
 		unsigned char *ptr = buf+3;
-		while (ptr < buf+3+ntohs(*(unsigned short *)(buf+1))) {
+		while (ptr < buf+3+ret->len) {
 			ret->children[ret->nchildren] = block_deserialize(ptr, ret);
 			ptr += ret->children[ret->nchildren]->len + 3;
 			ret->nchildren++;
 		}
 	} else {
-		ret->len = ntohs(*(unsigned short *)(buf+1));
 		ret->data = malloc(ret->len);
 		memcpy(ret->data, buf+3, ret->len);
 	}
