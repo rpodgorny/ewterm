@@ -7,15 +7,40 @@
 #include "x25_packet.h"
 
 
+struct packet *line_to_packet() {
+	FILE *f = fopen("../tdump2", "r");
+
+	char line[100000];
+	unsigned char buf[100000];
+
+	fgets(line, 100000, f);
+
+	int pos = 0;
+	char *p = line;
+	while (p) {
+		//buf[pos] = atoi(p+1, 16);
+		buf[pos] = strtol(p, (char **)NULL, 16);
+//printf("%x ", buf[pos]);
+		pos++;
+		p = index(p+1, ' ');
+	}
+//printf("\n");
+
+	fclose(f);
+
+	return packet_deserialize(buf);
+}
+
 struct packet *login_packet() {
 	struct packet *ret = malloc(sizeof(struct packet));
 	ret->family = 0xf1;
+	ret->unk1 = 0xe0;
 	ret->dir = 0x04;
 	ret->pltype = 0x00;
-	ret->connid = 0x232e;
+	ret->connid = 0x5c72;
 	ret->subseq = 0;
 	ret->unk2 = 0;
-	ret->unk3 = 0x02d7;//// same
+	ret->unk3 = 0x0744;//// same
 	ret->tail = 0;
 
 	ret->data = malloc(sizeof(struct block));
@@ -39,7 +64,7 @@ struct packet *login_packet() {
 	xxx[6] = 0x45;//
 	xxx[7] = 0x01;//
 	xxx[8] = 0x20;//
-	xxx[9] = 0x04;
+	xxx[9] = 0x03;
 	block_addchild(ret->data, "2", xxx, 0x0a);
 
 	block_addchild(ret->data, "4-1", "TACPC", 5);
@@ -50,7 +75,7 @@ struct packet *login_packet() {
 	memset(xxx, 0x00, 2);
 	block_addchild(ret->data, "4-3-2-1", xxx, 2);
 
-	block_addchild(ret->data, "4-3-2-2", "RAPO", 4);
+	block_addchild(ret->data, "4-3-2-2", "PATR", 4);
 	
 	//block_addchild(pack->data, "4-3-2-3", "061101", 6);
 	//block_addchild(pack->data, "4-3-2-4", "220740", 6);
@@ -149,17 +174,32 @@ int main() {
 	if (res < 0) {
 		perror("connect");
 		return 1;
+	} else {
+		printf("connect ok\n");
 	}
 
 	struct packet *pack = login_packet();
 
-	packet_print(pack);
+//	packet_print(pack);
 
 	char buf[32000];
-	int l = packet_serialize(pack, buf);
+//	int l = packet_serialize(pack, buf);
 
-	write(sock, buf, l);
-	
+//	write(sock, buf, l);
+
+	packet_delete(pack);
+
+pack = line_to_packet();
+//struct block *b = block_getchild(pack->data, "4-3-2-3");
+//memset(b->data, 0, 46);
+//b = block_getchild(pack->data, "2");
+//b->data = realloc(b->data, 10);
+//b->len = 10;
+packet_print(pack);
+int l = packet_serialize(pack, buf);
+write(sock, buf, l);
+packet_delete(pack);
+
 	int r = 0;
 	for (;;) {
 		r = read(sock, buf, 32000);
