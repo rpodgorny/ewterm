@@ -43,9 +43,13 @@ struct packet *packet_deserialize(unsigned char *buf) {
 }
 
 void packet_print(struct packet *p) {
+	printf("-------- PACKET PRINT BEGIN ---------\n");
+
 	printf("fam: %x, unk1: %x, dir: %x, pltype: %x, connid: %x, subseq: %x, unk2: %x, unk3: %x, tail: %x\n", p->family, p->unk1, p->dir, p->pltype, p->connid, p->subseq, p->unk2, p->unk3, p->tail);
 
 	if (p->data) block_print(p->data);
+
+	printf("-------- PACKET PRINT END ---------\n\n");
 }
 
 void packet_delete(struct packet *p) {
