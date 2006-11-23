@@ -27,6 +27,9 @@
 #include <time.h>
 #include <grp.h>
 
+#include <linux/sockios.h>
+#include <linux/x25.h>
+
 #include "version.h"
 
 #include "logging.h"
@@ -506,7 +509,7 @@ void ReOpenSerial() {
 }
 
 void ReOpenX25() {
-	pdebug("ReOpenEthernet()\n");
+	pdebug("ReOpenX25()\n");
 
 	if (X25Fd >= 0) {
 		close(X25Fd);
@@ -565,7 +568,19 @@ void ReOpenX25() {
 		if (!LockName[0]) Done(5);
 #endif /* LOCKDIR */
 
-		if (X25Name) X25Fd = open(X25Name, O_RDWR);
+		///if (X25Name) X25Fd = open(X25Name, O_RDWR);
+
+		int res = 0;
+		struct sockaddr_x25 bind_addr, dest_addr;
+		bzero(&bind_addr, sizeof(bind_addr));
+		bzero(&dest_addr, sizeof(dest_addr));
+
+		bind_addr.sx25_family = AF_X25;
+		dest_addr.sx25_family = AF_X25;
+		strcpy(bind_addr.sx25_addr.x25_addr, "10000001");
+		strcpy(dest_addr.sx25_addr.x25_addr, "10000002");
+
+		X25Fd = socket(AF_X25, SOCK_SEQPACKET, 0);
 		if (X25Fd < 0) {
 #ifdef LOCKDIR
 			Unlock();
@@ -573,8 +588,68 @@ void ReOpenX25() {
 
 			fprintf(stderr, "Aieee... cannot open x25 file!\r\n");
 			exit(2);
-		} else {
-			fcntl(X25Fd, F_SETFL, O_NONBLOCK);
+		}/// else {
+///			fcntl(X25Fd, F_SETFL, O_NONBLOCK);
+///		}
+
+		int on = 1;
+		setsockopt(X25Fd, SOL_SOCKET, SO_DEBUG, &on, sizeof(on));
+
+		unsigned long facil_mask = (
+		X25_MASK_PACKET_SIZE
+		| X25_MASK_WINDOW_SIZE
+		| X25_MASK_CALLING_AE
+		| X25_MASK_CALLED_AE);
+
+		struct x25_subscrip_struct subscr;
+		int extended = 0;
+		subscr.global_facil_mask = facil_mask;
+		subscr.extended = extended;
+		strcpy(subscr.device, "x25tap0");
+		res = ioctl(X25Fd, SIOCX25SSUBSCRIP, &subscr);
+		if (res < 0) {
+			perror("subscr");
+			exit(2);
+		}
+
+		struct x25_facilities fac;
+		fac.winsize_in = 7;
+		fac.winsize_out = 7;
+		fac.pacsize_in = 10;
+		fac.pacsize_out = 10;
+		fac.throughput = 0xdd;
+		fac.reverse = 0x80;
+
+		res = ioctl(X25Fd, SIOCX25SFACILITIES, &fac);
+		if (res < 0) {
+			perror("fac");
+			exit(2);
+		}
+
+		unsigned char tmp1[] = {0x36, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x01, 0x30, 0x1f};
+		unsigned char tmp2[] = {0x36, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x02, 0x10, 0x1f};
+		struct x25_dte_facilities dtefac;
+		dtefac.calling_len = 20;
+		dtefac.called_len = 20;
+		memcpy(&dtefac.calling_ae, &tmp1, 10);
+		memcpy(&dtefac.called_ae, &tmp2, 10);
+
+		res = ioctl(X25Fd, SIOCX25SDTEFACILITIES, &dtefac);
+		if (res < 0) {
+			perror("dtefac");
+			exit(2);
+		}
+
+		res = bind(X25Fd, (struct sockaddr *)&bind_addr, sizeof(bind_addr));
+		if (res < 0) {
+			perror("bind");
+			exit(2);
+		}
+
+		res = connect(X25Fd, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
+		if (res < 0) {
+			perror("connect");
+			exit(2);
 		}
 	}
 }
@@ -1691,7 +1766,7 @@ int main(int argc, char *argv[]) {
 			if (WriteBufLen > 0) FD_SET(CuaFd, &WriteQ);
 		}
 
-		if (CuaFd >= 0) { /* talking with EWSD (X.25) */
+		if (X25Fd >= 0) { /* talking with EWSD (X.25) */
 			FD_SET(X25Fd, &ReadQ);
 			if (X25Fd > MaxFd) MaxFd = X25Fd;
 			if (WriteBufLen > 0) FD_SET(X25Fd, &WriteQ);
