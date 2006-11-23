@@ -267,6 +267,18 @@ write(sock, buf, l);
 
 		struct packet *p = packet_deserialize(buf);
 		packet_print(p);
+
+		//send confirmation
+		if (p->dir == 2 && p->pltype == 2) {
+			unsigned char *tt = p->data;
+			p->data = NULL;
+			p->dir = 3;
+			p->pltype = 6;
+			l = packet_serialize(p, buf);
+			write(sock, buf, l);
+			p->data = tt;
+		}
+
 		packet_delete(p);
 	}
 
