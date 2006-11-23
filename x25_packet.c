@@ -6,6 +6,26 @@
 #include "x25_packet.h"
 
 
+struct packet *packet_alloc() {
+	struct packet *ret = malloc(sizeof(struct packet));
+
+	memset(ret, 0, sizeof(struct packet));
+/*
+	ret->family = *buf;
+	ret->unk1 = *(buf+1);
+	ret->dir = *(buf+2);
+	ret->pltype = *(buf+3);
+	ret->connid = ntohs(*(unsigned short *)(buf+4));
+	ret->subseq = *(buf+6);
+	ret->unk2 = *(buf+7);
+	ret->unk3 = ntohs(*(unsigned short *)(buf+8));
+	ret->tail = *(buf+10);
+
+	ret->data = block_deserialize(buf+11, NULL);
+*/
+	return ret;
+}
+
 int packet_serialize(struct packet *p, unsigned char *buf) {
 	int ret = 11;
 
