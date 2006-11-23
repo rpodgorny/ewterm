@@ -1407,6 +1407,7 @@ int main(int argc, char *argv[]) {
 	int ac, swp = 0, ForkOut = 1, PrintLog = 0, OldPID;
 
 	printf("EWReceiver "VERSION" written by Petr Baudis, 2001, 2002\n");
+	printf("X.25 functionality added by Radek Podgorny, 2006\n");
 
 	/* process options */  
 	strcpy(CuaName, DEFDEVICE);
@@ -1466,6 +1467,7 @@ int main(int argc, char *argv[]) {
 			printf("-h\tDisplay this help\n");
 			printf("-c\tConnect to <cuadev> cua device (defaults to %s)\n", DEFDEVICE);
 			printf("-s\tSet <speed> speed on cua device (defaults to %s)\n", DEFSPEED);
+			printf("-x\tConnect to <addr> X.25 node\n");
 			printf("-f\tLog to file <file>\n");
 			printf("-L\tTake -f parameter as directory name and log each day to separate\n");
 			printf("\tfile, each one named <file>/YYYY-MM-DD\n");
@@ -1533,7 +1535,7 @@ int main(int argc, char *argv[]) {
 			continue;
 		}
 
-		if (!strcmp(argv[ac], "-C") || !strcmp(argv[ac], "--connect")) {
+		if (!strcmp(argv[ac], "-x") || !strcmp(argv[ac], "--x25")) {
 			swp = 9;
 			continue;
 		}
