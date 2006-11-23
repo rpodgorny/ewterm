@@ -15,6 +15,7 @@ struct packet {
 	struct block *data;
 };
 
+struct packet *packet_alloc();
 void packet_delete(struct packet *);
 struct packet *packet_deserialize(unsigned char *);
 void packet_print(struct packet *);
