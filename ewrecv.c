@@ -193,7 +193,8 @@ struct config_record {
 } ConfRec;
 
 void Done(int Err) {
-	pdebug("Done() %d\n", Err);
+	// segfault here? why?
+	//pdebug("Done() %d\n", Err);
 
 #ifdef LOCKDIR
 	if (LockName[0] != 0 && LockName[0] != 10) {
@@ -433,7 +434,8 @@ void GetLockInfo(FILE *Fl, int *pid, char *name) {
 }
 
 void ReOpenSerial() {
-	pdebug("ReOpenSerial()\n");
+	// segfault here? why?
+	//pdebug("ReOpenSerial()\n");
 
 	/* Close old cua file and unlock it */
 	if (CuaFd >= 0) {
@@ -509,7 +511,8 @@ void ReOpenSerial() {
 }
 
 void ReOpenX25() {
-	pdebug("ReOpenX25()\n");
+	// segfault here? why?
+	//pdebug("ReOpenX25()\n");
 
 	if (X25Fd >= 0) {
 		close(X25Fd);
@@ -689,7 +692,7 @@ void ReOpenX25() {
  */
 
 void LogCh(char Chr) {
-	pdebug("LogCh() %c/x%x\n", Chr, Chr);
+	///pdebug("LogCh() %c/x%x\n", Chr, Chr);
 
 	if (Chr >= 32 || Chr == 10) {
 		if (DailyLog) CheckDailyLog();
@@ -717,7 +720,7 @@ void LogCh(char Chr) {
 }
 
 int SendChar(struct connection *c, char Chr) {
-	pdebug("SendChar() %c/x%x\n", Chr, Chr);
+	///pdebug("SendChar() %c/x%x\n", Chr, Chr);
 
 	if (LoggedIn && c && c != connection) return -1;
 
@@ -756,7 +759,7 @@ int LastMask = 0;
 void ProcessExchangeChar(char Chr) {
 	static int prompt = 0;
 
-	pdebug("ProcessExchangeChar() Chr = %d\n", Chr);
+	///pdebug("ProcessExchangeChar() Chr = %d\n", Chr);
 
 	if (prompt && Chr != ENQ) {
 		prompt = 0;
@@ -1171,7 +1174,7 @@ void TakeOverRequest(struct connection *conn, char *d) {
 }
 
 void CancelPromptRequest(struct connection *conn, char *d) {
-	pdebug("CancelPromptRequest()\n");
+	///pdebug("CancelPromptRequest()\n");
 
 	if (conn != connection) return;
 	if (conn && conn->authenticated < 2) return;
@@ -1183,7 +1186,7 @@ void CancelPromptRequest(struct connection *conn, char *d) {
 }
 
 void LoginPromptRequest(struct connection *conn, char *d) {
-	pdebug("LoginPromptRequest()\n");
+	///pdebug("LoginPromptRequest()\n");
 
 	if (LoggedIn) return;
 	if (conn && conn->authenticated < 2) return;
@@ -1377,7 +1380,7 @@ int DeploySocket(char *SockName, int SockPort) {
 	struct sockaddr_in addr;
 	int SockFd, opt;
 
-	pdebug("DeploySocket()\n");
+	///pdebug("DeploySocket()\n");
 
 	SockFd = socket(PF_INET, SOCK_STREAM, 0);
 	if (SockFd < 0) {
