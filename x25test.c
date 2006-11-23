@@ -38,14 +38,14 @@ struct packet *command_packet() {
 	ret->unk1 = 0xe0;
 	ret->dir = 0x02;
 	ret->pltype = 0x00;
-	ret->connid = 0xe15b;
+	ret->connid = 0x9ecb;
 	ret->subseq = 0;
 	ret->unk2 = 0;
-	ret->unk3 = 0x02d7;
+	ret->unk3 = 0x0675;
 	ret->tail = 0;
 
 	ret->data = malloc(sizeof(struct block));
-	ret->data->id = 1;
+	ret->data->id = 4;
 	ret->data->data = NULL;
 
 	char xxx[1024];
@@ -58,43 +58,19 @@ struct packet *command_packet() {
 //	xxx[2] = 0;
 //	xxx[3] = 0;
 	*(unsigned short *)(xxx+2) = htons(0); // job nr.
-	xxx[4] = 0xc5;//// same
-	xxx[5] = 0xac;//// same
+	xxx[4] = 0xdd;//// same
+	xxx[5] = 0xe1;//// same
 //	same asi jen pro login
 //	*(unsigned short *)(xxx+4) = htons(ret->unk3);
-	xxx[6] = 0x45;//
+	xxx[6] = 0x03;//
 	xxx[7] = 0x01;//
 	xxx[8] = 0x20;//
-	xxx[9] = 0x04;
-	block_addchild(ret->data, "2", xxx, 0x0a);
+//	xxx[9] = 0x04;
+	block_addchild(ret->data, "2", xxx, 0x09);
 
-//	block_addchild(ret->data, "4-1", "TACPC", 5);
+	//block_addchild(ret->data, "6-1", "STATEXCH;", 9);
+	block_addchild(ret->data, "6-1", "DISPSESSION:USERID=X;", 21);
 
-//	memset(xxx, 0xff, 0x01b8);
-//	block_addchild(ret->data, "4-3-1", xxx, 0x01b8);
-
-//	memset(xxx, 0x00, 2);
-//	block_addchild(ret->data, "4-3-2-1", xxx, 2);
-
-//	block_addchild(ret->data, "4-3-2-2", "PATR", 4);
-	
-	//block_addchild(pack->data, "4-3-2-3", "061101", 6);
-	//block_addchild(pack->data, "4-3-2-4", "220740", 6);
-
-/*	memset(xxx, 0x00, 0x2e);
-	time_t t;
-	struct tm *lt;
-	t = time(NULL);
-	lt = localtime(&t);
-	strftime(xxx, 20, "%y%m%d%H%M%S", lt);
-	xxx[0x2c] = 0x00;
-	xxx[0x2d] = 0x06;
-	block_addchild(ret->data, "4-3-2-3", xxx, 0x2e);
-
-	memset(xxx, 0x00, 1);
-	block_addchild(ret->data, "4-3-2-5", xxx, 1);
-*/
-	block_addchild(ret->data, "6", "DISPALARM;", 10);
 	return ret;
 }
 
@@ -105,10 +81,10 @@ struct packet *login_packet() {
 	ret->unk1 = 0xe0;
 	ret->dir = 0x04;
 	ret->pltype = 0x00;
-	ret->connid = 0xe15a;
+	ret->connid = 0x9ec6;
 	ret->subseq = 0;
 	ret->unk2 = 0;
-	ret->unk3 = 0x06d8;//// same
+	ret->unk3 = 0x0675;//// same
 	ret->tail = 0;
 
 	ret->data = malloc(sizeof(struct block));
@@ -122,11 +98,9 @@ struct packet *login_packet() {
 
 	xxx[0] = 0;
 	xxx[1] = 0;
-//	xxx[2] = 0;
-//	xxx[3] = 0;
 	*(unsigned short *)(xxx+2) = htons(0); // job nr.
-	xxx[4] = 0x01;//// same
-	xxx[5] = 0x0d;//// same
+	xxx[4] = 0x02;//// same
+	xxx[5] = 0x39;//// same
 //	same asi jen pro login
 //	*(unsigned short *)(xxx+4) = htons(ret->unk3);
 	xxx[6] = 0x45;//
@@ -159,34 +133,11 @@ struct packet *login_packet() {
 	block_addchild(ret->data, "4-3-2-3", xxx, 0x2e);
 */
 
-	xxx[0] = 0x95;
-	xxx[1] = 0x02;
-	xxx[2] = 0x6e;
-	xxx[3] = 0x55;
-	xxx[4] = 0x12;
-	xxx[5] = 0x55;
-	xxx[6] = 0x97;
-	xxx[7] = 0xe1;
-	xxx[8] = 0x33;
-	xxx[9] = 0x6e;
-	xxx[10] = 0x43;
-	xxx[11] = 0xa7;
-	xxx[12] = 0xb3;
-	xxx[13] = 0x53;
-	xxx[14] = 0x07;
-	xxx[15] = 0x75;
-	xxx[16] = 0x41;
-	xxx[17] = 0x7b;
-	xxx[18] = 0x0c;
-	xxx[19] = 0x06;
-	xxx[20] = 0x3a;
-	xxx[21] = 0xa8;
-	xxx[22] = 0x7d;
-	xxx[23] = 0xd5;
-	xxx[24] = 0x09;
-	xxx[25] = 0x00;
+//	unsigned char pass[] = {0x6e, 0xe9, 0x19, 0x01, 0x89, 0x56, 0xcd, 0x5c, 0x64, 0x42, 0x5a, 0x13, 0xd5, 0x11, 0xa2, 0x30, 0x25, 0x5a, 0x4c, 0xa1, 0xc8, 0xf6, 0x5a, 0x8e, 0x08, 0x00};
+//	unsigned char pass[] = {0xad, 0x2a, 0x66, 0xb5, 0xf4, 0x3e, 0xf6, 0xbd, 0x9b, 0x33, 0x68, 0xec, 0xce, 0x2a, 0x2d, 0xee, 0x29, 0x0e, 0x42, 0xb5, 0x5d, 0x04, 0xb9, 0x59, 0x17, 0x00};
+	unsigned char pass[] = {0x95, 0x02, 0x6e, 0x55, 0x12, 0x55, 0x97, 0xe1, 0x33, 0x6e, 0x43, 0xa7, 0xb3, 0x53, 0x07, 0x75, 0x41, 0x7b, 0x0c, 0x06, 0x3a, 0xa8, 0x7d, 0xd5, 0x09, 0x00};
 
-	block_addchild(ret->data, "4-3-2-3", xxx, 0x1a);
+	block_addchild(ret->data, "4-3-2-3", pass, sizeof(pass));
 
 	memset(xxx, 0x00, 1);
 	block_addchild(ret->data, "4-3-2-5", xxx, 1);
@@ -310,6 +261,8 @@ write(sock, buf, l);
 		r = read(sock, buf, 32000);
 		printf("read: %d\n", r);
 
+//l = packet_serialize(pack, buf);
+//write(sock, buf, l);
 		if (r <= 0) break;
 
 		struct packet *p = packet_deserialize(buf);
