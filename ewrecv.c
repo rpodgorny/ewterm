@@ -113,9 +113,9 @@ int SockFd = -1; /* listening socket */
 int Reselect = 0;
 
 /* x25 socket */
-char ConnectName[256] = "";
-unsigned int ConnectPort = 9000;
-int ConnectFd = -1;
+char X25Name[256] = "";
+unsigned int X25Port = 9000;
+int X25Fd = -1;
 
 /* Log files */
 
@@ -209,9 +209,9 @@ void Done(int Err) {
 	}
 	unlink(SockName);
 
-	if (ConnectFd >= 0) {
-		close(ConnectFd);
-		ConnectFd = -1;
+	if (X25Fd >= 0) {
+		close(X25Fd);
+		X25Fd = -1;
 	}
 
 	{
@@ -505,13 +505,12 @@ void ReOpenSerial() {
 	}
 }
 
-/* TODO: Rename this function */
-void ReOpenEthernet() {
+void ReOpenX25() {
 	pdebug("ReOpenEthernet()\n");
 
-	if (ConnectFd >= 0) {
-		close(ConnectFd);
-		ConnectFd = -1;
+	if (X25Fd >= 0) {
+		close(X25Fd);
+		X25Fd = -1;
 	}
 #ifdef LOCKDIR
 	Unlock();
@@ -522,7 +521,7 @@ void ReOpenEthernet() {
 		/* Lock new */
 #ifdef LOCKDIR
 		/* Make lock name */
-		char *FirstPtr = rindex(ConnectName, '/');
+		char *FirstPtr = rindex(X25Name, '/');
 
 		sprintf(LockName, "%s/LCK..%s", LOCKDIR, FirstPtr);
 
@@ -566,8 +565,8 @@ void ReOpenEthernet() {
 		if (!LockName[0]) Done(5);
 #endif /* LOCKDIR */
 
-		if (ConnectName) ConnectFd = open(ConnectName, O_RDWR);
-		if (ConnectFd < 0) {
+		if (X25Name) X25Fd = open(X25Name, O_RDWR);
+		if (X25Fd < 0) {
 #ifdef LOCKDIR
 			Unlock();
 #endif /* LOCKDIR */
@@ -575,7 +574,7 @@ void ReOpenEthernet() {
 			fprintf(stderr, "Aieee... cannot open x25 file!\r\n");
 			exit(2);
 		} else {
-			fcntl(ConnectFd, F_SETFL, O_NONBLOCK);
+			fcntl(X25Fd, F_SETFL, O_NONBLOCK);
 		}
 	}
 }
@@ -1444,11 +1443,11 @@ int main(int argc, char *argv[]) {
 				}
 				break;
 			case 9:
-				strncpy(ConnectName, argv[ac], 256);
-				if (strchr(ConnectName, ':')) {
-					char *s = strchr(ConnectName, ':');
+				strncpy(X25Name, argv[ac], 256);
+				if (strchr(X25Name, ':')) {
+					char *s = strchr(X25Name, ':');
 					*s = 0;
-					ConnectPort = atoi(s + 1);
+					X25Port = atoi(s + 1);
 					break;
 				}
 				break;
@@ -1562,9 +1561,9 @@ int main(int argc, char *argv[]) {
 
 	InstallSignals();
 
-	if (ConnectName && *ConnectName) {
+	if (X25Name && *X25Name) {
 		/* open x25 device */
-		ReOpenEthernet();
+		ReOpenX25();
 	} else if (CuaName && *CuaName) {
 		/* open cua device */
 		int Tmp;
@@ -1691,9 +1690,9 @@ int main(int argc, char *argv[]) {
 		}
 
 		if (CuaFd >= 0) { /* talking with EWSD (X.25) */
-			FD_SET(ConnectFd, &ReadQ);
-			if (ConnectFd > MaxFd) MaxFd = ConnectFd;
-			if (WriteBufLen > 0) FD_SET(ConnectFd, &WriteQ);
+			FD_SET(X25Fd, &ReadQ);
+			if (X25Fd > MaxFd) MaxFd = X25Fd;
+			if (WriteBufLen > 0) FD_SET(X25Fd, &WriteQ);
 		}
 
 		/* select */
@@ -1797,11 +1796,11 @@ int main(int argc, char *argv[]) {
 			}
 
 			/* something from x25 */
-			if (ConnectFd >= 0 && FD_ISSET(ConnectFd, &ReadQ)) {
+			if (X25Fd >= 0 && FD_ISSET(X25Fd, &ReadQ)) {
 				char Chr = 0;
 
-				if (read(ConnectFd, &Chr, 1) <= 0 && errno != EINTR) {
-					perror("--- ewrecv: Read from ConnectFd failed");
+				if (read(X25Fd, &Chr, 1) <= 0 && errno != EINTR) {
+					perror("--- ewrecv: Read from X25Fd failed");
 					Done(4);
 				} else {
 					if (CommandMode == CM_READY) CommandMode = CM_BUSY;
@@ -1816,14 +1815,14 @@ int main(int argc, char *argv[]) {
 			}
 
 			/* something to x25 */
-			if (ConnectFd >= 0 && FD_ISSET(ConnectFd, &WriteQ)) {
-				int written = write(ConnectFd, WriteBuf, WriteBufLen);
+			if (X25Fd >= 0 && FD_ISSET(X25Fd, &WriteQ)) {
+				int written = write(X25Fd, WriteBuf, WriteBufLen);
 
 				if (written > 0) {
 					if (errno == EINTR) {
 						written = 0;
 					} else {
-						perror("--- ewrecv: Write to COnnectFd failed");
+						perror("--- ewrecv: Write to X25Fd failed");
 						Done(4);
 					}
 				}
