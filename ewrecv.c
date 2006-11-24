@@ -258,6 +258,7 @@ struct packet *command_packet(char *c, int len) {
 	ret->data = malloc(sizeof(struct block));
 	ret->data->id = 4;
 	ret->data->data = NULL;
+	ret->data->nchildren = 0;
 
 	char xxx[1024];
 
@@ -2029,6 +2030,7 @@ log_msg("xxxt");
 			/* something to x25 */
 			if (X25Fd >= 0 && FD_ISSET(X25Fd, &WriteQ)) {
 				log_msg("to X.25");
+
 				struct packet *p = command_packet(WriteBuf, WriteBufLen);
 				unsigned char buf[32000];
 				int len = packet_serialize(p, buf);
