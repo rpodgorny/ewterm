@@ -1134,30 +1134,56 @@ void ProcessExchangeChar(char Chr) {
 
 /* for X.25 communication */
 void ProcessExchangePacket(struct packet *p) {
-	char str[32000] = "";
-	char str2[32000] = "";
-	struct block *b = NULL;
-	struct block *b2 = NULL;
-						
 	if (p->dir == 2 && p->pltype == 2) {
+		// short answer
+		struct block *b = NULL;
+		int jobnr = 0;
+		char omt[200] = "";
+		char user[200] = "";
+		char exch[200] = "";
+		char header[200] = "";
+		char answer[32000] = "";
+
+		b = block_getchild(p->data, "4-4");
+		if (b) strncpy(omt, b->data, b->len);
+
+		b = block_getchild(p->data, "4-5");
+		if (b) strncpy(user, b->data, b->len);
+
+		b = block_getchild(p->data, "4-1");
+		if (b) strncpy(exch, b->data, b->len);
+
+		sprintf(header, "%d,%s,%s,%s", jobnr, omt, user, exch);
+
 		b = block_getchild(p->data, "7");
+		if (b) strncpy(answer, b->data, b->len);
+
+		foreach_conn (NULL) {
+			if (!c->authenticated) continue;
+			IProtoSEND(c, 0x47, header);
+printf("--> (%s)\n", header);
+			Write(c, answer, strlen(answer));
+			IProtoSEND(c, 0x45, "234"); // does not work
+IProtoSEND(c, 0x40, NULL);
+IProtoSEND(c, 0x41, "I");
+		} foreach_conn_end;
 	} else if (p->dir == 2 && p->pltype == 0 && p->subseq == 0) {
-		// command error od hint
-		b = block_getchild(p->data, "5-2");
-		b2 = block_getchild(p->data, "5-3");
-	}
+		// command error or hint
+		struct block *b = block_getchild(p->data, "5-2");
+		struct block *b2 = block_getchild(p->data, "5-3");
+		char str[32000] = "";
+		char str2[32000] = "";
+		if (b) strncpy(str, b->data, b->len);
+		if (b2) strncpy(str2, b2->data, b2->len);
 
-	if (b) strncpy(str, b->data, b->len);
-	if (b2) strncpy(str2, b2->data, b2->len);
-
-	foreach_conn (NULL) {
-		if (!c->authenticated) continue;
-		Write(c, str, strlen(str));
-
+		foreach_conn (NULL) {
+			if (!c->authenticated) continue;
+			Write(c, str, strlen(str));
 IProtoSEND(c, 0x40, NULL);
 Write(c, str2, strlen(str2));
 IProtoSEND(c, 0x41, "I");
-	} foreach_conn_end;
+		} foreach_conn_end;
+	}
 }
 
 void AnnounceUser(struct connection *conn, int opcode);
@@ -2013,7 +2039,7 @@ int main(int argc, char *argv[]) {
 
 			/* something from x25 */
 			if (X25Fd >= 0 && FD_ISSET(X25Fd, &ReadQ)) {
-				log_msg("from X.25");
+				log_msg("FROM X.25\n");
 
 				unsigned char buf[32000];
 
@@ -2051,7 +2077,7 @@ int main(int argc, char *argv[]) {
 
 			/* something to x25 */
 			if (X25Fd >= 0 && FD_ISSET(X25Fd, &WriteQ)) {
-				log_msg("to X.25");
+				log_msg("TO X.25\n");
 
 				struct packet *p = command_packet(WriteBuf, WriteBufLen);
 				unsigned char buf[32000];
