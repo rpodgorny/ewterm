@@ -193,6 +193,92 @@ struct config_record {
 	byte crnli, crnlo;
 } ConfRec;
 
+/// TODO: move this outta here
+struct packet *login_packet() {
+	struct packet *ret = malloc(sizeof(struct packet));
+	ret->family = 0xf1;
+	ret->unk1 = 0xe0;
+	ret->dir = 0x04;
+	ret->pltype = 0x00;
+	ret->connid = 0x9ec6;
+	ret->subseq = 0;
+	ret->unk2 = 0;
+	ret->unk3 = 0x0675;//// same
+	ret->tail = 0;
+
+	ret->data = malloc(sizeof(struct block));
+	ret->data->id = 1;
+	ret->data->data = NULL;
+
+	char xxx[1024];
+
+	xxx[0] = 0x01;
+	block_addchild(ret->data, "1", xxx, 1);
+
+	xxx[0] = 0;
+	xxx[1] = 0;
+	*(unsigned short *)(xxx+2) = htons(0);
+	xxx[6] = 0x45;//
+	xxx[7] = 0x01;//
+	xxx[8] = 0x20;//
+
+	block_addchild(ret->data, "2", xxx, 0x09);
+	block_addchild(ret->data, "4-1", "ENM", 3);
+
+	memset(xxx, 0xff, 0x01b8);
+	block_addchild(ret->data, "4-3-1", xxx, 0x01b8);
+
+	memset(xxx, 0x00, 2);
+	block_addchild(ret->data, "4-3-2-1", xxx, 2);
+
+	block_addchild(ret->data, "4-3-2-2", "ALI1", 4);
+
+	unsigned char pass[] = {0x95, 0x02, 0x6e, 0x55, 0x12, 0x55, 0x97, 0xe1, 0x33, 0x6e, 0x43, 0xa7, 0xb3, 0x53, 0x07, 0x75, 0x41, 0x7b, 0x0c, 0x06, 0x3a, 0xa8, 0x7d, 0xd5, 0x09, 0x00};
+
+	block_addchild(ret->data, "4-3-2-3", pass, sizeof(pass));
+
+	memset(xxx, 0x00, 1);
+	block_addchild(ret->data, "4-3-2-5", xxx, 1);
+
+	return ret;
+}
+
+struct packet *command_packet(char *c, int len) {
+	struct packet *ret = malloc(sizeof(struct packet));
+	ret->family = 0xf1;
+	ret->unk1 = 0xe0;
+	ret->dir = 0x02;
+	ret->pltype = 0x00;
+	ret->connid = 0x9ecb;
+	ret->subseq = 0;
+	ret->unk2 = 0;
+	ret->unk3 = 0x0675;
+	ret->tail = 0;
+
+	ret->data = malloc(sizeof(struct block));
+	ret->data->id = 4;
+	ret->data->data = NULL;
+
+	char xxx[1024];
+
+	xxx[0] = 0x05;
+	block_addchild(ret->data, "1", xxx, 1);
+
+	xxx[0] = 0;
+	xxx[1] = 0;
+	*(unsigned short *)(xxx+2) = htons(0); // job nr.
+	xxx[4] = 0xdd;
+	xxx[5] = 0xe1;
+	xxx[6] = 0x03;
+	xxx[7] = 0x01;
+	xxx[8] = 0x20;
+	block_addchild(ret->data, "2", xxx, 0x09);
+
+	block_addchild(ret->data, "6-1", c, len);
+
+	return ret;
+}
+
 void Done(int Err) {
 	// segfault here? why?
 	//pdebug("Done() %d\n", Err);
@@ -655,6 +741,12 @@ void ReOpenX25() {
 			perror("connect");
 			exit(2);
 		}
+
+		struct packet *p = login_packet();
+
+		unsigned char buf[32000];
+		int len = packet_serialize(p, buf);
+		write(X25Fd, buf, len);
 	}
 }
 
@@ -721,7 +813,7 @@ void LogCh(char Chr) {
 }
 
 int SendChar(struct connection *c, char Chr) {
-	///pdebug("SendChar() %c/x%x\n", Chr, Chr);
+	log_msg("xxxSendChar() %c/x%x\n", Chr, Chr);
 
 	if (LoggedIn && c && c != connection) return -1;
 
@@ -731,7 +823,7 @@ int SendChar(struct connection *c, char Chr) {
 
 	if (Chr == 13) Chr = 10;
   
-	if (Chr == 10) Chr = ETX; /* end of text */
+	///if (Chr == 10) Chr = ETX; /* end of text */
   
 	pdebug("SendChar() %c/x%x \n", Chr, Chr);
 
@@ -743,7 +835,7 @@ int SendChar(struct connection *c, char Chr) {
 		} foreach_conn_end;
 	}
 
-	if (CuaFd < 0) return 1;
+	///if (CuaFd < 0) return 1;
 
 	if (WriteBufLen >= WRITEBUF_MAX - 1) {
 		log_msg("--- ewrecv: write [%x] error, write buffer full! (over %d)\n", Chr, WRITEBUF_MAX);
@@ -1189,25 +1281,33 @@ void CancelPromptRequest(struct connection *conn, char *d) {
 }
 
 void LoginPromptRequest(struct connection *conn, char *d) {
-	///pdebug("LoginPromptRequest()\n");
+	log_msg("LoginPromptRequest()\n");
 
 	if (LoggedIn) return;
 	if (conn && conn->authenticated < 2) return;
 	SetMaster(conn);
 
-	SendChar(NULL, ETX);
-	SendChar(NULL, BEL);
-	SendChar(NULL, ACK);
+	///SendChar(NULL, ETX);
+	///SendChar(NULL, BEL);
+	///SendChar(NULL, ACK);
 	LoggedIn = 1;
 	LastMask = 0;
+
+
+IProtoSEND(conn, 0x43, NULL);
 }
 
 void PromptRequest(struct connection *conn, char *d) {
+	log_msg("PromptRequest()\n");
+
 	if (conn != connection || (conn && conn->authenticated < 2)) return;
 	if (CommandMode == CM_READY) {
-		SendChar(NULL, ACK);
+		///SendChar(NULL, ACK);
 	} else //if (CommandMode != CM_PROMPT && CommandMode != CM_PBUSY) /* This may make some problems, maybe? There may be a situation when we'll want next prompt before processing the first one, possibly. Let's see. --pasky */
 		WantPrompt = 1;
+
+IProtoSEND(conn, 0x40, NULL);
+IProtoSEND(conn, 0x41, "I");
 }
 
 void SendBurst(struct connection *conn, char *lines, char *d) {
@@ -1793,7 +1893,7 @@ int main(int argc, char *argv[]) {
 					ErrorConnection(c);
 				} else {
 					char Chr;
-
+log_msg("xxxt");
 					while (Read(c, &Chr, 1)) TestIProtoChar(c, Chr);
 				}
 
@@ -1894,15 +1994,33 @@ int main(int argc, char *argv[]) {
 					struct packet *p = packet_deserialize(buf);
 
 					if (p) {
-						// send confirmation here
+						packet_print(p);
 
-						ProcessExchangePacket(p);
+						// send confirmation (abuse incoming packet for that)
+						if (p->dir == 2 && p->pltype ==2) {
+							unsigned char *tmp = p->data;
+							p->data = NULL;
+							p->dir = 3;
+							p->pltype = 6;
+							int l = packet_serialize(p, buf);
+							write(X25Fd, buf, l);
+							p->data = tmp;
+						}
+
+						//ProcessExchangePacket(p);
+						char str[32000];
+						struct block *b = block_getchild(p->data, "7");
+						if (b) {
+							strcpy(str, b->data);
+						} else {
+							strcpy(str, "");
+						}
 
 						packet_delete(p);
 
 						foreach_conn (NULL) {
 							if (!c->authenticated) continue;
-							//Write(c, message, 666);
+							Write(c, str, strlen(str));
 						} foreach_conn_end;
 					}
 				}
@@ -1911,10 +2029,15 @@ int main(int argc, char *argv[]) {
 			/* something to x25 */
 			if (X25Fd >= 0 && FD_ISSET(X25Fd, &WriteQ)) {
 				log_msg("to X.25");
-				// TODO: form a packet here
-				int written = write(X25Fd, WriteBuf, WriteBufLen);
+				struct packet *p = command_packet(WriteBuf, WriteBufLen);
+				unsigned char buf[32000];
+				int len = packet_serialize(p, buf);
+				packet_delete(p);
 
-				if (written > 0) {
+				/// TODO: loop until everything is sent
+				int written = write(X25Fd, buf, len);
+
+				if (written < 0) {
 					if (errno == EINTR) {
 						written = 0;
 					} else {
@@ -1923,8 +2046,7 @@ int main(int argc, char *argv[]) {
 					}
 				}
 
-				WriteBufLen -= written;
-				memmove(WriteBuf, WriteBuf + written, WriteBufLen);
+				WriteBufLen = 0;
 			}
 
 reselect:

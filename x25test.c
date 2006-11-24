@@ -277,6 +277,26 @@ write(sock, buf, l);
 			l = packet_serialize(p, buf);
 			write(sock, buf, l);
 			p->data = tt;
+
+//and logout ?
+
+sleep(2);
+printf("sending logout\n");
+struct packet *p_logout = malloc(sizeof(struct packet));
+p_logout->family = 0xf1;
+p_logout->unk1 = 0xe0;
+p_logout->dir = 0x0e;
+p_logout->pltype = 0;
+p_logout->connid = pack->connid+10;
+p_logout->subseq = 0;
+p_logout->unk2 = 0;
+p_logout->unk3 = p->unk3;
+p_logout->tail = 0;
+p_logout->data = NULL;
+l = packet_serialize(p_logout, buf);
+write(sock, buf, l);
+packet_delete(p_logout);
+
 		}
 
 		packet_delete(p);
