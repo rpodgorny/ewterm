@@ -128,6 +128,8 @@ void block_addchild(struct block *root, char *path, unsigned char *buf, int len)
 }
 
 struct block *block_getchild(struct block *parent, char *path) {
+	if (!parent) return NULL;
+
 	int ipath[1000];
 	int pathlen = 0;
 
@@ -148,7 +150,7 @@ struct block *block_getchild(struct block *parent, char *path) {
 	int depth = 0;
 	for (depth = 0; depth < pathlen; depth++) {
 		int i = 0;
-		int nchildren = ret->children;
+		int nchildren = ret->nchildren;
 		for (i = 0; i < nchildren; i++) {
 			if (ipath[depth] == -1 || ret->children[i]->id == ipath[depth]) {
 				ret = ret->children[i];
