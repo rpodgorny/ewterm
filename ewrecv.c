@@ -2004,24 +2004,32 @@ int main(int argc, char *argv[]) {
 						packet_print(p);
 
 						// send confirmation (abuse incoming packet for that)
-						if (p->dir == 2 && p->pltype ==2) {
+						// TODO: create something like packet_copy()
+						if (p->dir == 2 && p->pltype == 2) {
 							unsigned char *tmp = p->data;
 							p->data = NULL;
 							p->dir = 3;
 							p->pltype = 6;
 							int l = packet_serialize(p, buf);
 							write(X25Fd, buf, l);
+
 							p->data = tmp;
+							p->dir = 2;
+							p->pltype = 2;
 						}
 
 						//ProcessExchangePacket(p);
-						char str[32000];
-						struct block *b = block_getchild(p->data, "7");
-						if (b) {
-							strcpy(str, b->data);
-						} else {
-							strcpy(str, "");
+						char str[32000] = "";
+						struct block *b = NULL;
+						
+						if (p->dir == 2 && p->pltype == 2) {
+							b = block_getchild(p->data, "7");
+printf("blabla %x\n", b);
+						} else if (p->dir == 2 && p->pltype == 0 && p->subseq == 0) {
+							b = block_getchild(p->data, "5-2");
 						}
+
+						if (b) strncpy(str, b->data, b->len);
 
 						packet_delete(p);
 
