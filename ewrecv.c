@@ -35,6 +35,7 @@
 #include "logging.h"
 #include "ascii.h"
 #include "iproto.h"
+#include "x25_packet.h"
 
 
 /* Everything being written to logs should be terminated by \r\n, not just \n!
@@ -1037,6 +1038,8 @@ void ProcessExchangeChar(char Chr) {
 	if (LogRaw) fputc(Chr, LogRaw);
 }
 
+void ProcessExchangePacket(struct packet *p) {
+}
 
 void AnnounceUser(struct connection *conn, int opcode);
 
@@ -1877,25 +1880,38 @@ int main(int argc, char *argv[]) {
 
 			/* something from x25 */
 			if (X25Fd >= 0 && FD_ISSET(X25Fd, &ReadQ)) {
-				char Chr = 0;
+				log_msg("from X.25");
 
-				if (read(X25Fd, &Chr, 1) <= 0 && errno != EINTR) {
+				unsigned char buf[32000];
+
+				if (read(X25Fd, buf, 32000) <= 0 && errno != EINTR) {
 					perror("--- ewrecv: Read from X25Fd failed");
 					Done(4);
 				} else {
-					if (CommandMode == CM_READY) CommandMode = CM_BUSY;
+					// TODO: why else?
+					///if (CommandMode == CM_READY) CommandMode = CM_BUSY;
 
-					ProcessExchangeChar(Chr);
+					struct packet *p = packet_deserialize(buf);
 
-					foreach_conn (NULL) {
-						if (!c->authenticated) continue;
-						Write(c, &Chr, 1);
-					} foreach_conn_end;
+					if (p) {
+						// send confirmation here
+
+						ProcessExchangePacket(p);
+
+						packet_delete(p);
+
+						foreach_conn (NULL) {
+							if (!c->authenticated) continue;
+							//Write(c, message, 666);
+						} foreach_conn_end;
+					}
 				}
 			}
 
 			/* something to x25 */
 			if (X25Fd >= 0 && FD_ISSET(X25Fd, &WriteQ)) {
+				log_msg("to X.25");
+				// TODO: form a packet here
 				int written = write(X25Fd, WriteBuf, WriteBufLen);
 
 				if (written > 0) {
