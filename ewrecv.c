@@ -745,12 +745,13 @@ void ReOpenX25() {
 			perror("connect");
 			exit(2);
 		}
-
+/*
 		struct packet *p = login_packet();
 
 		unsigned char buf[32000];
 		int len = packet_serialize(p, buf);
 		write(X25Fd, buf, len);
+*/
 	}
 }
 
@@ -1166,9 +1167,6 @@ void ProcessExchangePacket(struct packet *p) {
 			Write(c, answer, strlen(answer));
 
 			IProtoSEND(c, 0x45, "234"); // does not work
-
-IProtoSEND(c, 0x40, NULL);
-IProtoSEND(c, 0x41, "I");
 		} foreach_auth_conn_end
 	} else if (p->dir == 2 && p->pltype == 0 && p->subseq == 0) {
 		// command error or hint
@@ -1181,9 +1179,16 @@ IProtoSEND(c, 0x41, "I");
 
 		foreach_auth_conn (NULL) {
 			Write(c, str, strlen(str));
-IProtoSEND(c, 0x40, NULL);
-Write(c, str2, strlen(str2));
-IProtoSEND(c, 0x41, "I");
+
+			// TODO: we don't save context
+			IProtoSEND(c, 0x40, NULL);
+			Write(c, str2, strlen(str2));
+			IProtoSEND(c, 0x41, "I");
+		} foreach_auth_conn_end
+	} else if (p->dir == 0x0c && p->pltype == 1) {
+		// Login success (no check for failure yet)
+		foreach_auth_conn (NULL) {
+			IProtoSEND(c, 0x43, NULL);
 		} foreach_auth_conn_end
 	}
 }
@@ -1287,9 +1292,6 @@ void GotUser(struct connection *conn, char *uname, char *d) {
 	AnnounceUser(conn, 0x05);
 	snprintf(s, 1024, "!%s@%s:%d", conn->user ? conn->user : "UNKNOWN", conn->host, conn->id);
 	IProtoSEND(conn, 0x05, s);
-
-// autologin hack
-LoginPromptRequest(conn, d);
 }
 
 void GotPrivMsg(struct connection *conn, char *tg, int id, char *host, char *msg, char *d) {
@@ -1327,7 +1329,7 @@ void TakeOverRequest(struct connection *conn, char *d) {
 }
 
 void CancelPromptRequest(struct connection *conn, char *d) {
-	///pdebug("CancelPromptRequest()\n");
+	log_msg("CancelPromptRequest()\n");
 
 	if (conn != connection) return;
 	if (conn && conn->authenticated < 2) return;
@@ -1345,18 +1347,20 @@ void LoginPromptRequest(struct connection *conn, char *d) {
 	if (conn && conn->authenticated < 2) return;
 	SetMaster(conn);
 
-	///SendChar(NULL, ETX);
-	///SendChar(NULL, BEL);
-	///SendChar(NULL, ACK);
+	if (CuaFd > 0) {
+		SendChar(NULL, ETX);
+		SendChar(NULL, BEL);
+		SendChar(NULL, ACK);
+	} else if (X25Fd > 0) {
+		struct packet *p = login_packet();
+
+		unsigned char buf[32000];
+		int len = packet_serialize(p, buf);
+		write(X25Fd, buf, len);
+	}
+
 	LoggedIn = 1;
 	LastMask = 0;
-
-
-IProtoSEND(conn, 0x43, NULL);
-
-// prompt
-IProtoSEND(conn, 0x40, NULL);
-IProtoSEND(conn, 0x41, "I");
 }
 
 void PromptRequest(struct connection *conn, char *d) {
@@ -1368,8 +1372,9 @@ void PromptRequest(struct connection *conn, char *d) {
 	} else //if (CommandMode != CM_PROMPT && CommandMode != CM_PBUSY) /* This may make some problems, maybe? There may be a situation when we'll want next prompt before processing the first one, possibly. Let's see. --pasky */
 		WantPrompt = 1;
 
+/// TODO: retain old compatibility
 IProtoSEND(conn, 0x40, NULL);
-IProtoSEND(conn, 0x41, "I");
+IProtoSEND(conn, 0x41, "<");
 }
 
 void SendBurst(struct connection *conn, char *lines, char *d) {
