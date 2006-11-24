@@ -850,10 +850,11 @@ int SendChar(struct connection *c, char Chr) {
 
 int LastMask = 0;
 
+/* for serial communication */
 void ProcessExchangeChar(char Chr) {
 	static int prompt = 0;
 
-	///pdebug("ProcessExchangeChar() Chr = %d\n", Chr);
+	pdebug("ProcessExchangeChar() Chr = %d\n", Chr);
 
 	if (prompt && Chr != ENQ) {
 		prompt = 0;
@@ -1131,7 +1132,32 @@ void ProcessExchangeChar(char Chr) {
 	if (LogRaw) fputc(Chr, LogRaw);
 }
 
+/* for X.25 communication */
 void ProcessExchangePacket(struct packet *p) {
+	char str[32000] = "";
+	char str2[32000] = "";
+	struct block *b = NULL;
+	struct block *b2 = NULL;
+						
+	if (p->dir == 2 && p->pltype == 2) {
+		b = block_getchild(p->data, "7");
+	} else if (p->dir == 2 && p->pltype == 0 && p->subseq == 0) {
+		// command error od hint
+		b = block_getchild(p->data, "5-2");
+		b2 = block_getchild(p->data, "5-3");
+	}
+
+	if (b) strncpy(str, b->data, b->len);
+	if (b2) strncpy(str2, b2->data, b2->len);
+
+	foreach_conn (NULL) {
+		if (!c->authenticated) continue;
+		Write(c, str, strlen(str));
+
+IProtoSEND(c, 0x40, NULL);
+Write(c, str2, strlen(str2));
+IProtoSEND(c, 0x41, "I");
+	} foreach_conn_end;
 }
 
 void AnnounceUser(struct connection *conn, int opcode);
@@ -2006,39 +2032,19 @@ int main(int argc, char *argv[]) {
 						// send confirmation (abuse incoming packet for that)
 						// TODO: create something like packet_copy()
 						if (p->dir == 2 && p->pltype == 2) {
-							unsigned char *tmp = p->data;
-							p->data = NULL;
-							p->dir = 3;
-							p->pltype = 6;
-							int l = packet_serialize(p, buf);
+							struct packet *confirm = malloc(sizeof(struct packet));
+							memcpy(confirm, p, sizeof(struct packet));
+							confirm->data = NULL;
+							confirm->dir = 3;
+							confirm->pltype = 6;
+							int l = packet_serialize(confirm, buf);
 							write(X25Fd, buf, l);
-
-							p->data = tmp;
-							p->dir = 2;
-							p->pltype = 2;
+							packet_delete(confirm);
 						}
 
-						//ProcessExchangePacket(p);
-						char str[32000] = "";
-						struct block *b = NULL;
-						
-						if (p->dir == 2 && p->pltype == 2) {
-							b = block_getchild(p->data, "7");
-printf("blabla %x\n", b);
-						} else if (p->dir == 2 && p->pltype == 0 && p->subseq == 0) {
-							b = block_getchild(p->data, "5-2");
-						}
-
-						if (b) strncpy(str, b->data, b->len);
+						ProcessExchangePacket(p);
 
 						packet_delete(p);
-
-						foreach_conn (NULL) {
-							if (!c->authenticated) continue;
-							Write(c, str, strlen(str));
-IProtoSEND(c, 0x40, NULL);
-IProtoSEND(c, 0x41, "I");
-						} foreach_conn_end;
 					}
 				}
 			}
