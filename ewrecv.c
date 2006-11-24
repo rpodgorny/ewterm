@@ -64,6 +64,9 @@ if (connection) { \
 #define	foreach_ipr_conn(but)	foreach_conn(but) if (c->IProtoState != IPR_HANDSHAKE) {
 #define	foreach_ipr_conn_end	} foreach_conn_end
 
+#define foreach_auth_conn(but)	foreach_conn(but) if (c->authenticated) {
+#define foreach_auth_conn_end	} foreach_conn_end
+
 #define delete_from_list(c)	{ c->next->prev = c->prev; c->prev->next = c->next; }
 
 /* Some types */
@@ -830,10 +833,9 @@ int SendChar(struct connection *c, char Chr) {
 
 	pdebug("%p(%d)\n", c, c?c->IProtoState:-1);
 	if (c && c->IProtoState != IPR_DC4) {
-		foreach_conn (c) {
-			if (!c->authenticated) continue;
+		foreach_auth_conn (c) {
 			Write(c, &Chr, 1);
-		} foreach_conn_end;
+		} foreach_auth_conn_end;
 	}
 
 	///if (CuaFd < 0) return 1;
@@ -1158,15 +1160,16 @@ void ProcessExchangePacket(struct packet *p) {
 		b = block_getchild(p->data, "7");
 		if (b) strncpy(answer, b->data, b->len);
 
-		foreach_conn (NULL) {
-			if (!c->authenticated) continue;
+		foreach_auth_conn (NULL) {
 			IProtoSEND(c, 0x47, header);
-printf("--> (%s)\n", header);
+
 			Write(c, answer, strlen(answer));
+
 			IProtoSEND(c, 0x45, "234"); // does not work
+
 IProtoSEND(c, 0x40, NULL);
 IProtoSEND(c, 0x41, "I");
-		} foreach_conn_end;
+		} foreach_auth_conn_end
 	} else if (p->dir == 2 && p->pltype == 0 && p->subseq == 0) {
 		// command error or hint
 		struct block *b = block_getchild(p->data, "5-2");
@@ -1176,13 +1179,12 @@ IProtoSEND(c, 0x41, "I");
 		if (b) strncpy(str, b->data, b->len);
 		if (b2) strncpy(str2, b2->data, b2->len);
 
-		foreach_conn (NULL) {
-			if (!c->authenticated) continue;
+		foreach_auth_conn (NULL) {
 			Write(c, str, strlen(str));
 IProtoSEND(c, 0x40, NULL);
 Write(c, str2, strlen(str2));
 IProtoSEND(c, 0x41, "I");
-		} foreach_conn_end;
+		} foreach_auth_conn_end
 	}
 }
 

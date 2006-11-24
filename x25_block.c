@@ -210,7 +210,11 @@ void block_print(struct block *b) {
 		printf("datac: ");
 		ptr = b->data;
 		while (ptr < b->data + b->len) {
-			printf("%c", *(char *)ptr);
+			if (*ptr >= 0x20 || *ptr == 0x0a || *ptr == 0x0d) {
+				printf("%c", *(char *)ptr);
+			} else {
+				printf(".");
+			}
 			ptr++;
 		}
 		printf("\n");
