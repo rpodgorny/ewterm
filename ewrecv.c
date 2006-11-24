@@ -1233,6 +1233,9 @@ void GotUser(struct connection *conn, char *uname, char *d) {
 	AnnounceUser(conn, 0x05);
 	snprintf(s, 1024, "!%s@%s:%d", conn->user ? conn->user : "UNKNOWN", conn->host, conn->id);
 	IProtoSEND(conn, 0x05, s);
+
+// autologin hack
+LoginPromptRequest(conn, d);
 }
 
 void GotPrivMsg(struct connection *conn, char *tg, int id, char *host, char *msg, char *d) {
@@ -1296,6 +1299,10 @@ void LoginPromptRequest(struct connection *conn, char *d) {
 
 
 IProtoSEND(conn, 0x43, NULL);
+
+// prompt
+IProtoSEND(conn, 0x40, NULL);
+IProtoSEND(conn, 0x41, "I");
 }
 
 void PromptRequest(struct connection *conn, char *d) {
@@ -1894,7 +1901,6 @@ int main(int argc, char *argv[]) {
 					ErrorConnection(c);
 				} else {
 					char Chr;
-log_msg("xxxt");
 					while (Read(c, &Chr, 1)) TestIProtoChar(c, Chr);
 				}
 
@@ -2022,6 +2028,8 @@ log_msg("xxxt");
 						foreach_conn (NULL) {
 							if (!c->authenticated) continue;
 							Write(c, str, strlen(str));
+IProtoSEND(c, 0x40, NULL);
+IProtoSEND(c, 0x41, "I");
 						} foreach_conn_end;
 					}
 				}
