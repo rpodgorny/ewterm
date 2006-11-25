@@ -213,7 +213,7 @@ struct packet *login_packet() {
 	ret->data->id = 1;
 	ret->data->data = NULL;
 
-	char xxx[1024];
+	unsigned char xxx[1024];
 
 	xxx[0] = 0x01;
 	block_addchild(ret->data, "1", xxx, 1);
@@ -226,7 +226,7 @@ struct packet *login_packet() {
 	xxx[8] = 0x20;//
 
 	block_addchild(ret->data, "2", xxx, 0x09);
-	block_addchild(ret->data, "4-1", "ENM", 3);
+	block_addchild(ret->data, "4-1", (unsigned char *)"ENM", 3);
 
 	memset(xxx, 0xff, 0x01b8);
 	block_addchild(ret->data, "4-3-1", xxx, 0x01b8);
@@ -234,7 +234,7 @@ struct packet *login_packet() {
 	memset(xxx, 0x00, 2);
 	block_addchild(ret->data, "4-3-2-1", xxx, 2);
 
-	block_addchild(ret->data, "4-3-2-2", "ALI1", 4);
+	block_addchild(ret->data, "4-3-2-2", (unsigned char *)"ALI1", 4);
 
 	unsigned char pass[] = {0x95, 0x02, 0x6e, 0x55, 0x12, 0x55, 0x97, 0xe1, 0x33, 0x6e, 0x43, 0xa7, 0xb3, 0x53, 0x07, 0x75, 0x41, 0x7b, 0x0c, 0x06, 0x3a, 0xa8, 0x7d, 0xd5, 0x09, 0x00};
 
@@ -263,7 +263,7 @@ struct packet *command_packet(char *c, int len) {
 	ret->data->data = NULL;
 	ret->data->nchildren = 0;
 
-	char xxx[1024];
+	unsigned char xxx[1024];
 
 	xxx[0] = 0x05;
 	block_addchild(ret->data, "1", xxx, 1);
@@ -278,7 +278,7 @@ struct packet *command_packet(char *c, int len) {
 	xxx[8] = 0x20;
 	block_addchild(ret->data, "2", xxx, 0x09);
 
-	block_addchild(ret->data, "6-1", c, len);
+	block_addchild(ret->data, "6-1", (unsigned char *)c, len);
 
 	return ret;
 }
@@ -1134,7 +1134,8 @@ void ProcessExchangeChar(char Chr) {
 
 /* for X.25 communication */
 void ProcessExchangePacket(struct packet *p) {
-	if (p->dir == 2 && p->pltype == 2) {
+	if ((p->dir == 2 && p->pltype == 2)
+	|| (p->dir == 2 && p->pltype == 1 && p->subseq <= 1)) {
 		// short answer
 		struct block *b = NULL;
 		int jobnr = 0;
@@ -1145,18 +1146,18 @@ void ProcessExchangePacket(struct packet *p) {
 		char answer[32000] = "";
 
 		b = block_getchild(p->data, "4-4");
-		if (b) strncpy(omt, b->data, b->len);
+		if (b) strncpy(omt, (char *)b->data, b->len);
 
 		b = block_getchild(p->data, "4-5");
-		if (b) strncpy(user, b->data, b->len);
+		if (b) strncpy(user, (char *)b->data, b->len);
 
 		b = block_getchild(p->data, "4-1");
-		if (b) strncpy(exch, b->data, b->len);
+		if (b) strncpy(exch, (char *)b->data, b->len);
 
 		sprintf(header, "%d,%s,%s,%s", jobnr, omt, user, exch);
 
 		b = block_getchild(p->data, "7");
-		if (b) strncpy(answer, b->data, b->len);
+		if (b) strncpy(answer, (char *)b->data, b->len);
 
 		foreach_auth_conn (NULL) {
 			IProtoSEND(c, 0x47, header);
@@ -1171,8 +1172,8 @@ void ProcessExchangePacket(struct packet *p) {
 		struct block *b2 = block_getchild(p->data, "5-3");
 		char str[32000] = "";
 		char str2[32000] = "";
-		if (b) strncpy(str, b->data, b->len);
-		if (b2) strncpy(str2, b2->data, b2->len);
+		if (b) strncpy(str, (char *)b->data, b->len);
+		if (b2) strncpy(str2, (char *)b2->data, b2->len);
 
 		foreach_auth_conn (NULL) {
 			Write(c, str, strlen(str));
@@ -1192,7 +1193,7 @@ void ProcessExchangePacket(struct packet *p) {
 		struct block *b = block_getchild(p->data, "5-2");
 		char str[32000] = "";
 
-		if (b) strncpy(str, b->data, b->len);
+		if (b) strncpy(str, (char *)b->data, b->len);
 
 		foreach_auth_conn (NULL) {
 			Write(c, str, strlen(str));
@@ -1201,7 +1202,16 @@ void ProcessExchangePacket(struct packet *p) {
 		} foreach_auth_conn_end
 
 		LoggedIn = 0;
-	}
+	}/* else if (p->dir == 2 && p->pltype == 1 && p->subseq <= 1) {
+		struct block *b = block_getchild(p->data, "7");
+		char str[32000] = "";
+
+		if (b) strncpy(str, (char *)b->data, b->len);
+
+		foreach_auth_conn (NULL) {
+			Write(c, str, strlen(str));
+		} foreach_auth_conn_end
+	}*/
 }
 
 void AnnounceUser(struct connection *conn, int opcode);
@@ -1435,7 +1445,7 @@ struct connection *TryAccept(int Fd) {
 	struct connection *conn;
 	int NewFd;
 	static struct sockaddr_in remote;
-	static int remlen;
+	static socklen_t remlen;
 
 	NewFd = accept(Fd, (struct sockaddr *)&remote, &remlen);
 	if (NewFd < 0) {
@@ -2029,10 +2039,9 @@ int main(int argc, char *argv[]) {
 
 					ProcessExchangeChar(Chr);
 
-					foreach_conn (NULL) {
-						if (!c->authenticated) continue;
+					foreach_auth_conn (NULL) {
 						Write(c, &Chr, 1);
-					} foreach_conn_end;
+					} foreach_auth_conn_end
 				}
 			}
 
@@ -2059,9 +2068,14 @@ int main(int argc, char *argv[]) {
 			if (X25Fd >= 0 && FD_ISSET(X25Fd, &ReadQ)) {
 				log_msg("FROM X.25\n");
 
+				static unsigned char pbuf[320000]; // persistent buffer
+				static int pbuflen = 0;
+
 				unsigned char buf[32000];
 
-				if (read(X25Fd, buf, 32000) <= 0 && errno != EINTR) {
+				int r = read(X25Fd, buf, 32000);
+
+				if (r <= 0 && errno != EINTR) {
 					perror("--- ewrecv: Read from X25Fd failed");
 					//Done(4);
 
@@ -2071,24 +2085,57 @@ int main(int argc, char *argv[]) {
 					// TODO: why else?
 					///if (CommandMode == CM_READY) CommandMode = CM_BUSY;
 
-					struct packet *p = packet_deserialize(buf);
+					struct packet *p = packet_deserialize(buf, r);
 
+					// send confirmation
+					// TODO: create something like packet_copy()
+					///if (p->dir == 2 && p->pltype == 2) {
+					if (p && p->dir == 2) {
+						struct packet *confirm = malloc(sizeof(struct packet));
+						memcpy(confirm, p, sizeof(struct packet));
+						confirm->data = NULL;
+						confirm->rawdata = NULL;
+						confirm->dir = 3;
+						confirm->pltype = 6;
+
+						unsigned char buf2[32000];
+						int l = packet_serialize(confirm, buf2);
+						write(X25Fd, buf2, l);
+						packet_delete(confirm);
+					}
+
+					if (p && p->rawdata && p->data == NULL) {
+						// the block deserialize failed
+						if (pbuflen == 0) {
+printf("long answer\n");
+							// first truncated packet (copy with header)
+							memcpy(pbuf, buf, r);
+							pbuflen = r;
+							packet_delete(p); p = NULL;
+printf("ffff\n");
+						} else {
+printf("long answer continuation\n");
+							// continuation (copy without header)
+							memcpy(pbuf+pbuflen, p->rawdata, p->rawdatalen);
+							pbuflen += p->rawdatalen;
+							packet_delete(p); p = NULL;
+						}
+					}
+printf("adasd\n");
+					// test whether the packet is now complete
+					if (!p && pbuflen > 0) {
+						p = packet_deserialize(pbuf, pbuflen);
+						if (!p || (p->rawdata && !p->data)) {
+printf("Not complete yet...\n");
+							packet_delete(p); p = NULL;
+						} else {
+printf("Complete!\n");
+							pbuflen = 0;
+						}
+					}
+				
 					if (p) {
 						packet_print(p);
-
-						// send confirmation (abuse incoming packet for that)
-						// TODO: create something like packet_copy()
-						///if (p->dir == 2 && p->pltype == 2) {
-						if (p->dir == 2) {
-							struct packet *confirm = malloc(sizeof(struct packet));
-							memcpy(confirm, p, sizeof(struct packet));
-							confirm->data = NULL;
-							confirm->dir = 3;
-							confirm->pltype = 6;
-							int l = packet_serialize(confirm, buf);
-							write(X25Fd, buf, l);
-							packet_delete(confirm);
-						}
 
 						ProcessExchangePacket(p);
 

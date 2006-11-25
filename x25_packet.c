@@ -44,7 +44,9 @@ int packet_serialize(struct packet *p, unsigned char *buf) {
 	return ret;
 }
 
-struct packet *packet_deserialize(unsigned char *buf) {
+struct packet *packet_deserialize(unsigned char *buf, int len) {
+	if (len < 11) return NULL;
+
 	struct packet *ret = malloc(sizeof(struct packet));
 
 	ret->family = *buf;
@@ -57,7 +59,23 @@ struct packet *packet_deserialize(unsigned char *buf) {
 	ret->unk3 = ntohs(*(unsigned short *)(buf+8));
 	ret->tail = *(buf+10);
 
-	ret->data = block_deserialize(buf+11, NULL);
+	ret->data = NULL;
+	ret->rawdata = NULL;
+	ret->rawdatalen = 0;
+
+	if (len > 11) {
+printf("trying to deserialize block\n");
+		// try to deserialize inner block
+		ret->data = block_deserialize(buf+11, len-11, NULL);
+
+		if (!ret->data) {
+printf("saving as raw data\n");
+			// failed, save as raw data
+			ret->rawdata = malloc(len-11);
+			memcpy(ret->rawdata, buf+11, len-11);
+			ret->rawdatalen = len-11;
+		}
+	}
 
 	return ret;
 }
@@ -73,6 +91,10 @@ void packet_print(struct packet *p) {
 }
 
 void packet_delete(struct packet *p) {
+	if (!p) return;
+
 	if (p->data) block_delete(p->data);
+	if (p->rawdata) free(p->rawdata);
+
 	free(p);
 }
