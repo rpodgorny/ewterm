@@ -3,10 +3,14 @@
 #include <string.h>
 #include <strings.h>
 #include <arpa/inet.h>
+
 #include "x25_block.h"
 
 
-struct block *block_deserialize(unsigned char *buf, struct block *parent) {
+struct block *block_deserialize(unsigned char *buf, int maxlen, struct block *parent) {
+printf("block_deserialize() %d\n", maxlen);
+	if (maxlen < 3) return NULL;
+
 	struct block *ret = malloc(sizeof(struct block));
 
 	ret->id = *buf;
@@ -14,14 +18,32 @@ struct block *block_deserialize(unsigned char *buf, struct block *parent) {
 	ret->len = ntohs(*(unsigned short *)(buf+1)); // this must be kept during recursion
 	ret->nchildren = 0;
 
-	if (haschildren(buf+3, ret->len)) {
+	if (ret->len > maxlen-3) {
+printf("OVERFLOW: %d %d\n", ret->len, maxlen-3);
+		// the buffer seems to be truncated, fail then...
+		free(ret);
+		return NULL;
+	}
+
+	if (block_haschildren(buf+3, ret->len)) {
+printf("has children\n");
 		unsigned char *ptr = buf+3;
 		while (ptr < buf+3+ret->len) {
-			ret->children[ret->nchildren] = block_deserialize(ptr, ret);
+			struct block *deser = block_deserialize(ptr, buf+maxlen-ptr, ret);
+
+			if (deser == NULL) {
+printf("child has failed\n");
+				// One of the children has failed, fail too...
+				block_delete(ret);
+				return NULL;
+			}
+
+			ret->children[ret->nchildren] = deser;
 			ptr += ret->children[ret->nchildren]->len + 3;
 			ret->nchildren++;
 		}
 	} else {
+printf("does not have children\n");
 		ret->data = malloc(ret->len);
 		memcpy(ret->data, buf+3, ret->len);
 	}
@@ -38,6 +60,7 @@ void block_delete(struct block *b) {
 	for (i = 0; i < b->nchildren; i++) block_delete(b->children[i]);
 
 	if (b->data) free(b->data);
+
 	free(b);
 }
 
@@ -62,7 +85,7 @@ void block_getpath(struct block *b, char *path) {
 	}
 }
 
-int haschildren(unsigned char *buf, int len) {
+int block_haschildren(unsigned char *buf, int len) {
 	int pos = 0;
 
 	while (pos < len) {

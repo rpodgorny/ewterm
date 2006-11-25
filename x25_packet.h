@@ -13,10 +13,13 @@ struct packet {
 	unsigned char tail;
 
 	struct block *data;
+
+	unsigned char *rawdata;
+	int rawdatalen;
 };
 
 struct packet *packet_alloc();
 void packet_delete(struct packet *);
-struct packet *packet_deserialize(unsigned char *);
+struct packet *packet_deserialize(unsigned char *, int);
 void packet_print(struct packet *);
 int packet_serialize(struct packet *, unsigned char *);
