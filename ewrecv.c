@@ -284,8 +284,7 @@ struct packet *command_packet(char *c, int len) {
 }
 
 void Done(int Err) {
-	// segfault here? why?
-	//pdebug("Done() %d\n", Err);
+	log_msg("Done() %d\n", Err);
 
 #ifdef LOCKDIR
 	if (LockName[0] != 0 && LockName[0] != 10) {
@@ -525,8 +524,7 @@ void GetLockInfo(FILE *Fl, int *pid, char *name) {
 }
 
 void ReOpenSerial() {
-	// segfault here? why?
-	//pdebug("ReOpenSerial()\n");
+	log_msg("ReOpenSerial()\n");
 
 	/* Close old cua file and unlock it */
 	if (CuaFd >= 0) {
@@ -602,8 +600,7 @@ void ReOpenSerial() {
 }
 
 void ReOpenX25() {
-	// segfault here? why?
-	//pdebug("ReOpenX25()\n");
+	log_msg("ReOpenX25()\n");
 
 	if (X25Fd >= 0) {
 		close(X25Fd);
@@ -1190,6 +1187,20 @@ void ProcessExchangePacket(struct packet *p) {
 		foreach_auth_conn (NULL) {
 			IProtoSEND(c, 0x43, NULL);
 		} foreach_auth_conn_end
+	} else if (p->dir == 0x0e && p->pltype == 0) {
+		// Session timeout (maybe more errors)
+		struct block *b = block_getchild(p->data, "5-2");
+		char str[32000] = "";
+
+		if (b) strncpy(str, b->data, b->len);
+
+		foreach_auth_conn (NULL) {
+			Write(c, str, strlen(str));
+
+			IProtoSEND(c, 0x44, NULL);
+		} foreach_auth_conn_end
+
+		LoggedIn = 0;
 	}
 }
 
@@ -1347,11 +1358,11 @@ void LoginPromptRequest(struct connection *conn, char *d) {
 	if (conn && conn->authenticated < 2) return;
 	SetMaster(conn);
 
-	if (CuaFd > 0) {
+	if (CuaFd >= 0) {
 		SendChar(NULL, ETX);
 		SendChar(NULL, BEL);
 		SendChar(NULL, ACK);
-	} else if (X25Fd > 0) {
+	} else if (X25Fd >= 0) {
 		struct packet *p = login_packet();
 
 		unsigned char buf[32000];
@@ -2052,7 +2063,10 @@ int main(int argc, char *argv[]) {
 
 				if (read(X25Fd, buf, 32000) <= 0 && errno != EINTR) {
 					perror("--- ewrecv: Read from X25Fd failed");
-					Done(4);
+					//Done(4);
+
+					printf("Trying to reconnect...\n");
+					ReOpenX25();
 				} else {
 					// TODO: why else?
 					///if (CommandMode == CM_READY) CommandMode = CM_BUSY;
@@ -2064,7 +2078,8 @@ int main(int argc, char *argv[]) {
 
 						// send confirmation (abuse incoming packet for that)
 						// TODO: create something like packet_copy()
-						if (p->dir == 2 && p->pltype == 2) {
+						///if (p->dir == 2 && p->pltype == 2) {
+						if (p->dir == 2) {
 							struct packet *confirm = malloc(sizeof(struct packet));
 							memcpy(confirm, p, sizeof(struct packet));
 							confirm->data = NULL;
