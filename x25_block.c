@@ -8,7 +8,6 @@
 
 
 struct block *block_deserialize(unsigned char *buf, int maxlen, struct block *parent) {
-printf("block_deserialize() %d\n", maxlen);
 	if (maxlen < 3) return NULL;
 
 	struct block *ret = malloc(sizeof(struct block));
@@ -19,20 +18,17 @@ printf("block_deserialize() %d\n", maxlen);
 	ret->nchildren = 0;
 
 	if (ret->len > maxlen-3) {
-printf("OVERFLOW: %d %d\n", ret->len, maxlen-3);
 		// the buffer seems to be truncated, fail then...
 		free(ret);
 		return NULL;
 	}
 
 	if (block_haschildren(buf+3, ret->len)) {
-printf("has children\n");
 		unsigned char *ptr = buf+3;
 		while (ptr < buf+3+ret->len) {
 			struct block *deser = block_deserialize(ptr, buf+maxlen-ptr, ret);
 
 			if (deser == NULL) {
-printf("child has failed\n");
 				// One of the children has failed, fail too...
 				block_delete(ret);
 				return NULL;
@@ -43,7 +39,6 @@ printf("child has failed\n");
 			ret->nchildren++;
 		}
 	} else {
-printf("does not have children\n");
 		ret->data = malloc(ret->len);
 		memcpy(ret->data, buf+3, ret->len);
 	}

@@ -64,12 +64,10 @@ struct packet *packet_deserialize(unsigned char *buf, int len) {
 	ret->rawdatalen = 0;
 
 	if (len > 11) {
-printf("trying to deserialize block\n");
 		// try to deserialize inner block
 		ret->data = block_deserialize(buf+11, len-11, NULL);
 
 		if (!ret->data) {
-printf("saving as raw data\n");
 			// failed, save as raw data
 			ret->rawdata = malloc(len-11);
 			memcpy(ret->rawdata, buf+11, len-11);
