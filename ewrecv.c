@@ -815,8 +815,6 @@ void LogCh(char Chr) {
 }
 
 int SendChar(struct connection *c, char Chr) {
-	log_msg("xxxSendChar() %c/x%x\n", Chr, Chr);
-
 	if (LoggedIn && c && c != connection) return -1;
 
 	if (c && c->authenticated < 2) return -1;
@@ -825,7 +823,10 @@ int SendChar(struct connection *c, char Chr) {
 
 	if (Chr == 13) Chr = 10;
   
-	///if (Chr == 10) Chr = ETX; /* end of text */
+	// RS232 specific stuff
+	if (CuaFd >= 0) {
+		if (Chr == 10) Chr = ETX; /* end of text */
+	}
   
 	pdebug("SendChar() %c/x%x \n", Chr, Chr);
 
@@ -2107,29 +2108,26 @@ int main(int argc, char *argv[]) {
 					if (p && p->rawdata && p->data == NULL) {
 						// the block deserialize failed
 						if (pbuflen == 0) {
-printf("long answer\n");
 							// first truncated packet (copy with header)
 							memcpy(pbuf, buf, r);
 							pbuflen = r;
 							packet_delete(p); p = NULL;
-printf("ffff\n");
 						} else {
-printf("long answer continuation\n");
 							// continuation (copy without header)
 							memcpy(pbuf+pbuflen, p->rawdata, p->rawdatalen);
 							pbuflen += p->rawdatalen;
 							packet_delete(p); p = NULL;
 						}
 					}
-printf("adasd\n");
+
 					// test whether the packet is now complete
 					if (!p && pbuflen > 0) {
 						p = packet_deserialize(pbuf, pbuflen);
 						if (!p || (p->rawdata && !p->data)) {
-printf("Not complete yet...\n");
+							// not complete yet
 							packet_delete(p); p = NULL;
 						} else {
-printf("Complete!\n");
+							// complete
 							pbuflen = 0;
 						}
 					}
