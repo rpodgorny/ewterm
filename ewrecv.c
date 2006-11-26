@@ -108,6 +108,13 @@ int WantPrompt = 0; /* get prompt when CMD_READY */
 char Prompt = 0; /* prompt type */
 int LoggedIn = 0; /* logged in or not? */ /* 0 == not, 1 == in progress, 2 == yes */
 
+unsigned short LastConnId;
+unsigned short LastUnk3;
+unsigned char LastTail;
+unsigned short LastJob;
+unsigned short LastXXX1;
+unsigned short LastXXX2;
+
 #define WRITEBUF_MAX 16329
 char WriteBuf[WRITEBUF_MAX] = ""; int WriteBufLen;
 
@@ -218,14 +225,14 @@ struct packet *login_packet() {
 	xxx[0] = 0x01;
 	block_addchild(ret->data, "1", xxx, 1);
 
-	xxx[0] = 0;
-	xxx[1] = 0;
-	*(unsigned short *)(xxx+2) = htons(0);
+	*(unsigned short *)(xxx) = htons(0);
+	*(unsigned short *)(xxx+2) = htons(0); // job nr.
+	*(unsigned short *)(xxx+4) = htons(0);
 	xxx[6] = 0x45;//
 	xxx[7] = 0x01;//
 	xxx[8] = 0x20;//
-
 	block_addchild(ret->data, "2", xxx, 0x09);
+
 	block_addchild(ret->data, "4-1", (unsigned char *)"ENM", 3);
 
 	memset(xxx, 0xff, 0x01b8);
@@ -268,8 +275,7 @@ struct packet *command_packet(char *c, int len) {
 	xxx[0] = 0x05;
 	block_addchild(ret->data, "1", xxx, 1);
 
-	xxx[0] = 0;
-	xxx[1] = 0;
+	*(unsigned short *)(xxx) = htons(0);
 	*(unsigned short *)(xxx+2) = htons(0); // job nr.
 	xxx[4] = 0xdd;
 	xxx[5] = 0xe1;
@@ -277,6 +283,41 @@ struct packet *command_packet(char *c, int len) {
 	xxx[7] = 0x01;
 	xxx[8] = 0x20;
 	block_addchild(ret->data, "2", xxx, 0x09);
+
+	block_addchild(ret->data, "6-1", (unsigned char *)c, len);
+
+	return ret;
+}
+
+struct packet *command_confirmation_packet(char *c, int len) {
+	struct packet *ret = malloc(sizeof(struct packet));
+	ret->family = 0xf1;
+	ret->unk1 = 0xe0;
+	ret->dir = 0x03;
+	ret->pltype = 0x01;
+	ret->connid = LastConnId;
+	ret->subseq = 0;
+	ret->unk2 = 0;
+	ret->unk3 = LastUnk3;
+	ret->tail = LastTail;
+
+	ret->data = malloc(sizeof(struct block));
+	ret->data->id = 8;
+	ret->data->data = NULL;
+	ret->data->nchildren = 0;
+
+	unsigned char xxx[1024];
+
+	xxx[0] = 0x05;
+	block_addchild(ret->data, "1", xxx, 1);
+
+	*(unsigned short *)(xxx) = htons(0);
+	*(unsigned short *)(xxx+2) = htons(LastJob);
+	*(unsigned short *)(xxx+4) = htons(LastXXX1);
+	*(unsigned short *)(xxx+6) = htons(LastXXX2);
+	xxx[8] = 0x20;
+	xxx[9] = 0x02;
+	block_addchild(ret->data, "2", xxx, 0x0a);
 
 	block_addchild(ret->data, "6-1", (unsigned char *)c, len);
 
@@ -1135,12 +1176,11 @@ void ProcessExchangeChar(char Chr) {
 
 /* for X.25 communication */
 void ProcessExchangePacket(struct packet *p) {
-//	if ((p->dir == 2 && p->pltype == 2)
-//	|| (p->dir == 2 && p->pltype == 1 && p->subseq <= 1)) {
 	if (p->dir == 2) {
-		// short answer
 		struct block *b = NULL;
-		int jobnr = 0;
+		unsigned short jobnr = 0;
+		unsigned short xxx1 = 0;
+		unsigned short xxx2 = 0;
 		char omt[200] = "";
 		char user[200] = "";
 		char exch[200] = "";
@@ -1148,6 +1188,13 @@ void ProcessExchangePacket(struct packet *p) {
 		char err[32000] = "";
 		char prompt[32000] = "";
 		char answer[32000] = "";
+
+		b = block_getchild(p->data, "2");
+		if (b) {
+			jobnr = ntohs(*(unsigned short *)(b->data+2));
+			xxx1 = ntohs(*(unsigned short *)(b->data+4));
+			xxx2 = ntohs(*(unsigned short *)(b->data+6));
+		}
 
 		b = block_getchild(p->data, "4-4");
 		if (b) strncpy(omt, (char *)b->data, b->len);
@@ -1169,15 +1216,28 @@ void ProcessExchangePacket(struct packet *p) {
 		b = block_getchild(p->data, "5-3");
 		if (b) strncpy(prompt, (char *)b->data, b->len);
 
+		if (strlen(prompt)) {
+printf("saving with prompt=I\n");
+			// this is a command from EWSD
+			LastConnId = p->connid;
+			LastUnk3 = p->unk3;
+			LastTail = p->tail;
+			LastJob = jobnr;
+			LastXXX1 = xxx1;
+			LastXXX2 = xxx2;
+			Prompt = 'I';
+		} else {
+			Prompt = 0;
+		}
+
 		foreach_auth_conn (NULL) {
 			IProtoSEND(c, 0x47, header);
 
 			if (strlen(err)) Write(c, err, strlen(err));
 			if (strlen(answer)) Write(c, answer, strlen(answer));
 
-			IProtoSEND(c, 0x45, "234"); // does not work (job number)
+			IProtoSEND(c, 0x45, "234"); // job number (does not work?)
 
-			// TODO: we don't save context
 			if (strlen(prompt)) {
 				IProtoSEND(c, 0x40, NULL);
 				Write(c, prompt, strlen(prompt));
@@ -2082,7 +2142,7 @@ int main(int argc, char *argv[]) {
 					// send confirmation
 					// TODO: create something like packet_copy()
 					///if (p->dir == 2 && p->pltype == 2) {
-					if (p && p->dir == 2) {
+					if (p && p->dir == 2 && p->pltype != 0) {
 						struct packet *confirm = malloc(sizeof(struct packet));
 						memcpy(confirm, p, sizeof(struct packet));
 						confirm->data = NULL;
@@ -2137,7 +2197,14 @@ int main(int argc, char *argv[]) {
 			if (X25Fd >= 0 && FD_ISSET(X25Fd, &WriteQ)) {
 				log_msg("TO X.25\n");
 
-				struct packet *p = command_packet(WriteBuf, WriteBufLen);
+				struct packet *p = NULL;
+				if (!Prompt) {
+					p = command_packet(WriteBuf, WriteBufLen);
+				} else if (Prompt == 'I') {
+					p = command_confirmation_packet(WriteBuf, WriteBufLen);
+					Prompt = 0;
+				}
+
 				unsigned char buf[32000];
 				int len = packet_serialize(p, buf);
 				packet_delete(p);
