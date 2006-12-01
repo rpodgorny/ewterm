@@ -660,13 +660,6 @@ void ReOpenX25() {
 			perror("connect");
 			exit(2);
 		}
-/*
-		struct packet *p = login_packet();
-
-		unsigned char buf[32000];
-		int len = packet_serialize(p, buf);
-		write(X25Fd, buf, len);
-*/
 	}
 }
 
@@ -1056,8 +1049,6 @@ void ProcessExchangePacket(struct packet *p) {
 	if (p->dir == 2 || p->dir == 3) {
 		struct block *b = NULL;
 		unsigned short jobnr = 0;
-		unsigned short xxx1 = 0;
-		unsigned short xxx2 = 0;
 		char omt[200] = "";
 		char user[200] = "";
 		char exch[200] = "";
@@ -1069,8 +1060,6 @@ void ProcessExchangePacket(struct packet *p) {
 		b = block_getchild(p->data, "2");
 		if (b) {
 			jobnr = ntohs(*(unsigned short *)(b->data+2));
-			xxx1 = ntohs(*(unsigned short *)(b->data+4));
-			xxx2 = ntohs(*(unsigned short *)(b->data+6));
 		}
 
 		b = block_getchild(p->data, "4-4");
@@ -1094,14 +1083,10 @@ void ProcessExchangePacket(struct packet *p) {
 		if (b) strncpy(prompt, (char *)b->data, b->len);
 
 		if (strlen(prompt)) {
-printf("saving with prompt=I\n");
 			// this is a command from EWSD
 			LastConnId = p->connid;
 			LastUnk3 = p->unk3;
 			LastTail = p->tail;
-			LastJob = jobnr;
-			LastXXX1 = xxx1;
-			LastXXX2 = xxx2;
 			Prompt = 'I';
 		} else {
 			Prompt = 0;
@@ -1302,7 +1287,7 @@ void LoginPromptRequest(struct connection *conn, char *d) {
 		SendChar(NULL, BEL);
 		SendChar(NULL, ACK);
 	} else if (X25Fd >= 0) {
-		struct packet *p = login_packet();
+		struct packet *p = login_packet("ALI1", "CURRENTLY INGORED");
 
 		unsigned char buf[32000];
 		int len = packet_serialize(p, buf);
