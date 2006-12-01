@@ -1,3 +1,6 @@
+#ifndef EW__X25_BLOCK_H
+#define EW__X25_BLOCK_H
+
 struct block {
 	int id;
 	int len;
@@ -17,3 +20,5 @@ void block_getpath(struct block *, char *);
 void block_print(struct block *);
 int block_serialize(struct block *, unsigned char *);
 int block_haschildren(unsigned char *, int);
+
+#endif
