@@ -112,9 +112,6 @@ int LoggedIn = 0; /* logged in or not? */ /* 0 == not, 1 == in progress, 2 == ye
 unsigned short LastConnId;
 unsigned short LastUnk3;
 unsigned char LastTail;
-unsigned short LastJob;
-unsigned short LastXXX1;
-unsigned short LastXXX2;
 
 #define WRITEBUF_MAX 16329
 char WriteBuf[WRITEBUF_MAX] = ""; int WriteBufLen;
@@ -2081,7 +2078,7 @@ int main(int argc, char *argv[]) {
 				if (!Prompt) {
 					p = command_packet(WriteBuf, WriteBufLen);
 				} else if (Prompt == 'I') {
-					p = command_confirmation_packet(WriteBuf, WriteBufLen);
+					p = command_confirmation_packet(LastConnId, LastUnk3, LastTail, WriteBuf, WriteBufLen);
 					Prompt = 0;
 				}
 
