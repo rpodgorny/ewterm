@@ -88,8 +88,8 @@ ewterm: $(EWTERM_OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o ewterm $(EWTERM_OBJS) -lpanel -lncurses -lfl
 
 
-ewrecv: ewrecv.o logging.o iproto.o md5.o x25_packet.o x25_block.o
-	$(CC) $(CFLAGS) $(LDFLAGS) -o ewrecv ewrecv.o logging.o iproto.o md5.o x25_packet.o x25_block.o
+ewrecv: ewrecv.o logging.o iproto.o md5.o x25_packet.o x25_block.o x25_utils.o
+	$(CC) $(CFLAGS) $(LDFLAGS) -o ewrecv ewrecv.o logging.o iproto.o md5.o x25_packet.o x25_block.o x25_utils.o
 
 
 mkforms: mkforms.o

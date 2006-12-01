@@ -1,3 +1,6 @@
+#ifndef EW__X25_PACKET_H
+#define EW__X25_PACKET_H
+
 #include "x25_block.h"
 
 
@@ -23,3 +26,5 @@ void packet_delete(struct packet *);
 struct packet *packet_deserialize(unsigned char *, int);
 void packet_print(struct packet *);
 int packet_serialize(struct packet *, unsigned char *);
+
+#endif
