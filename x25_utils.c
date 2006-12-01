@@ -89,25 +89,17 @@ struct packet *command_packet(char *c, int len) {
 	return ret;
 }
 
-// TODO; Get rid these!!!
-extern unsigned short LastConnId;
-extern unsigned short LastUnk3;
-extern unsigned char LastTail;
-extern unsigned short LastJob;
-extern unsigned short LastXXX1;
-extern unsigned short LastXXX2;
-
-struct packet *command_confirmation_packet(char *c, int len) {
+struct packet *command_confirmation_packet(unsigned short connid, unsigned short unk3, unsigned char tail, char *c, int len) {
 	struct packet *ret = malloc(sizeof(struct packet));
 	ret->family = 0xf1;
 	ret->unk1 = 0xe0;
 	ret->dir = 0x03;
 	ret->pltype = 0x01;
-	ret->connid = LastConnId;
+	ret->connid = connid;
 	ret->subseq = 0;
 	ret->unk2 = 0;
-	ret->unk3 = LastUnk3;
-	ret->tail = LastTail;
+	ret->unk3 = unk3;
+	ret->tail = tail;
 
 	ret->data = malloc(sizeof(struct block));
 	ret->data->id = 8;
@@ -120,11 +112,11 @@ struct packet *command_confirmation_packet(char *c, int len) {
 	block_addchild(ret->data, "1", xxx, 1);
 
 	*(unsigned short *)(xxx) = htons(0);
-	*(unsigned short *)(xxx+2) = htons(LastJob);
-	*(unsigned short *)(xxx+4) = htons(LastXXX1);
-	*(unsigned short *)(xxx+6) = htons(LastXXX2);
-	xxx[8] = 0x20;
-	xxx[9] = 0x02;
+	*(unsigned short *)(xxx+2) = htons(0);
+	*(unsigned short *)(xxx+4) = htons(0);
+	*(unsigned short *)(xxx+6) = htons(0);
+	xxx[8] = 0;//0x20;
+	xxx[9] = 0;//0x02;
 	block_addchild(ret->data, "2", xxx, 0x0a);
 
 	block_addchild(ret->data, "6-1", (unsigned char *)c, len);
