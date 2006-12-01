@@ -4,7 +4,7 @@
 
 #include "x25_utils.h"
 
-struct packet *login_packet() {
+struct packet *login_packet(char *username, char *password) {
 	struct packet *ret = malloc(sizeof(struct packet));
 	ret->family = 0xf1;
 	ret->unk1 = 0xe0;
@@ -41,7 +41,7 @@ struct packet *login_packet() {
 	memset(xxx, 0x00, 2);
 	block_addchild(ret->data, "4-3-2-1", xxx, 2);
 
-	block_addchild(ret->data, "4-3-2-2", (unsigned char *)"ALI1", 4);
+	block_addchild(ret->data, "4-3-2-2", username, strlen(username));
 
 	unsigned char pass[] = {0x95, 0x02, 0x6e, 0x55, 0x12, 0x55, 0x97, 0xe1, 0x33, 0x6e, 0x43, 0xa7, 0xb3, 0x53, 0x07, 0x75, 0x41, 0x7b, 0x0c, 0x06, 0x3a, 0xa8, 0x7d, 0xd5, 0x09, 0x00};
 
