@@ -27,6 +27,8 @@ struct packet *packet_alloc() {
 }
 
 int packet_serialize(struct packet *p, unsigned char *buf) {
+	if (!p) return 0;
+
 	int ret = 11;
 
 	*buf = p->family;
