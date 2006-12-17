@@ -593,10 +593,17 @@ void ReOpenX25() {
 
 		bind_addr.sx25_family = AF_X25;
 		dest_addr.sx25_family = AF_X25;
-		//strcpy(bind_addr.sx25_addr.x25_addr, "10000001");
-		//strcpy(dest_addr.sx25_addr.x25_addr, "10000006");
-		strcpy(bind_addr.sx25_addr.x25_addr, X25Local);
-		strcpy(dest_addr.sx25_addr.x25_addr, X25Remote);
+
+		char x25local[256], x25remote[256];
+		strcpy(x25local, X25Local);
+		strcpy(x25remote, X25Remote);
+
+		char *idx;
+		if ((idx = index(x25local, '-')) != NULL) *idx = 0;
+		if ((idx = index(x25remote, '-')) != NULL) *idx = 0;
+
+		strcpy(bind_addr.sx25_addr.x25_addr, x25local);
+		strcpy(dest_addr.sx25_addr.x25_addr, x25remote);
 
 		X25Fd = socket(AF_X25, SOCK_SEQPACKET, 0);
 		if (X25Fd < 0) {
@@ -644,13 +651,17 @@ void ReOpenX25() {
 			exit(2);
 		}
 
-		unsigned char tmp1[] = {0x36, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x01, 0x30, 0x1f};
-		unsigned char tmp2[] = {0x36, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x06, 0x10, 0x1f};
+		unsigned char calling_exten[10];
+		unsigned char called_exten[10];
+
+		to_bcd(calling_exten, X25Local);
+		to_bcd(called_exten, X25Remote);
+
 		struct x25_dte_facilities dtefac;
 		dtefac.calling_len = 20;
 		dtefac.called_len = 20;
-		memcpy(&dtefac.calling_ae, &tmp1, 10);
-		memcpy(&dtefac.called_ae, &tmp2, 10);
+		memcpy(&dtefac.calling_ae, &calling_exten, 10);
+		memcpy(&dtefac.called_ae, &called_exten, 10);
 
 		res = ioctl(X25Fd, SIOCX25SDTEFACILITIES, &dtefac);
 		if (res < 0) {
