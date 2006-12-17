@@ -587,7 +587,7 @@ void ReOpenX25() {
 		bind_addr.sx25_family = AF_X25;
 		dest_addr.sx25_family = AF_X25;
 		strcpy(bind_addr.sx25_addr.x25_addr, "10000001");
-		strcpy(dest_addr.sx25_addr.x25_addr, "10000002");
+		strcpy(dest_addr.sx25_addr.x25_addr, "10000006");
 
 		X25Fd = socket(AF_X25, SOCK_SEQPACKET, 0);
 		if (X25Fd < 0) {
@@ -636,7 +636,7 @@ void ReOpenX25() {
 		}
 
 		unsigned char tmp1[] = {0x36, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x01, 0x30, 0x1f};
-		unsigned char tmp2[] = {0x36, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x02, 0x10, 0x1f};
+		unsigned char tmp2[] = {0x36, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x06, 0x10, 0x1f};
 		struct x25_dte_facilities dtefac;
 		dtefac.calling_len = 20;
 		dtefac.called_len = 20;
@@ -1287,7 +1287,7 @@ void LoginPromptRequest(struct connection *conn, char *d) {
 		SendChar(NULL, BEL);
 		SendChar(NULL, ACK);
 	} else if (X25Fd >= 0) {
-		struct packet *p = login_packet("ALI1", "CURRENTLY INGORED");
+		struct packet *p = login_packet_old("ALI1", "CURRENTLY INGORED");
 
 		unsigned char buf[32000];
 		int len = packet_serialize(p, buf);
