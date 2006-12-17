@@ -1,23 +1,46 @@
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <arpa/inet.h>
 
 #include "x25_utils.h"
 
-int cdte_to_bcd(char *to, char *from, int length) {
-	char *src;
-	int i;
+// TODO: currently hardcoded to 10 bytes of output
+// returns number of digits
+int to_bcd(unsigned char *buf, char *str) {
+	int ret = 0;
 
-	src = to;
-	for (i = 0; i < length; i += 2) {
-		*src = (*from++ << 4) & 0xf0;
-		*src++ |= (*from++ & 0x0f);
+	memset(buf, 0, 10);
+	buf[0] = 0x36; // first byte must be 0x36, why?
+
+	unsigned char tmpbuf[10];
+	memset(tmpbuf, 0, 10);
+
+	int i = 0, len = strlen(str);
+	for (i = 0; i < len; i++) {
+		if (!isdigit(str[i])) continue;
+
+		unsigned char num = str[i] - '0';
+
+		tmpbuf[ret/2] |= num << (4 * !(ret%2));
+
+		ret++;
 	}
 
-	i = (length + 1)/2;
-	if (length & 1) to[i-1] |= 0x0f;
+	// reuse the var for encoded length
+	len = ret/2;
 
-	return i;
+	if (ret % 2) {
+		// odd number of digits
+		tmpbuf[ret/2] |= 0x0f;
+		len++;
+	}
+
+	for (i = 0; i < len; i++) {
+		buf[10-len+i] = tmpbuf[i];
+	}
+
+	return ret;
 }
 
 struct packet *login_packet(char *username, char *password) {
@@ -58,9 +81,9 @@ struct packet *login_packet(char *username, char *password) {
 	memset(xxx, 0x00, 2);
 	block_addchild(ret->data, "4-3-2-1", xxx, 2);
 
-	block_addchild(ret->data, "4-3-2-2", username, strlen(username));
+	block_addchild(ret->data, "4-3-2-2", (unsigned char *)username, strlen(username));
 
-	block_addchild(ret->data, "4-3-2-3", password, strlen(password));
+	block_addchild(ret->data, "4-3-2-3", (unsigned char *)password, strlen(password));
 
 	memset(xxx, 0x00, 1);
 	block_addchild(ret->data, "4-3-2-5", xxx, 1);
