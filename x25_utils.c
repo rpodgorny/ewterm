@@ -4,6 +4,22 @@
 
 #include "x25_utils.h"
 
+int cdte_to_bcd(char *to, char *from, int length) {
+	char *src;
+	int i;
+
+	src = to;
+	for (i = 0; i < length; i += 2) {
+		*src = (*from++ << 4) & 0xf0;
+		*src++ |= (*from++ & 0x0f);
+	}
+
+	i = (length + 1)/2;
+	if (length & 1) to[i-1] |= 0x0f;
+
+	return i;
+}
+
 struct packet *login_packet(char *username, char *password) {
 	struct packet *ret = malloc(sizeof(struct packet));
 	ret->family = 0xf1;

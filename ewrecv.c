@@ -125,9 +125,12 @@ int SockFd = -1; /* listening socket */
 int Reselect = 0;
 
 /* x25 socket */
-char X25Name[256] = "";
-unsigned int X25Port = 9000;
+//char X25Name[256] = "";
+//unsigned int X25Port = 9000;
 int X25Fd = -1;
+
+char X25Local[256] = "";
+char X25Remote[256] = "";
 
 char X25User[256] = "";
 char X25Passwd[256] = "";
@@ -536,7 +539,8 @@ void ReOpenX25() {
 		/* Lock new */
 #ifdef LOCKDIR
 		/* Make lock name */
-		char *FirstPtr = rindex(X25Name, '/');
+		// TODO: sanitize this
+		char *FirstPtr = rindex(X25Local, '/');
 
 		sprintf(LockName, "%s/LCK..%s", LOCKDIR, FirstPtr);
 
@@ -589,8 +593,10 @@ void ReOpenX25() {
 
 		bind_addr.sx25_family = AF_X25;
 		dest_addr.sx25_family = AF_X25;
-		strcpy(bind_addr.sx25_addr.x25_addr, "10000001");
-		strcpy(dest_addr.sx25_addr.x25_addr, "10000006");
+		//strcpy(bind_addr.sx25_addr.x25_addr, "10000001");
+		//strcpy(dest_addr.sx25_addr.x25_addr, "10000006");
+		strcpy(bind_addr.sx25_addr.x25_addr, X25Local);
+		strcpy(dest_addr.sx25_addr.x25_addr, X25Remote);
 
 		X25Fd = socket(AF_X25, SOCK_SEQPACKET, 0);
 		if (X25Fd < 0) {
@@ -1629,17 +1635,10 @@ int main(int argc, char *argv[]) {
 					for (i = 0; argv[ac][i]; i++) argv[ac][i] = '#';
 				}
 				break;
-			case 9:
-				strncpy(X25Name, argv[ac], 256);
-				if (strchr(X25Name, ':')) {
-					char *s = strchr(X25Name, ':');
-					*s = 0;
-					X25Port = atoi(s + 1);
-					break;
-				}
-				break;
-			case 10: strncpy(X25User, argv[ac], 256); break;
-			case 11: strncpy(X25Passwd, argv[ac], 256); break;
+			case 9: strncpy(X25Local, argv[ac], 256); break;
+			case 10: strncpy(X25Remote, argv[ac], 256); break;
+			case 11: strncpy(X25User, argv[ac], 256); break;
+			case 12: strncpy(X25Passwd, argv[ac], 256); break;
 		}
 
 		if (swp) {
@@ -1656,7 +1655,8 @@ int main(int argc, char *argv[]) {
 			printf("-h\tDisplay this help\n");
 			printf("-c\tConnect to <cuadev> cua device (defaults to %s)\n", DEFDEVICE);
 			printf("-s\tSet <speed> speed on cua device (defaults to %s)\n", DEFSPEED);
-			printf("-x\tConnect to <addr1> X.25 node from <addr2>\n");
+			printf("--x25local\tLocal endpoint X.25 address\n");
+			printf("--x25remote\tRemote endpoint X.25 address\n");
 			printf("--x25user\t Username for X.25 connection\n");
 			printf("--x25passwd\t Password for X.25 connection\n");
 			printf("-f\tLog to file <file>\n");
@@ -1726,8 +1726,13 @@ int main(int argc, char *argv[]) {
 			continue;
 		}
 
-		if (!strcmp(argv[ac], "-x") || !strcmp(argv[ac], "--x25")) {
+		if (!strcmp(argv[ac], "--x25local")) {
 			swp = 9;
+			continue;
+		}
+
+		if (!strcmp(argv[ac], "--x25remote")) {
+			swp = 10;
 			continue;
 		}
 
@@ -1747,12 +1752,12 @@ int main(int argc, char *argv[]) {
 		}
 
 		if (!strcmp(argv[ac], "--x25user")) {
-			swp = 10;
+			swp = 11;
 			continue;
 		}
 
 		if (!strcmp(argv[ac], "--x25passwd")) {
-			swp = 11;
+			swp = 12;
 			continue;
 		}
 	}
@@ -1764,7 +1769,7 @@ int main(int argc, char *argv[]) {
 
 	InstallSignals();
 
-	if (X25Name && *X25Name) {
+	if (X25Local && *X25Local && X25Remote && *X25Remote) {
 		/* open x25 device */
 		ReOpenX25();
 	} else if (CuaName && *CuaName) {
