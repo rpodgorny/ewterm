@@ -129,6 +129,9 @@ char X25Name[256] = "";
 unsigned int X25Port = 9000;
 int X25Fd = -1;
 
+char X25User[256] = "";
+char X25Passwd[256] = "";
+
 /* Log files */
 
 FILE *LogFl1 = NULL, *LogFl2 = NULL, *LogRaw = NULL;
@@ -1287,7 +1290,7 @@ void LoginPromptRequest(struct connection *conn, char *d) {
 		SendChar(NULL, BEL);
 		SendChar(NULL, ACK);
 	} else if (X25Fd >= 0) {
-		struct packet *p = login_packet_old("ALI1", "CURRENTLY INGORED");
+		struct packet *p = login_packet(X25User, X25Passwd);
 
 		unsigned char buf[32000];
 		int len = packet_serialize(p, buf);
@@ -1635,6 +1638,8 @@ int main(int argc, char *argv[]) {
 					break;
 				}
 				break;
+			case 10: strncpy(X25User, argv[ac], 256); break;
+			case 11: strncpy(X25Passwd, argv[ac], 256); break;
 		}
 
 		if (swp) {
@@ -1643,14 +1648,17 @@ int main(int argc, char *argv[]) {
 		}
     
 		if (!strcmp(argv[ac], "-h") || !strcmp(argv[ac], "--help")) {
-			printf("\nUsage:\t%s [-h|--help] [-c|--cuadev <cuadev>] [-s|--speed <speed>]\n", argv[0]);
+			printf("\nUsage:\t%s ", argv[0]);
+			printf("[-h|--help] [-c|--cuadev <cuadev>] [-s|--speed <speed>]\n");
 			printf("\t[-f|--logfile <file>] [-L|--daylog] [-p|--printlog] [-r|--rawfile <file>]\n");
 			printf("\t[-H|--host <host>[:<port>]] [-P|--port <port>] [-w|--password <pwd>]\n");
 			printf("\t[-W|--ropassword <pwd>] [-g|--fg] [-S|--silent] [-v|--verbose]\n\n");
 			printf("-h\tDisplay this help\n");
 			printf("-c\tConnect to <cuadev> cua device (defaults to %s)\n", DEFDEVICE);
 			printf("-s\tSet <speed> speed on cua device (defaults to %s)\n", DEFSPEED);
-			printf("-x\tConnect to <addr> X.25 node\n");
+			printf("-x\tConnect to <addr1> X.25 node from <addr2>\n");
+			printf("--x25user\t Username for X.25 connection\n");
+			printf("--x25passwd\t Password for X.25 connection\n");
 			printf("-f\tLog to file <file>\n");
 			printf("-L\tTake -f parameter as directory name and log each day to separate\n");
 			printf("\tfile, each one named <file>/YYYY-MM-DD\n");
@@ -1735,6 +1743,16 @@ int main(int argc, char *argv[]) {
 
 		if (!strcmp(argv[ac], "-v") || !strcmp(argv[ac], "--verbose")) {
 			Verbose = 1;
+			continue;
+		}
+
+		if (!strcmp(argv[ac], "--x25user")) {
+			swp = 10;
+			continue;
+		}
+
+		if (!strcmp(argv[ac], "--x25passwd")) {
+			swp = 11;
 			continue;
 		}
 	}
