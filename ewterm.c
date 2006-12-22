@@ -142,7 +142,8 @@ void MainProc() {
 
 	RecreateWindows();
   
-	AddStr("EWTerm "VERSION" written by Petr Baudis, 2001, 2002, 2003\n\n", 0, 0);
+	AddStr("EWTerm "VERSION" written by Petr Baudis, 2001, 2002, 2003\n", 0, 0);
+	AddStr("X.25 functionality added by Radek Podgorny, 2006\n\n", 0, 0);
 	AddStr("Press F1 for help\n\n", 0, 0);
   
 	if (BadOpt) AddEStr("WARNING: Couldn't read option file: Bad version\n\n", 0, 0);
@@ -385,6 +386,10 @@ void ProcessArgs(int argc, char *argv[]) {
 				BurstLines = atoi(argv[ac]);
 				*BurstLinesStr = 0;
 				break;
+			case 5:
+				strncpy(ConnUsername, argv[ac], 128);
+				strcpy(argv[ac], "*");
+				break;
 		}
 
 		if (swp) {
@@ -400,6 +405,7 @@ void ProcessArgs(int argc, char *argv[]) {
 			printf("-h\tDisplay this help\n");
 			printf("-c\tConnect to <host> (defaults to %s)\n", HostName);
 			printf("-p\tConnect to <port> (defaults to %d)\n", HostPort);
+			printf("-u\tUse <username> when connecting to ewrecv\n");
 			printf("-w\tUse <password> when connecting to ewrecv\n");
 			printf("-l\tDon't attach to ewrecv (for testing, doesn't send exchange anything)\n");
 			printf("-m\tForce mono mode\n");
@@ -411,6 +417,8 @@ void ProcessArgs(int argc, char *argv[]) {
 			swp = 1;
 		} else if (! strcmp(argv[ac], "-p") || ! strcmp(argv[ac], "--port")) {
 			swp = 2;
+		} else if (! strcmp(argv[ac], "-u") || ! strcmp(argv[ac], "--password")) {
+			swp = 5;
 		} else if (! strcmp(argv[ac], "-w") || ! strcmp(argv[ac], "--password")) {
 			swp = 3;
 		} else if (! strcmp(argv[ac], "-l") || ! strcmp(argv[ac], "--alone")) {
@@ -440,6 +448,7 @@ int main(int argc, char **argv) {
 	wl = wl;
 
 	printf("EWTerm "VERSION" written by Petr Baudis, 2001, 2002\n");
+	printf("X.25 functionality added by Radek Podgorny, 2006\n");
 
 	/* Set some directories to CWD */
 	getcwd(LogFName, 255);

@@ -80,6 +80,7 @@ extern int LoggedOff, InputRequest;
 extern char *PendingCmd;
 extern char ActPasswd[], ActUsrname[], ActOMT[], ActExchange[];
 extern int ActJob, LastMask; extern char InBurst;
+extern char ConnUsername[]; // TODO: move to somewhere else?
 extern void (*InputRequestHook)();
 extern void (*NoInputRequestHook)();
 extern void (*CancelHook)();

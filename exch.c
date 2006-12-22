@@ -72,6 +72,8 @@ int ActJob = 0;
 int LastMask = 0;
 int WeKnowItIsComing = 0;
 
+char ConnUsername[32];
+
 void LogOff(), GetJobData();
 
 struct user {
@@ -754,6 +756,14 @@ void GotHeader(struct connection *c, char *job, char *omt, char *uname, char *ex
 	RedrawStatus();
 }
 
+void GotUserRequest(struct connection *c, char *unknown_radekp) {
+	if (ConnUsername[0] != 0) {
+		IProtoSEND(c, 0x01, ConnUsername);
+	} else {
+		IProtoSEND(c, 0x01, getenv("USER"));
+	}
+}
+
 void AskForBurst() {
 	char l[128] = "";
 
@@ -829,7 +839,7 @@ struct connection *MkConnection(int SockFd) {
 
 		/* 2.1a */
 		NULL,
-		NULL,
+		GotUserRequest,
 
 		/* 2.2a */
 		NULL,
