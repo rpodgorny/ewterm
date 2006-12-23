@@ -1066,86 +1066,85 @@ void ProcessExchangeChar(char Chr) {
 
 /* for X.25 communication */
 void ProcessExchangePacket(struct packet *p) {
-	if (p->dir == 2 || p->dir == 3) {
-		struct block *b = NULL;
-		unsigned short jobnr = 0;
-		char omt[200] = "";
-		char user[200] = "";
-		char exch[200] = "";
-		char header[200] = "";
-		char err[32000] = "";
-		char prompt[32000] = "";
-		char answer[32000] = "";
+	struct block *b = NULL;
+	unsigned short jobnr = 0;
+	char omt[200] = "";
+	char user[200] = "";
+	char exch[200] = "";
+	char header[200] = "";
+	char err[32000] = "";
+	char unkx1[32000] = "";
+	char prompt[32000] = "";
+	char answer[32000] = "";
 
-		b = block_getchild(p->data, "2");
-		if (b) {
-			jobnr = ntohs(*(unsigned short *)(b->data+2));
-		}
+	b = block_getchild(p->data, "2");
+	if (b) {
+		jobnr = ntohs(*(unsigned short *)(b->data+2));
+	}
 
-		b = block_getchild(p->data, "4-4");
-		if (b) strncpy(omt, (char *)b->data, b->len);
+	b = block_getchild(p->data, "3-3");
+	if (b) strncpy(unkx1, (char *)b->data, b->len);
 
-		b = block_getchild(p->data, "4-5");
-		if (b) strncpy(user, (char *)b->data, b->len);
+	b = block_getchild(p->data, "4-4");
+	if (b) strncpy(omt, (char *)b->data, b->len);
 
-		b = block_getchild(p->data, "4-1");
-		if (b) strncpy(exch, (char *)b->data, b->len);
+	b = block_getchild(p->data, "4-5");
+	if (b) strncpy(user, (char *)b->data, b->len);
 
-		sprintf(header, "%d,%s,%s,%s", jobnr, omt, user, exch);
+	b = block_getchild(p->data, "4-1");
+	if (b) strncpy(exch, (char *)b->data, b->len);
 
-		b = block_getchild(p->data, "7");
-		if (b) strncpy(answer, (char *)b->data, b->len);
+	sprintf(header, "%d,%s,%s,%s", jobnr, omt, user, exch);
 
-		b = block_getchild(p->data, "5-2");
-		if (b) strncpy(err, (char *)b->data, b->len);
+	b = block_getchild(p->data, "7");
+	if (b) strncpy(answer, (char *)b->data, b->len);
 
-		b = block_getchild(p->data, "5-3");
-		if (b) strncpy(prompt, (char *)b->data, b->len);
+	b = block_getchild(p->data, "5-2");
+	if (b) strncpy(err, (char *)b->data, b->len);
 
-		if (strlen(prompt)) {
-			// this is a command from EWSD
-			LastConnId = p->connid;
-			LastUnk3 = p->unk3;
-			LastTail = p->tail;
-			Prompt = 'I';
-		} else {
-			Prompt = 0;
-		}
+	b = block_getchild(p->data, "5-3");
+	if (b) strncpy(prompt, (char *)b->data, b->len);
 
-		foreach_auth_conn (NULL) {
+
+	foreach_auth_conn (NULL) {
+		if (strlen(err)) Write(c, err, strlen(err));
+		if (strlen(answer)) Write(c, answer, strlen(answer));
+
+		if (p->dir == 2 || p->dir == 3) {
+			if (strlen(prompt)) {
+				// this is a command from EWSD
+				LastConnId = p->connid;
+				LastUnk3 = p->unk3;
+				LastTail = p->tail;
+				Prompt = 'I';
+			} else {
+				Prompt = 0;
+			}
+
 			IProtoSEND(c, 0x47, header);
 
-			if (strlen(err)) Write(c, err, strlen(err));
-			if (strlen(answer)) Write(c, answer, strlen(answer));
-
-			IProtoSEND(c, 0x45, "234"); // job number (does not work?)
+			//IProtoSEND(c, 0x45, "234"); // job number (does not work?)
 
 			if (strlen(prompt)) {
 				IProtoSEND(c, 0x40, NULL);
 				Write(c, prompt, strlen(prompt));
 				IProtoSEND(c, 0x41, "I");
 			}
-		} foreach_auth_conn_end
-	} else if (p->dir == 0x0c && p->pltype == 1) {
-		// Login success (no check for failure yet)
-		foreach_auth_conn (NULL) {
-			IProtoSEND(c, 0x43, NULL);
-		} foreach_auth_conn_end
-	} else if (p->dir == 0x0e && p->pltype == 0) {
-		// Session timeout (maybe more errors)
-		struct block *b = block_getchild(p->data, "5-2");
-		char str[32000] = "";
-
-		if (b) strncpy(str, (char *)b->data, b->len);
-
-		foreach_auth_conn (NULL) {
-			Write(c, str, strlen(str));
-
+		} else if (p->dir == 0x0c && p->pltype == 1) {
+			if (strlen(unkx1)) {
+				// Login success
+				IProtoSEND(c, 0x43, NULL);
+			} else {
+				// Login failure
+				IProtoSEND(c, 0x42, NULL);
+			}
+		} else if (p->dir == 0x0e && p->pltype == 0) {
+			// Session timeout (maybe more errors)
 			IProtoSEND(c, 0x44, NULL);
-		} foreach_auth_conn_end
 
-		LoggedIn = 0;
-	}
+			LoggedIn = 0;
+		}
+	} foreach_auth_conn_end
 }
 
 void AnnounceUser(struct connection *conn, int opcode);
