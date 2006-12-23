@@ -81,6 +81,10 @@ DC2:
 
 	0x08	CRAM failed	This indicates that the CRAM authentification failed. This is usually sent right before dropping the connection. Ignore the data part.
 
+== 6.0 ==
+
+	0x48	I will start sending alarm messages.
+	0x49	I will stop sending alarm messages.
 
 DC3:
 	We ASK the peer for something. The packet has format:
@@ -119,6 +123,11 @@ DC3:
 	This is valid only for ewterm->ewrecv direction.
 
 	0x3f	Burst me - Send ewterm the burst, containing the history of previous activity. See above for the burst format description. <data> contains number of lines (everything if empty), strip everything after [,.:@;-].*.
+
+== 6.0 ==
+
+	0x44	Start sending alarm messages.
+	0x45	Stop sending alarm messages.
 
 DC4:
  	Like DC1, but we don't forward the stuff to other ewterms. Nice for passwords stuff.
