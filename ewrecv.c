@@ -1073,7 +1073,7 @@ void ProcessExchangePacket(struct packet *p) {
 	char exch[200] = "";
 	char header[200] = "";
 	char err[32000] = "";
-	char unkx1[32000] = "";
+	char unkx1_radekp[32000] = "";
 	char prompt[32000] = "";
 	char answer[32000] = "";
 
@@ -1083,7 +1083,7 @@ void ProcessExchangePacket(struct packet *p) {
 	}
 
 	b = block_getchild(p->data, "3-3");
-	if (b) strncpy(unkx1, (char *)b->data, b->len);
+	if (b) strncpy(unkx1_radekp, (char *)b->data, b->len);
 
 	b = block_getchild(p->data, "4-4");
 	if (b) strncpy(omt, (char *)b->data, b->len);
@@ -1131,7 +1131,7 @@ void ProcessExchangePacket(struct packet *p) {
 				IProtoSEND(c, 0x41, "I");
 			}
 		} else if (p->dir == 0x0c && p->pltype == 1) {
-			if (strlen(unkx1)) {
+			if (strlen(unkx1_radekp)) {
 				// Login success
 				IProtoSEND(c, 0x43, NULL);
 			} else {
