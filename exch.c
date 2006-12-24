@@ -837,6 +837,10 @@ struct connection *MkConnection(int SockFd) {
 		/* 2.3a */
 		GotPrivMsg,
 
+		/* 6.0 */
+		NULL,
+		NULL,
+
 		/* 2.1a */
 		NULL,
 		GotUserRequest,
@@ -851,6 +855,11 @@ struct connection *MkConnection(int SockFd) {
 		GotCRAM,
 
 		/* 0.5rc2 */
+		NULL,
+
+		/* 6.0 */
+		NULL,
+		NULL,
 		NULL,
 
 		/* 0.5pre3 */
