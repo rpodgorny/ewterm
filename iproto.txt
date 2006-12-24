@@ -128,6 +128,7 @@ DC3:
 
 	0x44	Start sending alarm messages.
 	0x45	Stop sending alarm messages.
+	0x46	Logout request.
 
 DC4:
  	Like DC1, but we don't forward the stuff to other ewterms. Nice for passwords stuff.
