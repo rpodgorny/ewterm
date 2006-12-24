@@ -44,6 +44,9 @@ struct conn_handlers {
 
   void (*SENDPrivMsg)(struct connection *, char *, int, char *, char *, char *);
 
+	void (*SENDAlarmsStart)(struct connection *);
+	void (*SENDAlarmsEnd)(struct connection *);
+
   void (*ASKVersion)(struct connection *, char *);
   void (*ASKUser)(struct connection *, char *);
 
@@ -55,6 +58,10 @@ struct conn_handlers {
   void (*ASKCRAM)(struct connection *, char *, char *);
 
   void (*ASKBurstMe)(struct connection *, char *, char *);
+
+	void (*ASKAlarmsStart)(struct connection *);
+	void (*ASKAlarmsEnd)(struct connection *);
+	void (*ASKLogout)(struct connection *);
 
   void (*AuthSuccess)(struct connection *);
   void (*AuthFailed)(struct connection *);

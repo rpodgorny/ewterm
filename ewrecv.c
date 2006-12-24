@@ -1416,6 +1416,10 @@ struct connection *TryAccept(int Fd) {
 			/* 2.3a */
 			GotPrivMsg,
 
+			/* 6.0 */
+			NULL,
+			NULL,
+
 			/* 2.1a */
 			NULL,
 			NULL,
@@ -1431,6 +1435,11 @@ struct connection *TryAccept(int Fd) {
 
 			/* 0.5rc2 */
 			SendBurst,
+
+			/* 6.0 */
+			NULL,
+			NULL,
+			NULL,
 
 			/* 0.5pre3 */
 			SendIntro /* AuthSuccess */,
