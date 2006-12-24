@@ -1374,6 +1374,10 @@ void SendIntro(struct connection *conn) {
 	WriteChar(conn, SI); /* end burst */
 }
 
+void LogoutRequest(struct connection *conn, char *d) {
+	/// TODO
+}
+
 struct connection *TryAccept(int Fd) {
 	struct connection *conn;
 	int NewFd;
@@ -1439,7 +1443,7 @@ struct connection *TryAccept(int Fd) {
 			/* 6.0 */
 			NULL,
 			NULL,
-			NULL,
+			LogoutRequest,
 
 			/* 0.5pre3 */
 			SendIntro /* AuthSuccess */,
