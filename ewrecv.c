@@ -1376,6 +1376,8 @@ void SendIntro(struct connection *conn) {
 
 void LogoutRequest(struct connection *conn, char *d) {
 	/// TODO
+	// note: when sending "ENDSESSION;" over serial. be sure to have prompt?
+	// not sure but just don't forget to investigate
 }
 
 struct connection *TryAccept(int Fd) {
