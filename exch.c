@@ -242,6 +242,9 @@ void DoLogOff() {
 	if (InputRequest) CancelCommand(); /* Quit from EDTS8 ;))) */
 	AddCommandToQueue("ENDSESSION;", 2);
 
+	/// TODO
+	///IProtoASK(connection, 0x46, NULL);
+
 	RefreshLogTxt();
 }
 
