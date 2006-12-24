@@ -20,51 +20,51 @@ enum fwmode {
 struct connection;
 
 struct conn_handlers {
-  int (*RecvChar)(struct connection *, char);
+	int (*RecvChar)(struct connection *, char);
 
-  /* Last (char *) is always "future data", everything following the part parsed by iproto.c. */
+	/* Last (char *) is always "future data", everything following the part parsed by iproto.c. */
 
-  void (*SENDVersion)(struct connection *, char *, char *);
-  void (*SENDUser)(struct connection *, char *, char *);
-  void (*SENDNotify)(struct connection *, char *);
-  void (*SENDUnknownASK)(struct connection *, char *);
+	void (*SENDVersion)(struct connection *, char *, char *);
+	void (*SENDUser)(struct connection *, char *, char *);
+	void (*SENDNotify)(struct connection *, char *);
+	void (*SENDUnknownASK)(struct connection *, char *);
 
-  void (*SENDForwardMode)(struct connection *, enum fwmode, char *);
-  void (*SENDUserConnect)(struct connection *, int, char *, char *, char *, char *);
-  void (*SENDUserDisconnect)(struct connection *, char *, char *, char *, char *);
+	void (*SENDForwardMode)(struct connection *, enum fwmode, char *);
+	void (*SENDUserConnect)(struct connection *, int, char *, char *, char *, char *);
+	void (*SENDUserDisconnect)(struct connection *, char *, char *, char *, char *);
 
-  void (*SENDPromptStart)(struct connection *, char *);
-  void (*SENDPromptEnd)(struct connection *, char, char *, char *);
-  void (*SENDLoginError)(struct connection *, char *);
-  void (*SENDLoginSuccess)(struct connection *, char *);
-  void (*SENDLogout)(struct connection *, char *);
-  void (*SENDJobEnd)(struct connection *, char *, char *);
-  void (*SENDMaskNumber)(struct connection *, char *, char *);
-  void (*SENDHeader)(struct connection *, char *, char *, char *, char *, char *);
+	void (*SENDPromptStart)(struct connection *, char *);
+	void (*SENDPromptEnd)(struct connection *, char, char *, char *);
+	void (*SENDLoginError)(struct connection *, char *);
+	void (*SENDLoginSuccess)(struct connection *, char *);
+	void (*SENDLogout)(struct connection *, char *);
+	void (*SENDJobEnd)(struct connection *, char *, char *);
+	void (*SENDMaskNumber)(struct connection *, char *, char *);
+	void (*SENDHeader)(struct connection *, char *, char *, char *, char *, char *);
 
-  void (*SENDPrivMsg)(struct connection *, char *, int, char *, char *, char *);
+	void (*SENDPrivMsg)(struct connection *, char *, int, char *, char *, char *);
 
-	void (*SENDAlarmsStart)(struct connection *);
-	void (*SENDAlarmsEnd)(struct connection *);
+	void (*SENDAlarmsStart)(struct connection *, char *);
+	void (*SENDAlarmsEnd)(struct connection *, char *);
 
-  void (*ASKVersion)(struct connection *, char *);
-  void (*ASKUser)(struct connection *, char *);
+	void (*ASKVersion)(struct connection *, char *);
+	void (*ASKUser)(struct connection *, char *);
 
-  void (*ASKPrompt)(struct connection *, char *);
-  void (*ASKLoginPrompt)(struct connection *, char *);
-  void (*ASKCancelPrompt)(struct connection *, char *);
-  void (*ASKTakeOver)(struct connection *, char *);
+	void (*ASKPrompt)(struct connection *, char *);
+	void (*ASKLoginPrompt)(struct connection *, char *);
+	void (*ASKCancelPrompt)(struct connection *, char *);
+	void (*ASKTakeOver)(struct connection *, char *);
 
-  void (*ASKCRAM)(struct connection *, char *, char *);
+	void (*ASKCRAM)(struct connection *, char *, char *);
 
-  void (*ASKBurstMe)(struct connection *, char *, char *);
+	void (*ASKBurstMe)(struct connection *, char *, char *);
 
-	void (*ASKAlarmsStart)(struct connection *);
-	void (*ASKAlarmsEnd)(struct connection *);
-	void (*ASKLogout)(struct connection *);
+	void (*ASKAlarmsStart)(struct connection *, char *);
+	void (*ASKAlarmsEnd)(struct connection *, char *);
+	void (*ASKLogout)(struct connection *, char *);
 
-  void (*AuthSuccess)(struct connection *);
-  void (*AuthFailed)(struct connection *);
+	void (*AuthSuccess)(struct connection *);
+	void (*AuthFailed)(struct connection *);
 };
 
 struct connection {
