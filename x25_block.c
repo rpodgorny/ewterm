@@ -7,6 +7,14 @@
 #include "x25_block.h"
 
 
+struct block *block_alloc() {
+	struct block *ret = malloc(sizeof(struct block));
+
+	memset(ret, 0, sizeof(struct block));
+
+	return ret;
+}
+
 struct block *block_deserialize(unsigned char *buf, int maxlen, struct block *parent) {
 	if (maxlen < 3) return NULL;
 

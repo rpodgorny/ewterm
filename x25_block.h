@@ -12,6 +12,7 @@ struct block {
 	struct block *parent;
 };
 
+struct block *block_alloc();
 void block_addchild(struct block *, char *, unsigned char *, int);
 void block_delete(struct block *);
 struct block *block_deserialize(unsigned char *, int, struct block *);
