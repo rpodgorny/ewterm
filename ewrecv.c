@@ -527,8 +527,11 @@ void ReOpenX25() {
 	log_msg("ReOpenX25()\n");
 
 	if (X25Fd >= 0) {
+log_msg("DEBUG: closing socket\n");
+		shutdown(X25Fd, SHUT_RDWR);
 		close(X25Fd);
 		X25Fd = -1;
+log_msg("DEBUG: socket closed\n");
 	}
 #ifdef LOCKDIR
 	Unlock();
@@ -611,7 +614,7 @@ void ReOpenX25() {
 			Unlock();
 #endif /* LOCKDIR */
 
-			fprintf(stderr, "Aieee... cannot open x25 file!\r\n");
+			fprintf(stderr, "Aieee... cannot open X.25 socket!\r\n");
 			exit(2);
 		}/// else {
 ///			fcntl(X25Fd, F_SETFL, O_NONBLOCK);
@@ -680,6 +683,8 @@ void ReOpenX25() {
 			perror("connect");
 			exit(2);
 		}
+
+log_msg("DEBUG: Everything went fine...\n");
 	}
 }
 
@@ -1066,6 +1071,8 @@ void ProcessExchangeChar(char Chr) {
 
 /* for X.25 communication */
 void ProcessExchangePacket(struct packet *p) {
+	pdebug("ProcessExchangePacket()\n");
+
 	struct block *b = NULL;
 	unsigned short jobnr = 0;
 	char omt[200] = "";
@@ -1078,33 +1085,32 @@ void ProcessExchangePacket(struct packet *p) {
 	char answer[32000] = "";
 
 	b = block_getchild(p->data, "2");
-	if (b) {
+	if (b && b->data) {
 		jobnr = ntohs(*(unsigned short *)(b->data+2));
 	}
 
 	b = block_getchild(p->data, "3-3");
-	if (b) strncpy(unkx1_radekp, (char *)b->data, b->len);
+	if (b && b->data) strncpy(unkx1_radekp, (char *)b->data, b->len);
 
 	b = block_getchild(p->data, "4-4");
-	if (b) strncpy(omt, (char *)b->data, b->len);
+	if (b && b->data) strncpy(omt, (char *)b->data, b->len);
 
 	b = block_getchild(p->data, "4-5");
-	if (b) strncpy(user, (char *)b->data, b->len);
+	if (b && b->data) strncpy(user, (char *)b->data, b->len);
 
 	b = block_getchild(p->data, "4-1");
-	if (b) strncpy(exch, (char *)b->data, b->len);
+	if (b && b->data) strncpy(exch, (char *)b->data, b->len);
 
 	sprintf(header, "%d,%s,%s,%s", jobnr, omt, user, exch);
 
 	b = block_getchild(p->data, "7");
-	if (b) strncpy(answer, (char *)b->data, b->len);
+	if (b && b->data) strncpy(answer, (char *)b->data, b->len);
 
 	b = block_getchild(p->data, "5-2");
-	if (b) strncpy(err, (char *)b->data, b->len);
+	if (b && b->data) strncpy(err, (char *)b->data, b->len);
 
 	b = block_getchild(p->data, "5-3");
-	if (b) strncpy(prompt, (char *)b->data, b->len);
-
+	if (b && b->data) strncpy(prompt, (char *)b->data, b->len);
 
 	foreach_auth_conn (NULL) {
 		if (strlen(err)) Write(c, err, strlen(err));
@@ -1143,6 +1149,9 @@ void ProcessExchangePacket(struct packet *p) {
 			IProtoSEND(c, 0x44, NULL);
 
 			LoggedIn = 0;
+
+			// DEBUG
+			ReOpenX25();
 		}
 	} foreach_auth_conn_end
 }
