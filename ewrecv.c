@@ -1151,7 +1151,7 @@ void ProcessExchangePacket(struct packet *p) {
 			LoggedIn = 0;
 
 			// DEBUG
-			ReOpenX25();
+			//ReOpenX25();
 		}
 	} foreach_auth_conn_end
 }
