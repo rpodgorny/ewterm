@@ -773,6 +773,7 @@ int SendChar(struct connection *c, char Chr) {
 		} foreach_auth_conn_end;
 	}
 
+	// TODO: solve this
 	///if (CuaFd < 0) return 1;
 
 	if (WriteBufLen >= WRITEBUF_MAX - 1) {
@@ -780,7 +781,10 @@ int SendChar(struct connection *c, char Chr) {
 		return 0;
 	}
 
-	WriteBuf[WriteBufLen++] = Chr;
+	// Filter newlines only for X.25
+	if (CuaFd >= 0 || (X25Fd >= 0 && Chr != 10)) {
+		WriteBuf[WriteBufLen++] = Chr;
+	}
 
 	return 1;
 }
@@ -1102,6 +1106,7 @@ void ProcessExchangePacket(struct packet *p) {
 	if (b && b->data) strncpy(exch, (char *)b->data, b->len);
 
 	sprintf(header, "%d,%s,%s,%s", jobnr, omt, user, exch);
+printf("HEADER: %s\n", header);
 
 	b = block_getchild(p->data, "7");
 	if (b && b->data) strncpy(answer, (char *)b->data, b->len);
@@ -1149,9 +1154,6 @@ void ProcessExchangePacket(struct packet *p) {
 			IProtoSEND(c, 0x44, NULL);
 
 			LoggedIn = 0;
-
-			// DEBUG
-			//ReOpenX25();
 		}
 	} foreach_auth_conn_end
 }
@@ -1315,15 +1317,14 @@ void LoginPromptRequest(struct connection *conn, char *d) {
 		SendChar(NULL, BEL);
 		SendChar(NULL, ACK);
 	} else if (X25Fd >= 0) {
-		struct packet *p = login_packet(X25User, X25Passwd);
+		X25User[0] = 0;
+		X25Passwd[0] = 0;
 
-		unsigned char buf[32000];
-		int len = packet_serialize(p, buf);
-		write(X25Fd, buf, len);
+		//TODO: foreach?
+		IProtoSEND(conn, 0x41, "U");
+
+		Prompt = 'U';
 	}
-
-	LoggedIn = 1;
-	LastMask = 0;
 }
 
 void PromptRequest(struct connection *conn, char *d) {
@@ -1335,15 +1336,17 @@ void PromptRequest(struct connection *conn, char *d) {
 	} else //if (CommandMode != CM_PROMPT && CommandMode != CM_PBUSY) /* This may make some problems, maybe? There may be a situation when we'll want next prompt before processing the first one, possibly. Let's see. --pasky */
 		WantPrompt = 1;
 
-/// TODO: retain old compatibility
-IProtoSEND(conn, 0x40, NULL);
-IProtoSEND(conn, 0x41, "<");
+	/// TODO: retain old compatibility -done?
+	if (X25Fd >= 0) {
+		IProtoSEND(conn, 0x40, NULL);
+		IProtoSEND(conn, 0x41, "<");
+	}
 }
 
 void SendBurst(struct connection *conn, char *lines, char *d) {
 	int ln, li = HISTLEN, lmax;
 
-	if (conn && ! conn->authenticated) return;
+	if (conn && !conn->authenticated) return;
 
 	if (isdigit(*lines)) {
 		lmax = atoi(lines);
@@ -1671,8 +1674,6 @@ int main(int argc, char *argv[]) {
 				break;
 			case 9: strncpy(X25Local, argv[ac], 256); break;
 			case 10: strncpy(X25Remote, argv[ac], 256); break;
-			case 11: strncpy(X25User, argv[ac], 256); break;
-			case 12: strncpy(X25Passwd, argv[ac], 256); break;
 		}
 
 		if (swp) {
@@ -1691,8 +1692,6 @@ int main(int argc, char *argv[]) {
 			printf("-s\tSet <speed> speed on cua device (defaults to %s)\n", DEFSPEED);
 			printf("--x25local\tLocal endpoint X.25 address\n");
 			printf("--x25remote\tRemote endpoint X.25 address\n");
-			printf("--x25user\t Username for X.25 connection\n");
-			printf("--x25passwd\t Password for X.25 connection\n");
 			printf("-f\tLog to file <file>\n");
 			printf("-L\tTake -f parameter as directory name and log each day to separate\n");
 			printf("\tfile, each one named <file>/YYYY-MM-DD\n");
@@ -1782,16 +1781,6 @@ int main(int argc, char *argv[]) {
 
 		if (!strcmp(argv[ac], "-v") || !strcmp(argv[ac], "--verbose")) {
 			Verbose = 1;
-			continue;
-		}
-
-		if (!strcmp(argv[ac], "--x25user")) {
-			swp = 11;
-			continue;
-		}
-
-		if (!strcmp(argv[ac], "--x25passwd")) {
-			swp = 12;
 			continue;
 		}
 	}
@@ -2121,6 +2110,23 @@ int main(int argc, char *argv[]) {
 					p = command_packet(WriteBuf, WriteBufLen);
 				} else if (Prompt == 'I') {
 					p = command_confirmation_packet(LastConnId, LastUnk3, LastTail, WriteBuf, WriteBufLen);
+					Prompt = 0;
+				} else if (Prompt == 'U') {
+					strcpy(X25User, WriteBuf);
+
+					foreach_conn (NULL) {
+						IProtoSEND(c, 0x41, "P");
+					} foreach_conn_end
+					Prompt = 'P';
+				} else if (Prompt == 'P') {
+					strcpy(X25Passwd, WriteBuf);
+
+					struct packet *p = login_packet(X25User, X25Passwd);
+
+					unsigned char buf[32000];
+					int len = packet_serialize(p, buf);
+					write(X25Fd, buf, len);
+
 					Prompt = 0;
 				}
 
