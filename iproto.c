@@ -443,6 +443,12 @@ ProcessIProtoChar(struct connection *conn, unsigned char Chr) {
 	  }
 	  IProtoSEND(conn, 0x80, "");
 	  break;
+	case 0x46: /* logout request */
+	  if (conn->handlers->ASKLogout) {
+	    conn->handlers->ASKLogout(conn, conn->IProtoPacket);
+		break;
+	  }
+	  IProtoSEND(conn, 0x80, "");
 	default:
 	  IProtoSEND(conn, 0x80, "");
 	  break;

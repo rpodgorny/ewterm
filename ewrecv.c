@@ -1148,7 +1148,10 @@ printf("HEADER: %s\n", header);
 			}
 		} else if (p->dir == 0x0e && p->pltype == 0) {
 			// Session timeout (maybe more errors)
-			IProtoSEND(c, 0x44, NULL);
+			foreach_ipr_conn (NULL) {
+				if (!c->authenticated) continue;
+				IProtoSEND(c, 0x44, NULL);
+			} foreach_ipr_conn_end;
 
 			LoggedIn = 0;
 		}
@@ -1387,6 +1390,14 @@ void LogoutRequest(struct connection *conn, char *d) {
 	/// TODO
 	// note: when sending "ENDSESSION;" over serial. be sure to have prompt?
 	// not sure but just don't forget to investigate
+	
+	// Just send success for now
+	foreach_ipr_conn (NULL) {
+		if (!c->authenticated) continue;
+		IProtoSEND(c, 0x44, NULL);
+	} foreach_ipr_conn_end;
+
+	LoggedIn = 0;
 }
 
 struct connection *TryAccept(int Fd) {
