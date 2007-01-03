@@ -240,10 +240,11 @@ void DoLogOff() {
 
 	/* I hope this won't break anytime. --pasky */
 	if (InputRequest) CancelCommand(); /* Quit from EDTS8 ;))) */
-	AddCommandToQueue("ENDSESSION;", 2);
+	///AddCommandToQueue("ENDSESSION;", 2);
+	/// TODO: make sure the new method works
 
-	/// TODO
-	///IProtoASK(connection, 0x46, NULL);
+	/// TODO: finish - done?
+	IProtoASK(connection, 0x46, NULL);
 
 	RefreshLogTxt();
 }
