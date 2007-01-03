@@ -781,10 +781,7 @@ int SendChar(struct connection *c, char Chr) {
 		return 0;
 	}
 
-	// Filter newlines only for X.25
-	if (CuaFd >= 0 || (X25Fd >= 0 && Chr != 10)) {
-		WriteBuf[WriteBufLen++] = Chr;
-	}
+	WriteBuf[WriteBufLen++] = Chr;
 
 	return 1;
 }
@@ -2120,6 +2117,12 @@ int main(int argc, char *argv[]) {
 					Prompt = 'P';
 				} else if (Prompt == 'P') {
 					strcpy(X25Passwd, WriteBuf);
+
+					// Username and password are messed with newlines, fix it
+					char *idx = index(X25User, 10);
+					if (idx) *idx = 0;
+					idx = index(X25Passwd, 10);
+					if (idx) *idx = 0;
 
 					struct packet *p = login_packet(X25User, X25Passwd);
 
