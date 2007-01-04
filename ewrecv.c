@@ -768,6 +768,7 @@ int SendChar(struct connection *c, char Chr) {
 
 	pdebug("%p(%d)\n", c, c?c->IProtoState:-1);
 	if (c && c->IProtoState != IPR_DC4) {
+		// send back to clients
 		foreach_auth_conn (c) {
 			Write(c, &Chr, 1);
 		} foreach_auth_conn_end;
@@ -1084,12 +1085,12 @@ void ProcessExchangePacket(struct packet *p) {
 	char err[32000] = "";
 	char unkx1_radekp[32000] = "";
 	unsigned short unkx2_radekp = 0;
+	unsigned short unkx3_radekp = 0;
 	unsigned short mask = 0;
 	char prompt[32000] = "";
 	char answer[32000] = "";
 	char date[256] = "";
 	char time[256] = "";
-	char datetime[256] = "";
 
 	b = block_getchild(p->data, "2");
 	if (b && b->data) {
@@ -1130,16 +1131,19 @@ void ProcessExchangePacket(struct packet *p) {
 		sprintf(time, "%02d:%02d:%02d", *b->data, *(b->data+1), *(b->data+2));
 	}
 
-	sprintf(datetime, "%s  %s\n", date, time);
-
-	b = block_getchild(p->data, "7");
-	if (b && b->data) strncpy(answer, (char *)b->data, b->len);
+	b = block_getchild(p->data, "5");
+	if (b && b->data) {
+		unkx3_radekp = ntohs(*(unsigned short *)b->data);
+	}
 
 	b = block_getchild(p->data, "5-2");
 	if (b && b->data) strncpy(err, (char *)b->data, b->len);
 
 	b = block_getchild(p->data, "5-3");
 	if (b && b->data) strncpy(prompt, (char *)b->data, b->len);
+
+	b = block_getchild(p->data, "7");
+	if (b && b->data) strncpy(answer, (char *)b->data, b->len);
 
 	foreach_auth_conn (NULL) {
 		char line1[256] = "", line2[256] = "";
@@ -1167,8 +1171,6 @@ printf("HEADER: %s\n", header);
 			} else {
 				Prompt = 0;
 			}
-
-			//IProtoSEND(c, 0x45, "234"); // job number (does not work?)
 
 			if (strlen(prompt)) {
 				IProtoSEND(c, 0x40, NULL);
@@ -1200,6 +1202,18 @@ printf("USTREDNA TO PRIJALA\n");
 			} foreach_ipr_conn_end;
 
 			LoggedIn = 0;
+		}
+
+printf("HOMANNN: %x\n", unkx3_radekp);
+		// TODO: is this really true? - probably not, just ry invalid command
+		if (unkx3_radekp == 0x0203) {
+			char tmp[256] = "";
+			sprintf(tmp, "\nEND JOB %d\n\n", jobnr);
+			Write(c, tmp, strlen(tmp));
+
+			char jobnr_s[10] = "";
+			sprintf(jobnr_s, "%d", jobnr);
+			IProtoSEND(c, 0x45, jobnr_s);
 		}
 	} foreach_auth_conn_end
 }
@@ -1385,6 +1399,7 @@ void PromptRequest(struct connection *conn, char *d) {
 	/// TODO: retain old compatibility -done?
 	if (X25Fd >= 0) {
 		IProtoSEND(conn, 0x40, NULL);
+		Write(conn, "<", 1);
 		IProtoSEND(conn, 0x41, "<");
 	}
 }
