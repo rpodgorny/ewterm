@@ -1079,19 +1079,40 @@ void ProcessExchangePacket(struct packet *p) {
 	char omt[200] = "";
 	char user[200] = "";
 	char exch[200] = "";
-	char header[200] = "";
+	char apsver[200] = "";
+	char patchver[200] = "";
 	char err[32000] = "";
 	char unkx1_radekp[32000] = "";
+	unsigned short unkx2_radekp = 0;
+	unsigned short mask = 0;
 	char prompt[32000] = "";
 	char answer[32000] = "";
+	char date[256] = "";
+	char time[256] = "";
+	char datetime[256] = "";
 
 	b = block_getchild(p->data, "2");
 	if (b && b->data) {
 		jobnr = ntohs(*(unsigned short *)(b->data+2));
 	}
 
+	b = block_getchild(p->data, "3");
+	if (b && b->data) {
+		unkx2_radekp = ntohs(*(unsigned short *)b->data);
+		mask = ntohs(*(unsigned short *)(b->data+2));
+	}
+
 	b = block_getchild(p->data, "3-3");
 	if (b && b->data) strncpy(unkx1_radekp, (char *)b->data, b->len);
+
+	b = block_getchild(p->data, "4-1");
+	if (b && b->data) strncpy(exch, (char *)b->data, b->len);
+
+	b = block_getchild(p->data, "4-2");
+	if (b && b->data) strncpy(apsver, (char *)b->data, b->len);
+
+	b = block_getchild(p->data, "4-3");
+	if (b && b->data) strncpy(patchver, (char *)b->data, b->len);
 
 	b = block_getchild(p->data, "4-4");
 	if (b && b->data) strncpy(omt, (char *)b->data, b->len);
@@ -1099,11 +1120,21 @@ void ProcessExchangePacket(struct packet *p) {
 	b = block_getchild(p->data, "4-5");
 	if (b && b->data) strncpy(user, (char *)b->data, b->len);
 
-	b = block_getchild(p->data, "4-1");
-	if (b && b->data) strncpy(exch, (char *)b->data, b->len);
-
+	char header[200] = "";
 	sprintf(header, "%d,%s,%s,%s", jobnr, omt, user, exch);
 printf("HEADER: %s\n", header);
+
+	b = block_getchild(p->data, "4-6");
+	if (b && b->data) {
+		sprintf(date, "%02d-%02d-%02d", *b->data, *(b->data+1), *(b->data+2));
+	}
+
+	b = block_getchild(p->data, "4-7");
+	if (b && b->data) {
+		sprintf(time, "%02d:%02d:%02d", *b->data, *(b->data+1), *(b->data+2));
+	}
+
+	sprintf(datetime, "%s  %s\n", date, time);
 
 	b = block_getchild(p->data, "7");
 	if (b && b->data) strncpy(answer, (char *)b->data, b->len);
@@ -1115,10 +1146,17 @@ printf("HEADER: %s\n", header);
 	if (b && b->data) strncpy(prompt, (char *)b->data, b->len);
 
 	foreach_auth_conn (NULL) {
+		char line1[256] = "", line2[256] = "";
+		sprintf(line1, "%s/%s/%s   %s  %s\n", omt, apsver, patchver, date, time);
+		sprintf(line2, "%d    %s/%s   %d/%d\n\n", jobnr, omt, user, unkx2_radekp, mask);
+
+		Write(c, line1, strlen(line1));
+		Write(c, line2, strlen(line2));
+
 		if (strlen(err)) Write(c, err, strlen(err));
 		if (strlen(answer)) Write(c, answer, strlen(answer));
 
-		if (p->dir == 2 || p->dir == 3) {
+		if (p->dir == 2) {
 			if (strlen(prompt)) {
 				// this is a command from EWSD
 				LastConnId = p->connid;
@@ -1138,6 +1176,15 @@ printf("HEADER: %s\n", header);
 				Write(c, prompt, strlen(prompt));
 				IProtoSEND(c, 0x41, "I");
 			}
+		} else if (p->dir == 3 && p->pltype == 1) {
+			// "Command accepted" confirmation
+printf("USTREDNA TO PRIJALA\n");
+			foreach_ipr_conn (NULL) {
+				if (!c->authenticated) continue;
+				char tmp[256];
+				sprintf(tmp, "JOB %d EXEKUOVAN WOE...\n\n", jobnr);
+				Write(c, tmp, strlen(tmp));
+			} foreach_ipr_conn_end;
 		} else if (p->dir == 0x0c && p->pltype == 1) {
 			if (strlen(unkx1_radekp)) {
 				// Login success
