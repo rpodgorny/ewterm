@@ -1120,10 +1120,6 @@ void ProcessExchangePacket(struct packet *p) {
 	b = block_getchild(p->data, "4-5");
 	if (b && b->data) strncpy(user, (char *)b->data, b->len);
 
-	char header[200] = "";
-	sprintf(header, "%d,%s,%s,%s", jobnr, omt, user, exch);
-printf("HEADER: %s\n", header);
-
 	b = block_getchild(p->data, "4-6");
 	if (b && b->data) {
 		sprintf(date, "%02d-%02d-%02d", *b->data, *(b->data+1), *(b->data+2));
@@ -1147,11 +1143,16 @@ printf("HEADER: %s\n", header);
 
 	foreach_auth_conn (NULL) {
 		char line1[256] = "", line2[256] = "";
-		sprintf(line1, "%s/%s/%s   %s  %s\n", omt, apsver, patchver, date, time);
+		sprintf(line1, "\n\n%s/%s/%s   %s  %s\n", exch, apsver, patchver, date, time);
 		sprintf(line2, "%d    %s/%s   %d/%d\n\n", jobnr, omt, user, unkx2_radekp, mask);
 
 		Write(c, line1, strlen(line1));
 		Write(c, line2, strlen(line2));
+
+		char header[200] = "";
+		sprintf(header, "%d,%s,%s,%s", jobnr, omt, user, exch);
+printf("HEADER: %s\n", header);
+		IProtoSEND(c, 0x47, header);
 
 		if (strlen(err)) Write(c, err, strlen(err));
 		if (strlen(answer)) Write(c, answer, strlen(answer));
@@ -1166,8 +1167,6 @@ printf("HEADER: %s\n", header);
 			} else {
 				Prompt = 0;
 			}
-
-			IProtoSEND(c, 0x47, header);
 
 			//IProtoSEND(c, 0x45, "234"); // job number (does not work?)
 
