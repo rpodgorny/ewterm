@@ -782,7 +782,10 @@ int SendChar(struct connection *c, char Chr) {
 		return 0;
 	}
 
-	WriteBuf[WriteBufLen++] = Chr;
+	// filter newlines for X.25 connection
+	if (CuaFd >= 0 || Chr != 10) {
+		WriteBuf[WriteBufLen++] = Chr;
+	}
 
 	return 1;
 }
@@ -1158,6 +1161,11 @@ void ProcessExchangePacket(struct packet *p) {
 printf("HEADER: %s\n", header);
 		IProtoSEND(c, 0x47, header);
 
+		char mask_s[20] = "";
+		sprintf(mask_s, "%d", mask);
+		IProtoSEND(c, 0x46, mask_s);
+printf("MASK: %d\n", mask);
+
 		if (strlen(err)) Write(c, err, strlen(err));
 		if (strlen(answer)) Write(c, answer, strlen(answer));
 
@@ -1190,6 +1198,12 @@ printf("USTREDNA TO PRIJALA\n");
 			if (strlen(unkx1_radekp)) {
 				// Login success
 				IProtoSEND(c, 0x43, NULL);
+
+// TODO: is this really correct?
+// send input prompt
+IProtoSEND(c, 0x40, NULL);
+Write(c, "<", 1);
+IProtoSEND(c, 0x41, "<");
 			} else {
 				// Login failure
 				IProtoSEND(c, 0x42, NULL);
@@ -1397,7 +1411,7 @@ void PromptRequest(struct connection *conn, char *d) {
 		WantPrompt = 1;
 
 	/// TODO: retain old compatibility -done?
-	if (X25Fd >= 0) {
+	if (X25Fd >= 0 && LoggedIn) {
 		IProtoSEND(conn, 0x40, NULL);
 		Write(conn, "<", 1);
 		IProtoSEND(conn, 0x41, "<");
@@ -2181,14 +2195,17 @@ int main(int argc, char *argv[]) {
 					p = command_confirmation_packet(LastConnId, LastUnk3, LastTail, WriteBuf, WriteBufLen);
 					Prompt = 0;
 				} else if (Prompt == 'U') {
-					strcpy(X25User, WriteBuf);
+					strncpy(X25User, WriteBuf, WriteBufLen);
+					X25User[WriteBufLen] = 0;
 
+					// TODO: really foreach?
 					foreach_conn (NULL) {
 						IProtoSEND(c, 0x41, "P");
 					} foreach_conn_end
 					Prompt = 'P';
 				} else if (Prompt == 'P') {
-					strcpy(X25Passwd, WriteBuf);
+					strncpy(X25Passwd, WriteBuf, WriteBufLen);
+					X25Passwd[WriteBufLen] - 0;
 
 					// Username and password are messed with newlines, fix it
 					char *idx = index(X25User, 10);
