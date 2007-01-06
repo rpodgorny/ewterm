@@ -130,20 +130,26 @@ void IProtoASK(struct connection *conn, char opcode, char *data) {
 char *StripData(char *str, char *delim) {
 	int idx = strcspn(str, delim);
 
-	if (str[idx]) { str[idx] = 0; return str + idx + 1; } else return NULL; 
+	if (str[idx]) {
+		str[idx] = 0;
+		return str + idx + 1;
+	}
+	
+	return NULL; 
 }
 
 void MD5Sum(char *v, char *p) {
-  struct md5_state_s ms;
-  md5_byte_t digest[16]; int i;
+	struct md5_state_s ms;
+	md5_byte_t digest[16]; int i;
 
-  md5_init(&ms);
-  md5_append(&ms, v, strlen(v));
-  md5_append(&ms, ConnPassword, strlen(ConnPassword));
-  md5_finish(&ms, digest);
+	md5_init(&ms);
+	md5_append(&ms, v, strlen(v));
+	md5_append(&ms, ConnPassword, strlen(ConnPassword));
+	md5_finish(&ms, digest);
 
-  for (i = 0; i < 16; i++)
-    snprintf(p + (i*2), 3, "%02x", digest[i]);
+	for (i = 0; i < 16; i++) {
+		snprintf(p + (i*2), 3, "%02x", digest[i]);
+	}
 }
 
 void
