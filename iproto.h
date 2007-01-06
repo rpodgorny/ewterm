@@ -5,16 +5,16 @@ extern char ConnPassword[];
 extern char ROConnPassword[];
 
 enum IProtoState {
-  IPR_HANDSHAKE, /* we sent DC1, but didn't get DC1 back yet */
-  IPR_DC1, /* forwarding */
-  IPR_DC2, /* loading SEND to IProtoPacket */
-  IPR_DC3, /* loading ASK to IProtoPacket */
-  IPR_DC4, /* forwarding only to exchange */
+	IPR_HANDSHAKE, /* we sent DC1, but didn't get DC1 back yet */
+	IPR_DC1, /* forwarding */
+	IPR_DC2, /* loading SEND to IProtoPacket */
+	IPR_DC3, /* loading ASK to IProtoPacket */
+	IPR_DC4, /* forwarding only to exchange */
 };
 
 enum fwmode {
-  FWD_INOUT,
-  FWD_IN,
+	FWD_INOUT,
+	FWD_IN,
 };
 
 struct connection;
@@ -68,28 +68,28 @@ struct conn_handlers {
 };
 
 struct connection {
-  char *user;
-  char *host;
-  int id;
-  int Fd;
+	char *user;
+	char *host;
+	int id;
+	int Fd;
 
-  enum IProtoState IProtoState; /* InternalProtocolState */
-  char *IProtoPacket;
-  int IProtoPacketLen;
+	enum IProtoState IProtoState; /* InternalProtocolState */
+	char *IProtoPacket;
+	int IProtoPacketLen;
 
-  struct conn_handlers *handlers;
+	struct conn_handlers *handlers;
 
-  enum fwmode fwmode;
+	enum fwmode fwmode;
 
-  int authenticated;
-  char *authstr;
+	int authenticated;
+	char *authstr;
 
-  char *ReadBuffer;
-  int ReadBufferLen;
-  char *WriteBuffer;
-  int WriteBufferLen;
+	char *ReadBuffer;
+	int ReadBufferLen;
+	char *WriteBuffer;
+	int WriteBufferLen;
 
-  struct connection *prev, *next;
+	struct connection *prev, *next;
 };
 
 struct connection *MakeConnection(int Fd, struct conn_handlers *);
