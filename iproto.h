@@ -107,8 +107,8 @@ void TestIProtoChar(struct connection *conn, char Chr);
 void MD5Sum(char *v, char *p);
 
 #define WriteChar(c, chr) do {\
-  char Ch = chr;\
-  Write(c, &Ch, 1); \
+	char Ch = chr;\
+	Write(c, &Ch, 1); \
 } while(0)
 
 #endif
