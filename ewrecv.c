@@ -1079,6 +1079,7 @@ void ProcessExchangePacket(struct packet *p) {
 	pdebug("ProcessExchangePacket()\n");
 
 	struct block *b = NULL;
+	unsigned short seq = 0;
 	unsigned short jobnr = 0;
 	char omt[200] = "";
 	char user[200] = "";
@@ -1088,16 +1089,18 @@ void ProcessExchangePacket(struct packet *p) {
 	char err[32000] = "";
 	char unkx1_radekp[32000] = "";
 	unsigned short unkx2_radekp = 0;
+	unsigned short unkx5_radekp = 0;
+	unsigned char unkx5_4_radekp = 0;
 	unsigned short mask = 0;
 	char prompt[32000] = "";
 	char answer[32000] = "";
 	char date[256] = "";
 	char time[256] = "";
 
-	int is_job_end = 0;
-
 	b = block_getchild(p->data, "2");
 	if (b && b->data) {
+		seq = ntohs(*(unsigned short *)b->data);
+printf("SEQ: %d\n", seq);
 		jobnr = ntohs(*(unsigned short *)(b->data+2));
 	}
 
@@ -1138,7 +1141,7 @@ void ProcessExchangePacket(struct packet *p) {
 
 	b = block_getchild(p->data, "5");
 	if (b && b->data) {
-		if (*b->data == 2) is_job_end = 1;
+		unkx5_radekp = ntohs(*(unsigned short *)b->data);
 	}
 
 	b = block_getchild(p->data, "5-2");
@@ -1149,18 +1152,26 @@ void ProcessExchangePacket(struct packet *p) {
 
 	b = block_getchild(p->data, "5-4");
 	if (b && b->data) {
-		if (*b->data == 2) is_job_end = 1;
+		unkx5_4_radekp = *b->data;
 	}
 
 	b = block_getchild(p->data, "7");
 	if (b && b->data) strncpy(answer, (char *)b->data, b->len);
 
 	foreach_auth_conn (NULL) {
+		printf("\n\n");
+
+		if (seq > 0) {
+			char tmp[128] = "";
+			sprintf(tmp, "CONTINUATION TEXT %04d\n\n", seq-1);
+			Write(c, tmp, strlen(tmp));
+		}
+
 		// TODO: better condition
 		if (strlen(exch)) {
 			// TODO: consolidate to single line
 			char line1[256] = "", line2[256] = "";
-			sprintf(line1, "\n\n%s/%s/%s                 %s  %s\n", exch, apsver, patchver, date, time);
+			sprintf(line1, "%s/%s/%s                 %s  %s\n", exch, apsver, patchver, date, time);
 			sprintf(line2, "%4d         %s/%s          %d/%05d\n\n", jobnr, omt, user, unkx2_radekp, mask);
 
 			Write(c, line1, strlen(line1));
@@ -1188,7 +1199,6 @@ printf("MASK: %d\n", mask);
 		}
 		if (strlen(answer)) {
 			Write(c, answer, strlen(answer));
-			Write(c, "\n\n", 2);
 		}
 
 		if (p->dir == 2) {
@@ -1212,9 +1222,9 @@ printf("USTREDNA TO PRIJALA\n");
 			foreach_ipr_conn (NULL) {
 				if (!c->authenticated) continue;
 				// TODO: send job start to ewterms?
-				//char tmp[256];
-				//sprintf(tmp, "JOB %d EXEKUOVAN WOE...\n\n", jobnr);
-				//Write(c, tmp, strlen(tmp));
+				char tmp[256];
+				sprintf(tmp, "%d\n\n", jobnr);
+				Write(c, tmp, strlen(tmp));
 			} foreach_ipr_conn_end;
 		} else if (p->dir == 0x0c && p->pltype == 1) {
 			if (strlen(unkx1_radekp)) {
@@ -1242,15 +1252,24 @@ printf("USTREDNA TO PRIJALA\n");
 			LoggedIn = 0;
 		}
 
+		char jobnr_s[10] = "";
+		sprintf(jobnr_s, "%d", jobnr);
+
 		// TODO: are these all cases?
-		if (is_job_end) {
+		if (unkx5_4_radekp == 2) {
 			char tmp[256] = "";
-			sprintf(tmp, "END JOB %d\n\n", jobnr);
+			sprintf(tmp, "\n\nEND JOB %d\n\n", jobnr);
 			Write(c, tmp, strlen(tmp));
 
-			char jobnr_s[10] = "";
-			sprintf(jobnr_s, "%d", jobnr);
 			IProtoSEND(c, 0x45, jobnr_s);
+		} else if (unkx5_radekp == 0x0203) {
+			char tmp[256] = "";
+			sprintf(tmp, "\n\nEND JOB %d EXEC'D\n\n", jobnr);
+			Write(c, tmp, strlen(tmp));
+		} else if (unkx5_radekp == 0x0003) {
+			char tmp[256] = "";
+			sprintf(tmp, "\n\nEND TEXT %d\n\n", jobnr);
+			Write(c, tmp, strlen(tmp));
 		}
 	} foreach_auth_conn_end
 }
@@ -1495,7 +1514,12 @@ void LogoutRequest(struct connection *conn, char *d) {
 		IProtoSEND(c, 0x44, NULL);
 	} foreach_ipr_conn_end;
 
+// TODO: this is a hack to make it select()
+WriteBuf[WriteBufLen++] = 'c';
+
 	LoggedIn = 0;
+
+	Prompt = 'X';
 }
 
 struct connection *TryAccept(int Fd) {
@@ -2228,7 +2252,7 @@ int main(int argc, char *argv[]) {
 					Prompt = 'P';
 				} else if (Prompt == 'P') {
 					strncpy(X25Passwd, WriteBuf, WriteBufLen);
-					X25Passwd[WriteBufLen] - 0;
+					X25Passwd[WriteBufLen] = 0;
 
 					// Username and password are messed with newlines, fix it
 					char *idx = index(X25User, 10);
@@ -2236,11 +2260,11 @@ int main(int argc, char *argv[]) {
 					idx = index(X25Passwd, 10);
 					if (idx) *idx = 0;
 
-					struct packet *p = login_packet(X25User, X25Passwd);
+					p = login_packet(X25User, X25Passwd);
 
-					unsigned char buf[32000];
-					int len = packet_serialize(p, buf);
-					write(X25Fd, buf, len);
+					Prompt = 0;
+				} else if (Prompt == 'X') {
+					p = logout_packet();
 
 					Prompt = 0;
 				}
