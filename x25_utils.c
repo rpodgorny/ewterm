@@ -90,6 +90,39 @@ struct packet *login_packet(char *username, char *password) {
 	return ret;
 }
 
+struct packet *logout_packet() {
+	struct packet *ret = packet_alloc();
+	ret->family = 0xf1;
+	ret->unk1 = 0xe0;
+	ret->dir = 0x0e;
+	ret->pltype = 0x00;
+	ret->connid = 0x1509;
+	ret->subseq = 0;
+	ret->unk2 = 0;
+	ret->unk3 = 0x0675;
+	ret->tail = 0;
+
+	ret->data = block_alloc();
+	ret->data->id = 0x0b;
+	ret->data->data = NULL;
+
+	unsigned char xxx[1024];
+
+	xxx[0] = 0x05;
+	block_addchild(ret->data, "1", xxx, 1);
+
+	*(unsigned short *)(xxx) = htons(0);
+	*(unsigned short *)(xxx+2) = htons(0); // job nr.
+	*(unsigned short *)(xxx+4) = htons(0xbd6c);
+	*(unsigned short *)(xxx+6) = htons(0x0001);
+	xxx[8] = 0x20;//
+	xxx[9] = 0x0b;//
+	block_addchild(ret->data, "2", xxx, 0x0a);
+
+	return ret;
+}
+
+
 struct packet *command_packet(char *c, int len) {
 	struct packet *ret = packet_alloc();
 	ret->family = 0xf1;
