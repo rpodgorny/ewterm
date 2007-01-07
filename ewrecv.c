@@ -110,7 +110,7 @@ char Prompt = 0; /* prompt type */
 int LoggedIn = 0; /* logged in or not? */ /* 0 == not, 1 == in progress, 2 == yes */
 
 unsigned short LastConnId;
-unsigned short LastUnk3;
+unsigned short LastSessId;
 unsigned char LastTail;
 
 #define WRITEBUF_MAX 16329
@@ -1205,7 +1205,7 @@ printf("MASK: %d\n", mask);
 			if (strlen(prompt)) {
 				// this is a command from EWSD
 				LastConnId = p->connid;
-				LastUnk3 = p->unk3;
+				LastSessId = p->sessid;
 				LastTail = p->tail;
 
 				IProtoSEND(c, 0x40, NULL);
@@ -2239,7 +2239,7 @@ int main(int argc, char *argv[]) {
 				if (!Prompt) {
 					p = command_packet(WriteBuf, WriteBufLen);
 				} else if (Prompt == 'I') {
-					p = command_confirmation_packet(LastConnId, LastUnk3, LastTail, WriteBuf, WriteBufLen);
+					p = command_confirmation_packet(LastConnId, LastSessId, LastTail, WriteBuf, WriteBufLen);
 					Prompt = 0;
 				} else if (Prompt == 'U') {
 					strncpy(X25User, WriteBuf, WriteBufLen);
