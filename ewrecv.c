@@ -1199,17 +1199,19 @@ printf("USTREDNA TO PRIJALA\n");
 				// Login success
 				IProtoSEND(c, 0x43, NULL);
 
-// TODO: is this really correct?
-// send input prompt
-IProtoSEND(c, 0x40, NULL);
-Write(c, "<", 1);
-IProtoSEND(c, 0x41, "<");
+				// TODO: is this really correct?
+				// send input prompt (some command may be waiting in ewterm)
+				IProtoSEND(c, 0x40, NULL);
+				Write(c, "<", 1);
+				IProtoSEND(c, 0x41, "<");
+
+				LoggedIn = 1;
 			} else {
 				// Login failure
 				IProtoSEND(c, 0x42, NULL);
 			}
 		} else if (p->dir == 0x0e && p->pltype == 0) {
-			// Session timeout (maybe more errors)
+			// Session timeout, cancelled (maybe more errors)
 			foreach_ipr_conn (NULL) {
 				if (!c->authenticated) continue;
 				IProtoSEND(c, 0x44, NULL);
