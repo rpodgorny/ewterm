@@ -9,10 +9,10 @@ struct packet {
 	unsigned char unk1;
 	unsigned char dir;
 	unsigned char pltype;
-	unsigned short connid;
+	unsigned short connid; // connection id (for one job)
 	unsigned char subseq;
 	unsigned char unk2;
-	unsigned short unk3;
+	unsigned short sessid; // session id
 	unsigned char tail;
 
 	struct block *data;

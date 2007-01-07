@@ -52,7 +52,7 @@ struct packet *login_packet(char *username, char *password) {
 	ret->connid = 0x9ec6;
 	ret->subseq = 0;
 	ret->unk2 = 0;
-	ret->unk3 = 0x0675;//// same
+	ret->sessid = 0x0675;//// same
 	ret->tail = 0;
 
 	ret->data = block_alloc();
@@ -99,7 +99,7 @@ struct packet *logout_packet() {
 	ret->connid = 0x1509;
 	ret->subseq = 0;
 	ret->unk2 = 0;
-	ret->unk3 = 0x0675;
+	ret->sessid = 0x0675;
 	ret->tail = 0;
 
 	ret->data = block_alloc();
@@ -132,7 +132,7 @@ struct packet *command_packet(char *c, int len) {
 	ret->connid = 0x9ecb;
 	ret->subseq = 0;
 	ret->unk2 = 0;
-	ret->unk3 = 0x0675;
+	ret->sessid = 0x0675;
 	ret->tail = 0;
 
 	ret->data = block_alloc();
@@ -157,7 +157,7 @@ struct packet *command_packet(char *c, int len) {
 	return ret;
 }
 
-struct packet *command_confirmation_packet(unsigned short connid, unsigned short unk3, unsigned char tail, char *c, int len) {
+struct packet *command_confirmation_packet(unsigned short connid, unsigned short sessid, unsigned char tail, char *c, int len) {
 	struct packet *ret = packet_alloc();
 	ret->family = 0xf1;
 	ret->unk1 = 0xe0;
@@ -166,7 +166,7 @@ struct packet *command_confirmation_packet(unsigned short connid, unsigned short
 	ret->connid = connid;
 	ret->subseq = 0;
 	ret->unk2 = 0;
-	ret->unk3 = unk3;
+	ret->sessid = sessid;
 	ret->tail = tail;
 
 	ret->data = block_alloc();
