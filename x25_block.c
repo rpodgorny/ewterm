@@ -220,20 +220,18 @@ int block_serialize(struct block *b, unsigned char *buf) {
 }
 
 void block_print(struct block *b) {
-	char path[1000];
-	block_getpath(b, path);
-	printf("path: %s, len (direct): %d\n", path, b->len);
-
 	if (b->data) {
-		printf("data: ");
+		char path[1000];
+		block_getpath(b, path);
+		printf("%s (%d):\t", path, b->len);
+
 		unsigned char *ptr = b->data;
 		while (ptr < b->data + b->len) {
 			printf("%02x ", *ptr);
 			ptr++;
 		}
-		printf("\n");
 
-		printf("datac: ");
+		printf("[");
 		ptr = b->data;
 		while (ptr < b->data + b->len) {
 			if (*ptr >= 0x20 || *ptr == 0x0a || *ptr == 0x0d) {
@@ -243,7 +241,7 @@ void block_print(struct block *b) {
 			}
 			ptr++;
 		}
-		printf("\n");
+		printf("]\n");
 	} else {
 		int i = 0;
 		for (i = 0; i < b->nchildren; i++) {
