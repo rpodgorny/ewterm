@@ -128,8 +128,8 @@ int Reselect = 0;
 //int X25Fd = -1;
 
 struct X25Connection {
-	int fd = -1;
-	char address[256] = "";
+	int fd;
+	char address[256];
 };
 
 struct X25Connection X25s[32];
@@ -633,11 +633,16 @@ int OpenX25Socket(char *local, char *remote) {
 void ReOpenX25() {
 	log_msg("ReOpenX25()\n");
 
-	if (X25Fd >= 0) {
-		shutdown(X25Fd, SHUT_RDWR);
-		close(X25Fd);
-		X25Fd = -1;
+	///if (X25Fd >= 0) {
+	int i = 0;
+	for (i = 0; i < X25sCount; i++) {
+		if (X25s[i].fd < 0) continue;
+
+		shutdown(X25s[i].fd, SHUT_RDWR);
+		close(X25s[i].fd);
+		X25s[i].fd = -1;
 	}
+
 #ifdef LOCKDIR
 	Unlock();
 #endif
@@ -656,11 +661,13 @@ void ReOpenX25() {
 		if (!LockName[0]) Done(5);
 #endif
 
-		X25Fd = OpenX25Socket(X25Local, X25Remote);
+		for (i = 0; i < X25sCount; i++) {
+			X25s[i].fd = OpenX25Socket(X25Local, X25s[i].address);
 
 #ifdef LOCKDIR
-		if (X25Fd < 0) exit(2);
+			if (X25s[i].fd < 0) exit(2);
 #endif
+		}
 	}
 }
 
@@ -1413,7 +1420,7 @@ void LoginPromptRequest(struct connection *conn, char *d) {
 		SendChar(NULL, ETX);
 		SendChar(NULL, BEL);
 		SendChar(NULL, ACK);
-	} else if (X25Fd >= 0) {
+	} else {
 		X25User[0] = 0;
 		X25Passwd[0] = 0;
 
@@ -1434,7 +1441,7 @@ void PromptRequest(struct connection *conn, char *d) {
 		WantPrompt = 1;
 
 	/// TODO: retain old compatibility -done?
-	if (X25Fd >= 0 && LoggedIn) {
+	if (X25sCount >= 0 && LoggedIn) {
 		IProtoSEND(conn, 0x40, NULL);
 		Write(conn, "<", 1);
 		IProtoSEND(conn, 0x41, "<");
@@ -1788,7 +1795,10 @@ int main(int argc, char *argv[]) {
 					char *p;
 					p = strtok(argv[ac],":;,");
 					while (p != NULL) {
-						strcpy(X25s[X25sCount++].address, p);
+						X25s[X25sCount].fd = -1;
+						strcpy(X25s[X25sCount].address, p);
+
+						X25sCount++;
 						p = strtok(NULL, ":;,");
 					}
 				}
@@ -2229,7 +2239,10 @@ int main(int argc, char *argv[]) {
 			}
 
 			/* something to x25 */
-			if (X25Fd >= 0 && FD_ISSET(X25Fd, &WriteQ)) {
+			///if (X25Fd >= 0 && FD_ISSET(X25Fd, &WriteQ)) {
+			for (i = 0; i < X25sCount; i++) {
+				if (X25s[i].fd < 0 || FD_ISSET(X25s[i].fd, &WriteQ)) continue;
+
 				log_msg("TO X.25\n");
 
 				struct packet *p = NULL;
@@ -2271,7 +2284,7 @@ int main(int argc, char *argv[]) {
 				packet_delete(p);
 
 				/// TODO: loop until everything is sent
-				int written = write(X25Fd, buf, len);
+				int written = write(X25s[i].fd, buf, len);
 
 				if (written < 0) {
 					if (errno == EINTR) {
@@ -2281,10 +2294,9 @@ int main(int argc, char *argv[]) {
 						Done(4);
 					}
 				}
-
-				WriteBufLen = 0;
 			}
 
+			WriteBufLen = 0;
 reselect:
 			;
 		}
