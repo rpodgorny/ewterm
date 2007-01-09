@@ -1088,6 +1088,7 @@ void ProcessExchangePacket(struct packet *p) {
 	char patchver[200] = "";
 	char err[32000] = "";
 	char unkx1_radekp[32000] = "";
+	char hint[32000] = "";
 	unsigned short unkx2_radekp = 0;
 	unsigned short unkx5_radekp = 0;
 	unsigned char unkx5_4_radekp = 0;
@@ -1107,7 +1108,7 @@ printf("SEQ: %d\n", seq);
 	b = block_getchild(p->data, "3");
 	if (b && b->data) {
 		// TODO: ask troller about the name of this one
-		unkx2_radekp = ntohs(*(unsigned short *)b->data);
+		unkx2_radekp = ntohs(*(unsigned short *)b->data); // message group
 		mask = ntohs(*(unsigned short *)(b->data+2));
 	}
 
@@ -1139,6 +1140,9 @@ printf("SEQ: %d\n", seq);
 		sprintf(time, "%02d:%02d:%02d", *b->data, *(b->data+1), *(b->data+2));
 	}
 
+	b = block_getchild(p->data, "4-8");
+	if (b && b->data) strncpy(hint, (char *)b->data, b->len);
+
 	b = block_getchild(p->data, "5");
 	if (b && b->data) {
 		unkx5_radekp = ntohs(*(unsigned short *)b->data);
@@ -1159,7 +1163,7 @@ printf("SEQ: %d\n", seq);
 	if (b && b->data) strncpy(answer, (char *)b->data, b->len);
 
 	foreach_auth_conn (NULL) {
-		printf("\n\n");
+		Write(c, "\n\n", 2);
 
 		if (seq > 0) {
 			char tmp[128] = "";
@@ -1169,10 +1173,13 @@ printf("SEQ: %d\n", seq);
 
 		// TODO: better condition
 		if (strlen(exch)) {
+			char omtuser[32] = "";
+			if (strlen(omt) && strlen(user)) sprintf("%s/%s", omt, user);
+
 			// TODO: consolidate to single line
 			char line1[256] = "", line2[256] = "";
-			sprintf(line1, "%s/%s/%s                 %s  %s\n", exch, apsver, patchver, date, time);
-			sprintf(line2, "%4d         %s/%s          %d/%05d\n\n", jobnr, omt, user, unkx2_radekp, mask);
+			sprintf(line1, "%s/%s/%s                 %8s  %8s\n", exch, apsver, patchver, date, time);
+			sprintf(line2, "%04d         %s          %04d/%05d    %s\n\n", jobnr, omtuser, unkx2_radekp, mask, hint);
 
 			Write(c, line1, strlen(line1));
 			Write(c, line2, strlen(line2));
@@ -1253,19 +1260,17 @@ printf("USTREDNA TO PRIJALA\n");
 		}
 
 		char jobnr_s[10] = "";
-		sprintf(jobnr_s, "%d", jobnr);
+		sprintf(jobnr_s, "%04d", jobnr);
 
 		// TODO: are these all cases?
-		if (unkx5_4_radekp == 2) {
+		if (unkx5_4_radekp == 2
+		|| unkx5_radekp == 0x0200
+		|| unkx5_radekp == 0x0203) {
 			char tmp[256] = "";
 			sprintf(tmp, "\n\nEND JOB %d\n\n", jobnr);
 			Write(c, tmp, strlen(tmp));
 
 			IProtoSEND(c, 0x45, jobnr_s);
-		} else if (unkx5_radekp == 0x0203) {
-			char tmp[256] = "";
-			sprintf(tmp, "\n\nEND JOB %d EXEC'D\n\n", jobnr);
-			Write(c, tmp, strlen(tmp));
 		} else if (unkx5_radekp == 0x0003) {
 			char tmp[256] = "";
 			sprintf(tmp, "\n\nEND TEXT %d\n\n", jobnr);
