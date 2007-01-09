@@ -526,6 +526,101 @@ void ReOpenSerial() {
 	}
 }
 
+int OpenX25Socket(char *local, char *remote) {
+	int ret = -1;
+
+	struct sockaddr_x25 bind_addr, dest_addr;
+	bzero(&bind_addr, sizeof(bind_addr));
+	bzero(&dest_addr, sizeof(dest_addr));
+
+	bind_addr.sx25_family = AF_X25;
+	dest_addr.sx25_family = AF_X25;
+
+	char x25local[256], x25remote[256];
+	strcpy(x25local, local);
+	strcpy(x25remote, remote);
+
+	char *idx;
+	if ((idx = index(x25local, '-')) != NULL) *idx = 0;
+	if ((idx = index(x25remote, '-')) != NULL) *idx = 0;
+
+	strcpy(bind_addr.sx25_addr.x25_addr, x25local);
+	strcpy(dest_addr.sx25_addr.x25_addr, x25remote);
+
+	ret = socket(AF_X25, SOCK_SEQPACKET, 0);
+	if (ret < 0) {
+		perror("socket");
+		return -1;
+	}
+
+	int on = 1;
+	setsockopt(ret, SOL_SOCKET, SO_DEBUG, &on, sizeof(on));
+
+	unsigned long facil_mask = (
+	X25_MASK_PACKET_SIZE
+	| X25_MASK_WINDOW_SIZE
+	| X25_MASK_CALLING_AE
+	| X25_MASK_CALLED_AE);
+
+	struct x25_subscrip_struct subscr;
+	int extended = 0;
+	subscr.global_facil_mask = facil_mask;
+	subscr.extended = extended;
+	strcpy(subscr.device, "x25tap0");
+
+	int res = ioctl(ret, SIOCX25SSUBSCRIP, &subscr);
+	if (res < 0) {
+		perror("subscr");
+		return -1;
+	}
+
+	struct x25_facilities fac;
+	fac.winsize_in = 7;
+	fac.winsize_out = 7;
+	fac.pacsize_in = 10;
+	fac.pacsize_out = 10;
+	fac.throughput = 0xdd;
+	fac.reverse = 0x80;
+
+	res = ioctl(ret, SIOCX25SFACILITIES, &fac);
+	if (res < 0) {
+		perror("fac");
+		return -1;
+	}
+
+	unsigned char calling_exten[10];
+	unsigned char called_exten[10];
+
+	to_bcd(calling_exten, X25Local);
+	to_bcd(called_exten, X25Remote);
+
+	struct x25_dte_facilities dtefac;
+	dtefac.calling_len = 20;
+	dtefac.called_len = 20;
+	memcpy(&dtefac.calling_ae, &calling_exten, 10);
+	memcpy(&dtefac.called_ae, &called_exten, 10);
+
+	res = ioctl(ret, SIOCX25SDTEFACILITIES, &dtefac);
+	if (res < 0) {
+		perror("dtefac");
+		return -1;
+	}
+
+	res = bind(ret, (struct sockaddr *)&bind_addr, sizeof(bind_addr));
+	if (res < 0) {
+		perror("bind");
+		return -1;
+	}
+
+	res = connect(ret, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
+	if (res < 0) {
+		perror("connect");
+		return -1;
+	}
+
+	return ret;
+}
+
 void ReOpenX25() {
 	log_msg("ReOpenX25()\n");
 
@@ -550,113 +645,13 @@ void ReOpenX25() {
 		TryLock(LockName);
 
 		if (!LockName[0]) Done(5);
-#endif /* LOCKDIR */
-
-		///if (X25Name) X25Fd = open(X25Name, O_RDWR);
-
-		int res = 0;
-		struct sockaddr_x25 bind_addr, dest_addr;
-		bzero(&bind_addr, sizeof(bind_addr));
-		bzero(&dest_addr, sizeof(dest_addr));
-
-		bind_addr.sx25_family = AF_X25;
-		dest_addr.sx25_family = AF_X25;
-
-		char x25local[256], x25remote[256];
-		strcpy(x25local, X25Local);
-		strcpy(x25remote, X25Remote);
-
-		char *idx;
-		if ((idx = index(x25local, '-')) != NULL) *idx = 0;
-		if ((idx = index(x25remote, '-')) != NULL) *idx = 0;
-
-		strcpy(bind_addr.sx25_addr.x25_addr, x25local);
-		strcpy(dest_addr.sx25_addr.x25_addr, x25remote);
-
-		X25Fd = socket(AF_X25, SOCK_SEQPACKET, 0);
-		if (X25Fd < 0) {
-			perror("socket");
-#ifdef LOCKDIR
-			Unlock();
 #endif
-			exit(2);
-		}
 
-		int on = 1;
-		setsockopt(X25Fd, SOL_SOCKET, SO_DEBUG, &on, sizeof(on));
+		X25Fd = OpenX25Socket(X25Local, X25Remote);
 
-		unsigned long facil_mask = (
-		X25_MASK_PACKET_SIZE
-		| X25_MASK_WINDOW_SIZE
-		| X25_MASK_CALLING_AE
-		| X25_MASK_CALLED_AE);
-
-		struct x25_subscrip_struct subscr;
-		int extended = 0;
-		subscr.global_facil_mask = facil_mask;
-		subscr.extended = extended;
-		strcpy(subscr.device, "x25tap0");
-		res = ioctl(X25Fd, SIOCX25SSUBSCRIP, &subscr);
-		if (res < 0) {
-			perror("subscr");
 #ifdef LOCKDIR
-			Unlock();
+		if (X25Fd < 0) exit(2);
 #endif
-			exit(2);
-		}
-
-		struct x25_facilities fac;
-		fac.winsize_in = 7;
-		fac.winsize_out = 7;
-		fac.pacsize_in = 10;
-		fac.pacsize_out = 10;
-		fac.throughput = 0xdd;
-		fac.reverse = 0x80;
-
-		res = ioctl(X25Fd, SIOCX25SFACILITIES, &fac);
-		if (res < 0) {
-			perror("fac");
-			exit(2);
-		}
-
-		unsigned char calling_exten[10];
-		unsigned char called_exten[10];
-
-		to_bcd(calling_exten, X25Local);
-		to_bcd(called_exten, X25Remote);
-
-		struct x25_dte_facilities dtefac;
-		dtefac.calling_len = 20;
-		dtefac.called_len = 20;
-		memcpy(&dtefac.calling_ae, &calling_exten, 10);
-		memcpy(&dtefac.called_ae, &called_exten, 10);
-
-		res = ioctl(X25Fd, SIOCX25SDTEFACILITIES, &dtefac);
-		if (res < 0) {
-			perror("dtefac");
-#ifdef LOCKDIR
-			Unlock();
-#endif
-			exit(2);
-		}
-
-		res = bind(X25Fd, (struct sockaddr *)&bind_addr, sizeof(bind_addr));
-		if (res < 0) {
-			perror("bind");
-#ifdef LOCKDIR
-			Unlock();
-#endif
-			exit(2);
-		}
-
-		res = connect(X25Fd, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
-		if (res < 0) {
-			perror("connect");
-#ifdef LOCKDIR
-			Unlock();
-#endif
-			exit(2);
-		}
 	}
 }
 
