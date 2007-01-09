@@ -125,8 +125,6 @@ int SockFd = -1; /* listening socket */
 int Reselect = 0;
 
 /* x25 socket */
-//char X25Name[256] = "";
-//unsigned int X25Port = 9000;
 int X25Fd = -1;
 
 char X25Local[256] = "";
