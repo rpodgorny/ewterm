@@ -610,15 +610,12 @@ log_msg("DEBUG: socket closed\n");
 
 		X25Fd = socket(AF_X25, SOCK_SEQPACKET, 0);
 		if (X25Fd < 0) {
+			perror("socket");
 #ifdef LOCKDIR
 			Unlock();
-#endif /* LOCKDIR */
-
-			fprintf(stderr, "Aieee... cannot open X.25 socket!\r\n");
+#endif
 			exit(2);
-		}/// else {
-///			fcntl(X25Fd, F_SETFL, O_NONBLOCK);
-///		}
+		}
 
 		int on = 1;
 		setsockopt(X25Fd, SOL_SOCKET, SO_DEBUG, &on, sizeof(on));
@@ -637,6 +634,9 @@ log_msg("DEBUG: socket closed\n");
 		res = ioctl(X25Fd, SIOCX25SSUBSCRIP, &subscr);
 		if (res < 0) {
 			perror("subscr");
+#ifdef LOCKDIR
+			Unlock();
+#endif
 			exit(2);
 		}
 
@@ -669,22 +669,29 @@ log_msg("DEBUG: socket closed\n");
 		res = ioctl(X25Fd, SIOCX25SDTEFACILITIES, &dtefac);
 		if (res < 0) {
 			perror("dtefac");
+#ifdef LOCKDIR
+			Unlock();
+#endif
 			exit(2);
 		}
 
 		res = bind(X25Fd, (struct sockaddr *)&bind_addr, sizeof(bind_addr));
 		if (res < 0) {
 			perror("bind");
+#ifdef LOCKDIR
+			Unlock();
+#endif
 			exit(2);
 		}
 
 		res = connect(X25Fd, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
 		if (res < 0) {
 			perror("connect");
+#ifdef LOCKDIR
+			Unlock();
+#endif
 			exit(2);
 		}
-
-log_msg("DEBUG: Everything went fine...\n");
 	}
 }
 
