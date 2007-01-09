@@ -125,10 +125,18 @@ int SockFd = -1; /* listening socket */
 int Reselect = 0;
 
 /* x25 socket */
-int X25Fd = -1;
+//int X25Fd = -1;
+
+struct X25Connection {
+	int fd = -1;
+	char address[256] = "";
+};
+
+struct X25Connection X25s[32];
+int X25sCount = 0;
 
 char X25Local[256] = "";
-char X25Remote[256] = "";
+//char X25Remote[256] = "";
 
 char X25User[256] = "";
 char X25Passwd[256] = "";
@@ -225,9 +233,12 @@ void Done(int Err) {
 	}
 	unlink(SockName);
 
-	if (X25Fd >= 0) {
-		close(X25Fd);
-		X25Fd = -1;
+	int i = 0;
+	for (i = 0; i < X25sCount; i++) {
+		if (X25s[i].fd < 0) continue;
+
+		close(X25s[i].fd);
+		X25s[i].fd = -1;
 	}
 
 	{
@@ -589,8 +600,8 @@ int OpenX25Socket(char *local, char *remote) {
 	unsigned char calling_exten[10];
 	unsigned char called_exten[10];
 
-	to_bcd(calling_exten, X25Local);
-	to_bcd(called_exten, X25Remote);
+	to_bcd(calling_exten, local);
+	to_bcd(called_exten, remote);
 
 	struct x25_dte_facilities dtefac;
 	dtefac.calling_len = 20;
@@ -1773,7 +1784,15 @@ int main(int argc, char *argv[]) {
 				}
 				break;
 			case 9: strncpy(X25Local, argv[ac], 256); break;
-			case 10: strncpy(X25Remote, argv[ac], 256); break;
+			case 10: {
+					char *p;
+					p = strtok(argv[ac],":;,");
+					while (p != NULL) {
+						strcpy(X25s[X25sCount++].address, p);
+						p = strtok(NULL, ":;,");
+					}
+				}
+				break;
 		}
 
 		if (swp) {
@@ -1892,7 +1911,7 @@ int main(int argc, char *argv[]) {
 
 	InstallSignals();
 
-	if (X25Local && *X25Local && X25Remote && *X25Remote) {
+	if (X25Local && *X25Local && X25sCount > 0) {
 		/* open x25 device */
 		ReOpenX25();
 	} else if (CuaName && *CuaName) {
@@ -2020,10 +2039,14 @@ int main(int argc, char *argv[]) {
 			if (WriteBufLen > 0) FD_SET(CuaFd, &WriteQ);
 		}
 
-		if (X25Fd >= 0) { /* talking with EWSD (X.25) */
-			FD_SET(X25Fd, &ReadQ);
-			if (X25Fd > MaxFd) MaxFd = X25Fd;
-			if (WriteBufLen > 0) FD_SET(X25Fd, &WriteQ);
+		/* talking with EWSD (X.25) */
+		int i = 0;
+		for (i = 0; i < X25sCount; i++) {
+			if (X25s[i].fd < 0) continue;
+
+			FD_SET(X25s[i].fd, &ReadQ);
+			if (X25s[i].fd > MaxFd) MaxFd = X25s[i].fd;
+			if (WriteBufLen > 0) FD_SET(X25s[i].fd, &WriteQ);
 		}
 
 		/* select */
@@ -2125,7 +2148,11 @@ int main(int argc, char *argv[]) {
 			}
 
 			/* something from x25 */
-			if (X25Fd >= 0 && FD_ISSET(X25Fd, &ReadQ)) {
+			///if (X25Fd >= 0 && FD_ISSET(X25Fd, &ReadQ)) {
+			int i = 0;
+			for (i = 0; i < X25sCount; i++) {
+				if (X25s[i].fd >= 0 && FD_ISSET(X25s[i].fd, &ReadQ)) continue;
+
 				log_msg("FROM X.25\n");
 
 				static unsigned char pbuf[320000]; // persistent buffer
@@ -2133,7 +2160,7 @@ int main(int argc, char *argv[]) {
 
 				unsigned char buf[32000];
 
-				int r = read(X25Fd, buf, 32000);
+				int r = read(X25s[i].fd, buf, 32000);
 
 				if (r <= 0 && errno != EINTR) {
 					perror("--- ewrecv: Read from X25Fd failed");
@@ -2160,7 +2187,7 @@ int main(int argc, char *argv[]) {
 
 						unsigned char buf2[32000];
 						int l = packet_serialize(confirm, buf2);
-						write(X25Fd, buf2, l);
+						write(X25s[i].fd, buf2, l);
 						packet_delete(confirm);
 					}
 
