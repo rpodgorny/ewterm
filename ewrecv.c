@@ -662,6 +662,8 @@ void ReOpenX25() {
 #endif
 
 		for (i = 0; i < X25sCount; i++) {
+			printf("DEBUG: opening %s\n", X25s[i].address);
+
 			X25s[i].fd = OpenX25Socket(X25Local, X25s[i].address);
 
 #ifdef LOCKDIR
@@ -1072,7 +1074,7 @@ void ProcessExchangePacket(struct packet *p) {
 	char err[32000] = "";
 	char unkx1_radekp[32000] = "";
 	char hint[32000] = "";
-	unsigned short unkx2_radekp = 0;
+	unsigned short msggrp = 0;
 	unsigned short unkx5_radekp = 0;
 	unsigned char unkx5_4_radekp = 0;
 	unsigned short mask = 0;
@@ -1090,8 +1092,7 @@ printf("SEQ: %d\n", seq);
 
 	b = block_getchild(p->data, "3");
 	if (b && b->data) {
-		// TODO: ask troller about the name of this one
-		unkx2_radekp = ntohs(*(unsigned short *)b->data); // message group
+		msggrp = ntohs(*(unsigned short *)b->data);
 		mask = ntohs(*(unsigned short *)(b->data+2));
 	}
 
@@ -1162,7 +1163,7 @@ printf("SEQ: %d\n", seq);
 			// TODO: consolidate to single line
 			char line1[256] = "", line2[256] = "";
 			sprintf(line1, "%s/%s/%s                 %8s  %8s\n", exch, apsver, patchver, date, time);
-			sprintf(line2, "%04d               %s                %04d/%05d           %s\n\n", jobnr, omtuser, unkx2_radekp, mask, hint);
+			sprintf(line2, "%04d               %s                %04d/%05d           %s\n\n", jobnr, omtuser, msggrp, mask, hint);
 
 			Write(c, line1, strlen(line1));
 			Write(c, line2, strlen(line2));
@@ -2056,7 +2057,7 @@ int main(int argc, char *argv[]) {
 
 			FD_SET(X25s[i].fd, &ReadQ);
 			if (X25s[i].fd > MaxFd) MaxFd = X25s[i].fd;
-			if (WriteBufLen > 0) FD_SET(X25s[i].fd, &WriteQ);
+			///if (WriteBufLen > 0) FD_SET(X25s[i].fd, &WriteQ);
 		}
 
 		/* select */
@@ -2161,7 +2162,7 @@ int main(int argc, char *argv[]) {
 			///if (X25Fd >= 0 && FD_ISSET(X25Fd, &ReadQ)) {
 			int i = 0;
 			for (i = 0; i < X25sCount; i++) {
-				if (X25s[i].fd >= 0 && FD_ISSET(X25s[i].fd, &ReadQ)) continue;
+				if (X25s[i].fd < 0 || !FD_ISSET(X25s[i].fd, &ReadQ)) continue;
 
 				log_msg("FROM X.25\n");
 
@@ -2176,6 +2177,7 @@ int main(int argc, char *argv[]) {
 					perror("--- ewrecv: Read from X25Fd failed");
 					//Done(4);
 
+					// TODO: shouldn't Done() be really called?
 					printf("Trying to reconnect...\n");
 					ReOpenX25();
 				} else {
@@ -2236,12 +2238,14 @@ int main(int argc, char *argv[]) {
 						packet_delete(p);
 					}
 				}
+
+				log_msg("END FROM X.25\n");
 			}
 
 			/* something to x25 */
 			///if (X25Fd >= 0 && FD_ISSET(X25Fd, &WriteQ)) {
 			for (i = 0; i < X25sCount; i++) {
-				if (X25s[i].fd < 0 || FD_ISSET(X25s[i].fd, &WriteQ)) continue;
+				if (X25s[i].fd < 0 || !FD_ISSET(X25s[i].fd, &WriteQ)) continue;
 
 				log_msg("TO X.25\n");
 
