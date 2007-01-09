@@ -1179,7 +1179,7 @@ printf("SEQ: %d\n", seq);
 			// TODO: consolidate to single line
 			char line1[256] = "", line2[256] = "";
 			sprintf(line1, "%s/%s/%s                 %8s  %8s\n", exch, apsver, patchver, date, time);
-			sprintf(line2, "%04d         %s          %04d/%05d    %s\n\n", jobnr, omtuser, unkx2_radekp, mask, hint);
+			sprintf(line2, "%04d               %s                %04d/%05d           %s\n\n", jobnr, omtuser, unkx2_radekp, mask, hint);
 
 			Write(c, line1, strlen(line1));
 			Write(c, line2, strlen(line2));
@@ -1267,13 +1267,13 @@ printf("USTREDNA TO PRIJALA\n");
 		|| unkx5_radekp == 0x0200
 		|| unkx5_radekp == 0x0203) {
 			char tmp[256] = "";
-			sprintf(tmp, "\n\nEND JOB %d\n\n", jobnr);
+			sprintf(tmp, "\n\nEND JOB %04d\n\n", jobnr);
 			Write(c, tmp, strlen(tmp));
 
 			IProtoSEND(c, 0x45, jobnr_s);
 		} else if (unkx5_radekp == 0x0003) {
 			char tmp[256] = "";
-			sprintf(tmp, "\n\nEND TEXT %d\n\n", jobnr);
+			sprintf(tmp, "\n\nEND TEXT %04d\n\n", jobnr);
 			Write(c, tmp, strlen(tmp));
 		}
 	} foreach_auth_conn_end

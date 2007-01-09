@@ -30,6 +30,7 @@ struct block *block_deserialize(unsigned char *buf, int maxlen, struct block *pa
 		return NULL;
 	}
 
+	if (parent && !parent->parent && ret->id == 2) // TODO: hack! remove!
 	if (ret->id > 0 && block_haschildren(buf+3, ret->len)) {
 		unsigned char *ptr = buf+3;
 		while (ptr < buf+3+ret->len) {
