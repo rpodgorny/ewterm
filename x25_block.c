@@ -18,20 +18,19 @@ struct block *block_alloc() {
 struct block *block_deserialize(unsigned char *buf, int maxlen, struct block *parent) {
 	if (maxlen < 3) return NULL;
 
-	struct block *ret = malloc(sizeof(struct block));
+	struct block *ret = block_alloc();
 
 	ret->id = *buf;
-	ret->data = NULL;
 	ret->len = ntohs(*(unsigned short *)(buf+1)); // this must be kept during recursion
-	ret->nchildren = 0;
+	ret->parent = parent;
 
 	if (ret->len > maxlen-3) {
 		// the buffer seems to be truncated, fail then...
-		free(ret);
+		block_delete(ret);
 		return NULL;
 	}
 
-	if (block_haschildren(buf+3, ret->len)) {
+	if (ret->id > 0 && block_haschildren(buf+3, ret->len)) {
 		unsigned char *ptr = buf+3;
 		while (ptr < buf+3+ret->len) {
 			struct block *deser = block_deserialize(ptr, buf+maxlen-ptr, ret);
@@ -50,8 +49,6 @@ struct block *block_deserialize(unsigned char *buf, int maxlen, struct block *pa
 		ret->data = malloc(ret->len);
 		memcpy(ret->data, buf+3, ret->len);
 	}
-
-	ret->parent = parent;
 
 	return ret;
 }
