@@ -1063,6 +1063,9 @@ void ProcessExchangeChar(char Chr) {
 void ProcessExchangePacket(struct packet *p) {
 	pdebug("ProcessExchangePacket()\n");
 
+	// TODO: a quick hack to filter empty packets. remove!
+	if (block_getchild(p->data, "8-1") != NULL) return;
+
 	struct block *b = NULL;
 	unsigned short seq = 0;
 	unsigned short jobnr = 0;
