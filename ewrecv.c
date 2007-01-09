@@ -447,6 +447,45 @@ void GetLockInfo(FILE *Fl, int *pid, char *name) {
 	strcpy(name, Locker);
 }
 
+void TryLock(char *name) {
+	/* Check for lock */
+	FILE *Fl = fopen(name, "r");
+	if (Fl) {
+		int HisPID = 0;
+		char Locker[256];
+
+		GetLockInfo(Fl, &HisPID, Locker);
+
+		fclose(Fl);
+
+		fprintf(stderr, "Device already locked by '%s' (PID %d).\r\n", Locker, HisPID);
+
+		/* Try if process still exists */
+		if (kill(HisPID, 0) < 0) {
+			if (errno == ESRCH) {
+				fprintf(stderr, "That process does not exist. Trying to remove... ");
+				fflush(stderr);
+	
+				if (remove(LockName) < 0) {
+					fprintf(stderr, "failed.\r\nremove(LockFile): %s\r\n", strerror(errno));
+					name[0] = 0;
+					return;
+				} else {
+					fprintf(stderr, "success.\r\n");
+				}
+			} else {
+				name[0] = 0;
+				return;
+			}
+		} else {
+			name[0] = 0;
+			return;
+		}
+	}
+
+	Lock(Fl);
+}
+
 void ReOpenSerial() {
 	log_msg("ReOpenSerial()\n");
 
@@ -465,45 +504,9 @@ void ReOpenSerial() {
 #ifdef LOCKDIR
 		/* Make lock name */
 		char *FirstPtr = rindex(CuaName, '/');
-
 		sprintf(LockName, "%s/LCK..%s", LOCKDIR, FirstPtr);
 
-		/* Check for lock */
-		FILE *Fl = fopen(LockName, "r");
-		if (Fl) {
-			int HisPID = 0;
-			char Locker[256];
-
-			GetLockInfo(Fl, &HisPID, Locker);
-
-			fclose(Fl);
-
-			fprintf(stderr, "Device already locked by '%s' (PID %d).\r\n", Locker, HisPID);
-
-			/* Try if process still exists */
-			if (kill(HisPID, 0) < 0) {
-				if (errno == ESRCH) {
-					fprintf(stderr, "That process does not exist. Trying to remove... ");
-					fflush(stderr);
-	
-					if (remove(LockName) < 0) {
-						fprintf(stderr, "failed.\r\nremove(LockFile): %s\r\n", strerror(errno));
-						LockName[0] = 0;
-						return;
-					} else {
-						fprintf(stderr, "success.\r\n");
-					}
-				} else {
-					LockName[0] = 0;
-					return;
-				}
-			} else {
-				LockName[0] = 0;
-				return;
-			}
-		}
-
-		Lock(Fl);
+		TryLock(LockName);
 
 		if (!LockName[0]) Done(5);
 #endif /* LOCKDIR */
@@ -527,11 +530,9 @@ void ReOpenX25() {
 	log_msg("ReOpenX25()\n");
 
 	if (X25Fd >= 0) {
-log_msg("DEBUG: closing socket\n");
 		shutdown(X25Fd, SHUT_RDWR);
 		close(X25Fd);
 		X25Fd = -1;
-log_msg("DEBUG: socket closed\n");
 	}
 #ifdef LOCKDIR
 	Unlock();
@@ -544,45 +545,9 @@ log_msg("DEBUG: socket closed\n");
 		/* Make lock name */
 		// TODO: sanitize this
 		char *FirstPtr = rindex(X25Local, '/');
-
 		sprintf(LockName, "%s/LCK..%s", LOCKDIR, FirstPtr);
 
-		/* Check for lock */
-		FILE *Fl = fopen(LockName, "r");
-		if (Fl) {
-			int HisPID = 0;
-			char Locker[256];
-
-			GetLockInfo(Fl, &HisPID, Locker);
-
-			fclose(Fl);
-
-			fprintf(stderr, "Device already locked by '%s' (PID %d).\r\n", Locker, HisPID);
-
-			/* Try if process still exists */
-			if (kill(HisPID, 0) < 0) {
-				if (errno == ESRCH) {
-					fprintf(stderr, "That process does not exist. Trying to remove... ");
-					fflush(stderr);
-	
-					if (remove(LockName) < 0) {
-						fprintf(stderr, "failed.\r\nremove(LockFile): %s\r\n", strerror(errno));
-						LockName[0] = 0;
-						return;
-					} else {
-						fprintf(stderr, "success.\r\n");
-					}
-				} else {
-					LockName[0] = 0;
-					return;
-				}
-			} else {
-				LockName[0] = 0;
-				return;
-			}
-		}
-
-		Lock(Fl);
+		TryLock(LockName);
 
 		if (!LockName[0]) Done(5);
 #endif /* LOCKDIR */
