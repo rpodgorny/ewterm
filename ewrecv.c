@@ -143,8 +143,8 @@ char X25Passwd[256] = "";
 
 /* Log files */
 
-FILE *LogFl1 = NULL, *LogFl2 = NULL, *LogRaw = NULL;
-char LogFName[256] = "", LogRawName[256] = "", DailyLogFNameTemplate[256] = "";
+FILE *LogFl1 = NULL, *LogFl2 = NULL, *LogRaw = NULL, *LogTODO = NULL;
+char LogFName[256] = "", LogRawName[256] = "", DailyLogFNameTemplate[256] = "", LogTODOFName[256] = "";
 
 int DailyLog = 0;
 
@@ -395,7 +395,7 @@ void ReopenLogFile() {
 	if (!LogFl2) return;
 
 	fclose(LogFl2);
-  
+
 	LogFl2 = fopen(LogFName, "a");
 	if (!LogFl2) log_msg("--- ewrecv: Hey! Cannot fopen %s!\n", LogFName);
 }
@@ -733,6 +733,16 @@ void LogCh(char Chr) {
 		Lines[LastLine][0] = 0;
 		LineLen = 0;
 	}
+}
+
+//TODO: this is slow and nasty
+void LogStr(char *s, int len) {
+	if (!LogTODO) return;
+
+	int i = 0;
+	for (i = 0; i < len; i++) fputc(s[i], LogTODO);
+
+	fflush(LogTODO);
 }
 
 int SendChar(struct connection *c, char Chr) {
@@ -1166,7 +1176,7 @@ printf("SEQ: %d\n", seq);
 			// TODO: consolidate to single line
 			char line1[256] = "", line2[256] = "";
 			sprintf(line1, "%s/%s/%s                 %8s  %8s\n", exch, apsver, patchver, date, time);
-			sprintf(line2, "%04d               %s                %04d/%05d           %s\n\n", jobnr, omtuser, msggrp, mask, hint);
+			sprintf(line2, "%04d               %s                %04d/%05d           %16s\n\n", jobnr, omtuser, msggrp, mask, hint);
 
 			Write(c, line1, strlen(line1));
 			Write(c, line2, strlen(line2));
@@ -1213,13 +1223,13 @@ printf("MASK: %d\n", mask);
 		} else if (p->dir == 3 && p->pltype == 1) {
 			// "Command accepted" confirmation
 printf("USTREDNA TO PRIJALA\n");
-			foreach_ipr_conn (NULL) {
-				if (!c->authenticated) continue;
+			///foreach_ipr_conn (NULL) {
+			///	if (!c->authenticated) continue;
 				// TODO: send job start to ewterms?
 				char tmp[256];
 				sprintf(tmp, "%d\n\n", jobnr);
 				Write(c, tmp, strlen(tmp));
-			} foreach_ipr_conn_end;
+			///} foreach_ipr_conn_end;
 		} else if (p->dir == 0x0c && p->pltype == 1) {
 			if (strlen(unkx1_radekp)) {
 				// Login success
@@ -1238,10 +1248,10 @@ printf("USTREDNA TO PRIJALA\n");
 			}
 		} else if (p->dir == 0x0e && p->pltype == 0) {
 			// Session timeout, cancelled (maybe more errors)
-			foreach_ipr_conn (NULL) {
-				if (!c->authenticated) continue;
+			///foreach_ipr_conn (NULL) {
+			///	if (!c->authenticated) continue;
 				IProtoSEND(c, 0x44, NULL);
-			} foreach_ipr_conn_end;
+			///} foreach_ipr_conn_end;
 
 			LoggedIn = 0;
 		}
@@ -1264,6 +1274,68 @@ printf("USTREDNA TO PRIJALA\n");
 			Write(c, tmp, strlen(tmp));
 		}
 	} foreach_auth_conn_end
+
+	// the same to log
+	// TODO: remove this duplicity
+	{
+		LogStr("\n\n", 2);
+
+		if (seq > 0) {
+			char tmp[128] = "";
+			sprintf(tmp, "CONTINUATION TEXT %04d\n\n", seq-1);
+			LogStr(tmp, strlen(tmp));
+		}
+
+		// TODO: better condition
+		if (strlen(exch)) {
+			char omtuser[32] = "";
+			if (strlen(omt) && strlen(user)) sprintf("%s/%s", omt, user);
+
+			// TODO: consolidate to single line
+			char line1[256] = "", line2[256] = "";
+			sprintf(line1, "%s/%s/%s                 %8s  %8s\n", exch, apsver, patchver, date, time);
+			sprintf(line2, "%04d               %s                %04d/%05d           %16s\n\n", jobnr, omtuser, msggrp, mask, hint);
+
+			LogStr(line1, strlen(line1));
+			LogStr(line2, strlen(line2));
+		}
+
+		if (strlen(err)) {
+			LogStr(err, strlen(err));
+		}
+		if (strlen(answer)) {
+			LogStr(answer, strlen(answer));
+		}
+
+		if (p->dir == 2) {
+			if (strlen(prompt)) {
+				LogStr(prompt, strlen(prompt));
+			}
+		} else if (p->dir == 3 && p->pltype == 1) {
+			// "Command accepted" confirmation
+			char tmp[256];
+			sprintf(tmp, "%d\n\n", jobnr);
+			LogStr(tmp, strlen(tmp));
+		} else if (p->dir == 0x0c && p->pltype == 1) {
+			if (strlen(unkx1_radekp)) {
+				LogStr("<", 1);
+			}
+		} else if (p->dir == 0x0e && p->pltype == 0) {
+		}
+
+		// TODO: are these all cases?
+		if (unkx5_4_radekp == 2
+		|| unkx5_radekp == 0x0200
+		|| unkx5_radekp == 0x0203) {
+			char tmp[256] = "";
+			sprintf(tmp, "\n\nEND JOB %04d\n\n", jobnr);
+			LogStr(tmp, strlen(tmp));
+		} else if (unkx5_radekp == 0x0003) {
+			char tmp[256] = "";
+			sprintf(tmp, "\n\nEND TEXT %04d\n\n", jobnr);
+			LogStr(tmp, strlen(tmp));
+		}
+	}
 }
 
 void AnnounceUser(struct connection *conn, int opcode);
@@ -1752,6 +1824,21 @@ void StartLog2(int PrintLog) {
 		LogFl1 = popen("/usr/bin/lpr", "w");
 		if (!LogFl1) fprintf(stderr, "Warning! Cannot popen lpr!\r\n");
 	}
+
+	if (LogTODOFName[0]) {
+		if (LogTODOFName[0] != '/') {
+			char LogTODOFName2[256];
+
+			/* make the path absolute, we will be chdir()ing later */
+			strcpy(LogTODOFName2, LogTODOFName);
+			if (!getcwd(LogTODOFName, 256)) fprintf(stderr, "Warning! Cannot get cwd - logging may not work properly.\r\n");
+			strcat(LogTODOFName, "/");
+			strcat(LogTODOFName, LogTODOFName2);
+		}
+
+		LogTODO = fopen(LogTODOFName, "a");
+		if (!LogTODO) fprintf(stderr, "Warning! Cannot fopen %s!\r\n", LogTODOFName);
+	}
 }
 
 int main(int argc, char *argv[]) {
@@ -1807,6 +1894,7 @@ int main(int argc, char *argv[]) {
 					}
 				}
 				break;
+			case 11: strncpy(LogTODOFName, argv[ac], 256); break;
 		}
 
 		if (swp) {
@@ -1817,7 +1905,7 @@ int main(int argc, char *argv[]) {
 		if (!strcmp(argv[ac], "-h") || !strcmp(argv[ac], "--help")) {
 			printf("\nUsage:\t%s ", argv[0]);
 			printf("[-h|--help] [-c|--cuadev <cuadev>] [-s|--speed <speed>]\n");
-			printf("\t[-f|--logfile <file>] [-L|--daylog] [-p|--printlog] [-r|--rawfile <file>]\n");
+			printf("\t[-f|--logfile <file>] [-L|--daylog] [-p|--printlog] [-r|--rawfile <file>] [--todolog <file>]\n");
 			printf("\t[-H|--host <host>[:<port>]] [-P|--port <port>] [-w|--password <pwd>]\n");
 			printf("\t[-W|--ropassword <pwd>] [-g|--fg] [-S|--silent] [-v|--verbose]\n\n");
 			printf("-h\tDisplay this help\n");
@@ -1899,6 +1987,11 @@ int main(int argc, char *argv[]) {
 
 		if (!strcmp(argv[ac], "--x25remote")) {
 			swp = 10;
+			continue;
+		}
+
+		if (!strcmp(argv[ac], "--todolog")) {
+			swp = 11;
 			continue;
 		}
 
@@ -2060,7 +2153,7 @@ int main(int argc, char *argv[]) {
 
 			FD_SET(X25s[i].fd, &ReadQ);
 			if (X25s[i].fd > MaxFd) MaxFd = X25s[i].fd;
-			///if (WriteBufLen > 0) FD_SET(X25s[i].fd, &WriteQ);
+			if (WriteBufLen > 0) FD_SET(X25s[i].fd, &WriteQ);
 		}
 
 		/* select */
