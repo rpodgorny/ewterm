@@ -1078,7 +1078,7 @@ void GenHeader(char *exch, char *apsver, char *patchver, char *date, char *time,
 	}
 
 	char omtuser[32] = "";
-	if (strlen(omt) && strlen(user)) sprintf("%s/%s", omt, user);
+	if (strlen(omt) && strlen(user)) sprintf(omtuser, "%s/%s", omt, user);
 
 	char left_part[100] = "";
 
@@ -2344,7 +2344,7 @@ int main(int argc, char *argv[]) {
 				something_sent_todo = 1;
 
 				log_msg("TO X.25\n");
-printf("PROMPT: %c\n", Prompt);
+
 				struct packet *p = NULL;
 				if (!Prompt) {
 					p = command_packet(WriteBuf, WriteBufLen);
