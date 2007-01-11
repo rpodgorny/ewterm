@@ -1069,6 +1069,23 @@ void ProcessExchangeChar(char Chr) {
 	if (LogRaw) fputc(Chr, LogRaw);
 }
 
+// TODO: move this to somewhere else
+void GenHeader(char *exch, char *apsver, char *patchver, char *date, char *time, unsigned short jobnr, char *omt, char *user, unsigned short msggrp, unsigned short mask, char *hint, char *out) {
+	// TODO: better condition
+	if (strlen(exch) == 0) {
+		out[0] = 0;
+		return;
+	}
+
+	char omtuser[32] = "";
+	if (strlen(omt) && strlen(user)) sprintf("%s/%s", omt, user);
+
+	char left_part[100] = "";
+
+	sprintf(left_part, "%s/%s/%s", exch, apsver, patchver);
+	sprintf(out, "%-53s %8s  %8s\n%04d %14s                %04d/%05d %26s\n\n", left_part, date, time, jobnr, omtuser, msggrp, mask, hint);
+}
+
 /* for X.25 communication */
 void ProcessExchangePacket(struct packet *p) {
 	pdebug("ProcessExchangePacket()\n");
@@ -1168,19 +1185,9 @@ printf("SEQ: %d\n", seq);
 			Write(c, tmp, strlen(tmp));
 		}
 
-		// TODO: better condition
-		if (strlen(exch)) {
-			char omtuser[32] = "";
-			if (strlen(omt) && strlen(user)) sprintf("%s/%s", omt, user);
-
-			// TODO: consolidate to single line
-			char line1[256] = "", line2[256] = "";
-			sprintf(line1, "%s/%s/%s                 %8s  %8s\n", exch, apsver, patchver, date, time);
-			sprintf(line2, "%04d               %s                %04d/%05d           %16s\n\n", jobnr, omtuser, msggrp, mask, hint);
-
-			Write(c, line1, strlen(line1));
-			Write(c, line2, strlen(line2));
-		}
+		char header[256] = "";
+		GenHeader(exch, apsver, patchver, date, time, jobnr, omt, user, msggrp, mask, hint, header);
+		if (strlen(header)) Write(c, header, strlen(header));
 
 		// TODO: better condition
 		if (jobnr) {
@@ -1286,19 +1293,9 @@ printf("USTREDNA TO PRIJALA\n");
 			LogStr(tmp, strlen(tmp));
 		}
 
-		// TODO: better condition
-		if (strlen(exch)) {
-			char omtuser[32] = "";
-			if (strlen(omt) && strlen(user)) sprintf("%s/%s", omt, user);
-
-			// TODO: consolidate to single line
-			char line1[256] = "", line2[256] = "";
-			sprintf(line1, "%s/%s/%s                 %8s  %8s\n", exch, apsver, patchver, date, time);
-			sprintf(line2, "%04d               %s                %04d/%05d           %16s\n\n", jobnr, omtuser, msggrp, mask, hint);
-
-			LogStr(line1, strlen(line1));
-			LogStr(line2, strlen(line2));
-		}
+		char header[256] = "";
+		GenHeader(exch, apsver, patchver, date, time, jobnr, omt, user, msggrp, mask, hint, header);
+		if (strlen(header)) LogStr(header, strlen(header));
 
 		if (strlen(err)) {
 			LogStr(err, strlen(err));
