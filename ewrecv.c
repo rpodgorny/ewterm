@@ -2336,18 +2336,21 @@ int main(int argc, char *argv[]) {
 			}
 
 			/* something to x25 */
+			int something_sent_todo = 0;
 			///if (X25Fd >= 0 && FD_ISSET(X25Fd, &WriteQ)) {
 			for (i = 0; i < X25sCount; i++) {
 				if (X25s[i].fd < 0 || !FD_ISSET(X25s[i].fd, &WriteQ)) continue;
 
-				log_msg("TO X.25\n");
+				something_sent_todo = 1;
 
+				log_msg("TO X.25\n");
+printf("PROMPT: %c\n", Prompt);
 				struct packet *p = NULL;
 				if (!Prompt) {
 					p = command_packet(WriteBuf, WriteBufLen);
 				} else if (Prompt == 'I') {
 					p = command_confirmation_packet(LastConnId, LastSessId, LastTail, WriteBuf, WriteBufLen);
-					Prompt = 0;
+					///Prompt = 0;
 				} else if (Prompt == 'U') {
 					strncpy(X25User, WriteBuf, WriteBufLen);
 					X25User[WriteBufLen] = 0;
@@ -2356,7 +2359,7 @@ int main(int argc, char *argv[]) {
 					foreach_conn (NULL) {
 						IProtoSEND(c, 0x41, "P");
 					} foreach_conn_end
-					Prompt = 'P';
+					///Prompt = 'P';
 				} else if (Prompt == 'P') {
 					strncpy(X25Passwd, WriteBuf, WriteBufLen);
 					X25Passwd[WriteBufLen] = 0;
@@ -2368,12 +2371,12 @@ int main(int argc, char *argv[]) {
 					if (idx) *idx = 0;
 
 					p = login_packet(X25User, X25Passwd);
-
-					Prompt = 0;
+printf("login_packet()\n");
+					///Prompt = 0;
 				} else if (Prompt == 'X') {
 					p = logout_packet();
 
-					Prompt = 0;
+					///Prompt = 0;
 				}
 
 				unsigned char buf[32000];
@@ -2393,7 +2396,32 @@ int main(int argc, char *argv[]) {
 				}
 			}
 
-			WriteBufLen = 0;
+			// TODO: remove this duplicity!
+			if (something_sent_todo) {
+				if (!Prompt) {
+				} else if (Prompt == 'I') {
+					Prompt = 0;
+				} else if (Prompt == 'U') {
+					strncpy(X25User, WriteBuf, WriteBufLen);
+					X25User[WriteBufLen] = 0;
+					Prompt = 'P';
+				} else if (Prompt == 'P') {
+					strncpy(X25Passwd, WriteBuf, WriteBufLen);
+					X25Passwd[WriteBufLen] = 0;
+
+					// Username and password are messed with newlines, fix it
+					char *idx = index(X25User, 10);
+					if (idx) *idx = 0;
+					idx = index(X25Passwd, 10);
+					if (idx) *idx = 0;
+
+					Prompt = 0;
+				} else if (Prompt == 'X') {
+					Prompt = 0;
+				}
+
+				WriteBufLen = 0;
+			}
 reselect:
 			;
 		}
