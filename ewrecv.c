@@ -635,14 +635,14 @@ void ReOpenX25() {
 
 	///if (X25Fd >= 0) {
 	int i = 0;
-	for (i = 0; i < X25sCount; i++) {
+/*	for (i = 0; i < X25sCount; i++) {
 		if (X25s[i].fd < 0) continue;
 
 		shutdown(X25s[i].fd, SHUT_RDWR);
 		close(X25s[i].fd);
 		X25s[i].fd = -1;
 	}
-
+*/
 #ifdef LOCKDIR
 	Unlock();
 #endif
@@ -662,12 +662,14 @@ void ReOpenX25() {
 #endif
 
 		for (i = 0; i < X25sCount; i++) {
+			if (X25s[i].fd >= 0) continue;
+
 			printf("DEBUG: opening %s\n", X25s[i].address);
 
 			X25s[i].fd = OpenX25Socket(X25Local, X25s[i].address);
 
 #ifdef LOCKDIR
-			if (X25s[i].fd < 0) exit(2);
+			///if (X25s[i].fd < 0) exit(2);
 #endif
 		}
 	}
@@ -737,8 +739,32 @@ void LogCh(char Chr) {
 
 //TODO: this is slow and nasty
 void LogStr(char *s, int len) {
+	if (!LogTODO) {
+		if (LogTODOFName[0]) {
+			if (LogTODOFName[0] != '/') {
+				char LogTODOFName2[256];
+
+				/* make the path absolute, we will be chdir()ing later */
+				strcpy(LogTODOFName2, LogTODOFName);
+				if (!getcwd(LogTODOFName, 256)) fprintf(stderr, "Warning! Cannot get cwd - logging may not work properly.\r\n");
+				strcat(LogTODOFName, "/");
+				strcat(LogTODOFName, LogTODOFName2);
+			}
+
+			// it could be a fifo with no listener - we can't afford to block
+			int fd = open(LogTODOFName, O_WRONLY | O_APPEND | O_NONBLOCK);
+			if (fd < 0) {
+				perror("LogTODO open");
+			} else {
+				LogTODO = fdopen(fd, "a");
+				if (!LogTODO) fprintf(stderr, "Warning! Cannot fopen %s!\r\n", LogTODOFName);
+			}
+		}
+	}
+
 	if (!LogTODO) return;
 
+	// TODO: this is ugly and slow, fix it
 	int i = 0;
 	for (i = 0; i < len; i++) fputc(s[i], LogTODO);
 
@@ -1821,21 +1847,6 @@ void StartLog2(int PrintLog) {
 		LogFl1 = popen("/usr/bin/lpr", "w");
 		if (!LogFl1) fprintf(stderr, "Warning! Cannot popen lpr!\r\n");
 	}
-
-	if (LogTODOFName[0]) {
-		if (LogTODOFName[0] != '/') {
-			char LogTODOFName2[256];
-
-			/* make the path absolute, we will be chdir()ing later */
-			strcpy(LogTODOFName2, LogTODOFName);
-			if (!getcwd(LogTODOFName, 256)) fprintf(stderr, "Warning! Cannot get cwd - logging may not work properly.\r\n");
-			strcat(LogTODOFName, "/");
-			strcat(LogTODOFName, LogTODOFName2);
-		}
-
-		LogTODO = fopen(LogTODOFName, "a");
-		if (!LogTODO) fprintf(stderr, "Warning! Cannot fopen %s!\r\n", LogTODOFName);
-	}
 }
 
 int main(int argc, char *argv[]) {
@@ -2272,6 +2283,11 @@ int main(int argc, char *argv[]) {
 
 					// TODO: shouldn't Done() be really called?
 					printf("Trying to reconnect...\n");
+
+					shutdown(X25s[i].fd, SHUT_RDWR);
+					close(X25s[i].fd);
+					X25s[i].fd = -1;
+
 					ReOpenX25();
 				} else {
 					// TODO: why else?
