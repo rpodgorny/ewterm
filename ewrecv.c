@@ -1128,11 +1128,12 @@ void ProcessExchangePacket(struct packet *p) {
 	char apsver[200] = "";
 	char patchver[200] = "";
 	char err[32000] = "";
-	char unkx1_radekp[32000] = "";
+	char unkx3_3[32000] = "";
 	char hint[32000] = "";
 	unsigned short msggrp = 0;
-	unsigned short unkx5_radekp = 0;
-	unsigned char unkx5_4_radekp = 0;
+	unsigned char unkx5__0 = -1;
+	unsigned char unkx5__1 = -1;
+	unsigned char unkx5_4 = 0;
 	unsigned short mask = 0;
 	char prompt[32000] = "";
 	char answer[32000] = "";
@@ -1153,7 +1154,7 @@ printf("SEQ: %d\n", seq);
 	}
 
 	b = block_getchild(p->data, "3-3");
-	if (b && b->data) strncpy(unkx1_radekp, (char *)b->data, b->len);
+	if (b && b->data) strncpy(unkx3_3, (char *)b->data, b->len);
 
 	b = block_getchild(p->data, "4-1");
 	if (b && b->data) strncpy(exch, (char *)b->data, b->len);
@@ -1185,7 +1186,8 @@ printf("SEQ: %d\n", seq);
 
 	b = block_getchild(p->data, "5");
 	if (b && b->data) {
-		unkx5_radekp = ntohs(*(unsigned short *)b->data);
+		unkx5__0 = *b->data;
+		unkx5__1 = *(b->data+1);
 	}
 
 	b = block_getchild(p->data, "5-2");
@@ -1196,7 +1198,7 @@ printf("SEQ: %d\n", seq);
 
 	b = block_getchild(p->data, "5-4");
 	if (b && b->data) {
-		unkx5_4_radekp = *b->data;
+		unkx5_4 = *b->data;
 	}
 
 	b = block_getchild(p->data, "7");
@@ -1264,7 +1266,7 @@ printf("USTREDNA TO PRIJALA\n");
 				Write(c, tmp, strlen(tmp));
 			///} foreach_ipr_conn_end;
 		} else if (p->dir == 0x0c && p->pltype == 1) {
-			if (strlen(unkx1_radekp)) {
+			if (strlen(unkx3_3)) {
 				// Login success
 				IProtoSEND(c, 0x43, NULL);
 
@@ -1293,17 +1295,20 @@ printf("USTREDNA TO PRIJALA\n");
 		sprintf(jobnr_s, "%04d", jobnr);
 
 		// TODO: are these all cases?
-		if (unkx5_4_radekp == 2
-		|| unkx5_radekp == 0x0200
-		|| unkx5_radekp == 0x0203) {
+		if (unkx5_4 == 2
+		|| unkx5__0 == 2) {
 			char tmp[256] = "";
 			sprintf(tmp, "\n\nEND JOB %04d\n\n", jobnr);
 			Write(c, tmp, strlen(tmp));
 
 			IProtoSEND(c, 0x45, jobnr_s);
-		} else if (unkx5_radekp == 0x0003) {
+		} else if (unkx5__0 == 1) {
 			char tmp[256] = "";
-			sprintf(tmp, "\n\nEND TEXT %04d\n\n", jobnr);
+			sprintf(tmp, "\n\nEND TEXT JOB %04d\n\n", jobnr);
+			Write(c, tmp, strlen(tmp));
+		} else if (unkx5__0 == 0) {
+			char tmp[256] = "";
+			sprintf(tmp, "\n\nINTERRUPTION TEXT JOB %04d\n\n", jobnr);
 			Write(c, tmp, strlen(tmp));
 		}
 	} foreach_auth_conn_end
@@ -1340,24 +1345,28 @@ printf("USTREDNA TO PRIJALA\n");
 			sprintf(tmp, "%d\n\n", jobnr);
 			LogStr(tmp, strlen(tmp));
 		} else if (p->dir == 0x0c && p->pltype == 1) {
-			if (strlen(unkx1_radekp)) {
+			if (strlen(unkx3_3)) {
 				LogStr("<", 1);
 			}
 		} else if (p->dir == 0x0e && p->pltype == 0) {
 		}
 
 		// TODO: are these all cases?
-		if (unkx5_4_radekp == 2
-		|| unkx5_radekp == 0x0200
-		|| unkx5_radekp == 0x0203) {
+		if (unkx5_4 == 2
+		|| unkx5__0 == 2) {
 			char tmp[256] = "";
 			sprintf(tmp, "\n\nEND JOB %04d\n\n", jobnr);
 			LogStr(tmp, strlen(tmp));
-		} else if (unkx5_radekp == 0x0003) {
+		} else if (unkx5__0 == 1) {
 			char tmp[256] = "";
-			sprintf(tmp, "\n\nEND TEXT %04d\n\n", jobnr);
+			sprintf(tmp, "\n\nEND TEXT JOB %04d\n\n", jobnr);
+			LogStr(tmp, strlen(tmp));
+		} else if (unkx5__0 == 0) {
+			char tmp[256] = "";
+			sprintf(tmp, "\n\nINTERRUPTION TEXT JOB %04d\n\n", jobnr);
 			LogStr(tmp, strlen(tmp));
 		}
+
 	}
 }
 
