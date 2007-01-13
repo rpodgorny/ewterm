@@ -1298,17 +1298,17 @@ printf("USTREDNA TO PRIJALA\n");
 		if (unkx5_4 == 2
 		|| unkx5__0 == 2) {
 			char tmp[256] = "";
-			sprintf(tmp, "\n\nEND JOB %04d\n\n", jobnr);
+			sprintf(tmp, "\nEND JOB %04d\n\n", jobnr);
 			Write(c, tmp, strlen(tmp));
 
 			IProtoSEND(c, 0x45, jobnr_s);
 		} else if (unkx5__0 == 1) {
 			char tmp[256] = "";
-			sprintf(tmp, "\n\nEND TEXT JOB %04d\n\n", jobnr);
+			sprintf(tmp, "\nEND TEXT JOB %04d\n\n", jobnr);
 			Write(c, tmp, strlen(tmp));
 		} else if (unkx5__0 == 0) {
 			char tmp[256] = "";
-			sprintf(tmp, "\n\nINTERRUPTION TEXT JOB %04d\n\n", jobnr);
+			sprintf(tmp, "\nINTERRUPTION TEXT JOB %04d\n\n", jobnr);
 			Write(c, tmp, strlen(tmp));
 		}
 	} foreach_auth_conn_end
@@ -1355,15 +1355,15 @@ printf("USTREDNA TO PRIJALA\n");
 		if (unkx5_4 == 2
 		|| unkx5__0 == 2) {
 			char tmp[256] = "";
-			sprintf(tmp, "\n\nEND JOB %04d\n\n", jobnr);
+			sprintf(tmp, "\nEND JOB %04d\n\n", jobnr);
 			LogStr(tmp, strlen(tmp));
 		} else if (unkx5__0 == 1) {
 			char tmp[256] = "";
-			sprintf(tmp, "\n\nEND TEXT JOB %04d\n\n", jobnr);
+			sprintf(tmp, "\nEND TEXT JOB %04d\n\n", jobnr);
 			LogStr(tmp, strlen(tmp));
 		} else if (unkx5__0 == 0) {
 			char tmp[256] = "";
-			sprintf(tmp, "\n\nINTERRUPTION TEXT JOB %04d\n\n", jobnr);
+			sprintf(tmp, "\nINTERRUPTION TEXT JOB %04d\n\n", jobnr);
 			LogStr(tmp, strlen(tmp));
 		}
 
