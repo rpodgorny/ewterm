@@ -631,7 +631,7 @@ int OpenX25Socket(char *local, char *remote) {
 }
 
 void ReOpenX25() {
-	log_msg("ReOpenX25()\n");
+	//log_msg("ReOpenX25()\n");
 
 	///if (X25Fd >= 0) {
 	int i = 0;
@@ -2164,6 +2164,10 @@ int main(int argc, char *argv[]) {
 		}
 
 		/* talking with EWSD (X.25) */
+
+		// check connection and reconnect when something is broken
+		ReOpenX25();
+
 		int i = 0;
 		for (i = 0; i < X25sCount; i++) {
 			if (X25s[i].fd < 0) continue;
@@ -2291,13 +2295,13 @@ int main(int argc, char *argv[]) {
 					//Done(4);
 
 					// TODO: shouldn't Done() be really called?
-					printf("Trying to reconnect...\n");
+					//printf("Trying to reconnect...\n");
 
 					shutdown(X25s[i].fd, SHUT_RDWR);
 					close(X25s[i].fd);
 					X25s[i].fd = -1;
 
-					ReOpenX25();
+					//ReOpenX25();
 				} else {
 					// TODO: why else?
 					///if (CommandMode == CM_READY) CommandMode = CM_BUSY;
