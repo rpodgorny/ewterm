@@ -580,6 +580,7 @@ int OpenX25Socket(char *local, char *remote) {
 	int res = ioctl(ret, SIOCX25SSUBSCRIP, &subscr);
 	if (res < 0) {
 		perror("subscr");
+		close(ret);
 		return -1;
 	}
 
@@ -594,6 +595,7 @@ int OpenX25Socket(char *local, char *remote) {
 	res = ioctl(ret, SIOCX25SFACILITIES, &fac);
 	if (res < 0) {
 		perror("fac");
+		close(ret);
 		return -1;
 	}
 
@@ -612,18 +614,21 @@ int OpenX25Socket(char *local, char *remote) {
 	res = ioctl(ret, SIOCX25SDTEFACILITIES, &dtefac);
 	if (res < 0) {
 		perror("dtefac");
+		close(ret);
 		return -1;
 	}
 
 	res = bind(ret, (struct sockaddr *)&bind_addr, sizeof(bind_addr));
 	if (res < 0) {
 		perror("bind");
+		close(ret);
 		return -1;
 	}
 
 	res = connect(ret, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
 	if (res < 0) {
 		perror("connect");
+		close(ret);
 		return -1;
 	}
 
