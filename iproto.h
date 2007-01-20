@@ -90,6 +90,23 @@ struct connection {
 	int WriteBufferLen;
 
 	struct connection *prev, *next;
+
+	// These are the context extensions used by ewrecv on X.25
+	char X25User[256];
+	char X25Passwd[256];
+
+	int X25Fds[32];
+	int X25FdCount;
+
+	char *X25WriteBuf;
+	int X25WriteBufLen;
+
+	char Prompt;
+	int LoggedIn;
+
+	unsigned short LastConnId;
+	unsigned short LastSessId;
+	unsigned char LastTail;
 };
 
 struct connection *MakeConnection(int Fd, struct conn_handlers *);

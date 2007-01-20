@@ -45,8 +45,11 @@
 /* TODO: All nonblocking stuff buffered! TCP support! */
 
 
-struct connection *connection = NULL;
-struct connection *to_destroy = NULL; /* Delayed destruction */
+struct connection Conns[128];
+int ConnCount;
+/*
+///struct connection *connection = NULL;
+struct connection *to_destroy = NULL; // Delayed destruction
 
 #define foreach_conn(but) \
 if (connection) { \
@@ -69,7 +72,7 @@ if (connection) { \
 #define foreach_auth_conn_end	} foreach_conn_end
 
 #define delete_from_list(c)	{ c->next->prev = c->prev; c->prev->next = c->next; }
-
+*/
 /* Some types */
 
 typedef unsigned char byte;
@@ -87,16 +90,16 @@ FILE *debugf;
 
 /* Talking with EWSD */
 
-#define CUANSIZE 50
-#define DEFDEVICE "/dev/tts/0"
-#define DEFSPEED "9600"
-#define PARAMS "7E1NNN"
+///#define CUANSIZE 50
+///#define DEFDEVICE "/dev/tts/0"
+///#define DEFSPEED "9600"
+///#define PARAMS "7E1NNN"
 
-char CuaName[CUANSIZE+1] = "";
-char SpeedBuf[20] = "";
-int CuaSpeed;
+///char CuaName[CUANSIZE+1] = "";
+///char SpeedBuf[20] = "";
+///int CuaSpeed;
 
-int CuaFd = -1;
+///int CuaFd = -1;
 
 enum {
 	CM_READY, /* exchange is ready */
@@ -105,16 +108,16 @@ enum {
 	CM_PROMPT, /* exchange prompt ready */
 } CommandMode = 0;
 
-int WantPrompt = 0; /* get prompt when CMD_READY */
-char Prompt = 0; /* prompt type */
-int LoggedIn = 0; /* logged in or not? */ /* 0 == not, 1 == in progress, 2 == yes */
+///int WantPrompt = 0; /* get prompt when CMD_READY */
+///char Prompt = 0; /* prompt type */
+///int LoggedIn = 0; /* logged in or not? */ /* 0 == not, 1 == in progress, 2 == yes */
 
-unsigned short LastConnId;
-unsigned short LastSessId;
-unsigned char LastTail;
+///unsigned short LastConnId;
+///unsigned short LastSessId;
+///unsigned char LastTail;
 
 #define WRITEBUF_MAX 16329
-char WriteBuf[WRITEBUF_MAX] = ""; int WriteBufLen;
+///char WriteBuf[WRITEBUF_MAX] = ""; int WriteBufLen;
 
 /* Sockets */
 
@@ -124,22 +127,20 @@ int SockFd = -1; /* listening socket */
 
 int Reselect = 0;
 
-/* x25 socket */
-//int X25Fd = -1;
-
-struct X25Connection {
-	int fd;
+/* x25 database */
+struct X25ExchRecord {
+	char name[256];
 	char address[256];
 };
 
-struct X25Connection X25s[32];
-int X25sCount = 0;
+struct X25ExchRecord X25ExchDB[32];
+int X25ExchCount = 0;
 
 char X25Local[256] = "";
 //char X25Remote[256] = "";
 
-char X25User[256] = "";
-char X25Passwd[256] = "";
+///char X25User[256] = "";
+///char X25Passwd[256] = "";
 
 /* Log files */
 
@@ -223,16 +224,12 @@ void Done(int Err) {
 	}
 #endif /* LOCKDIR */
 
-	if (CuaFd >= 0) {
-		close(CuaFd);
-		CuaFd = -1;
-	}
 	if (SockFd >= 0) {
 		close(SockFd);
 		SockFd = -1;
 	}
 	unlink(SockName);
-
+/* TODO
 	int i = 0;
 	for (i = 0; i < X25sCount; i++) {
 		if (X25s[i].fd < 0) continue;
@@ -240,7 +237,7 @@ void Done(int Err) {
 		close(X25s[i].fd);
 		X25s[i].fd = -1;
 	}
-
+*/
 	{
 		char *time_s;
 		time_t tv;
@@ -257,7 +254,7 @@ void Done(int Err) {
 }
 
 /* Configure serial port */
-int set_baud_rate(struct termios *t, int rate) {
+/*int set_baud_rate(struct termios *t, int rate) {
 	int i;
 
 	switch (rate) {
@@ -279,13 +276,13 @@ int set_baud_rate(struct termios *t, int rate) {
 		case 57600: i=B57600; break;
 		case 115200: i=B115200; break;
 		case 230400: i=B230400; break;
-/*		case 460800: i=B460800; break; */
+//		case 460800: i=B460800; break;
 		default: return -1;
 	}
 	t->c_cflag = (t->c_cflag & ~CBAUD) | i;
 	return 0;
-}
-
+}*/
+/*
 static void parse_io_mode(struct config_record *r, char *baud, char *flags) {
 	wl = wl;
 	sscanf(baud, "%ld", &r->baud);
@@ -307,7 +304,8 @@ static void parse_io_mode(struct config_record *r, char *baud, char *flags) {
 		return;
 	}
 }
-
+*/
+/*
 void init_port(int Handle, struct config_record *r) {
 	struct termios *t;
 	int Ret;
@@ -332,14 +330,14 @@ void init_port(int Handle, struct config_record *r) {
 	}
 
 	if (set_baud_rate(t, r->baud)) fprintf(stderr, "Invalid baud rate\r\n");
-	t->c_cflag |= HUPCL; /* Hangup on close */
+	t->c_cflag |= HUPCL; // Hangup on close
 	Ret = tcsetattr(Handle, TCSANOW, t);
 	if (Ret) {
 		perror("Cannot set termios - tcsetattr()");
 		Done(6);
 	}
 }
-
+*/
 void SigTermCaught() {
 	/* Quit properly */
 	Done(0);
@@ -494,11 +492,11 @@ void TryLock(char *name) {
 
 	Lock(Fl);
 }
-
+/*
 void ReOpenSerial() {
 	log_msg("ReOpenSerial()\n");
 
-	/* Close old cua file and unlock it */
+	// Close old cua file and unlock it
 	if (CuaFd >= 0) {
 		close(CuaFd);
 		CuaFd = -1;
@@ -507,25 +505,25 @@ void ReOpenSerial() {
 	Unlock();
 #endif
 
-	/* Open new file */
+	// Open new file
 	{
-		/* Lock new */
+		// Lock new
 #ifdef LOCKDIR
-		/* Make lock name */
+		// Make lock name
 		char *FirstPtr = rindex(CuaName, '/');
 		sprintf(LockName, "%s/LCK..%s", LOCKDIR, FirstPtr);
 
 		TryLock(LockName);
 
 		if (!LockName[0]) Done(5);
-#endif /* LOCKDIR */
+#endif
 
-		/* Open modem file itself */
+		// Open modem file itself
 		if (CuaName) CuaFd = open(CuaName, O_RDWR);
 		if (CuaFd < 0) {
 #ifdef LOCKDIR
 			Unlock();
-#endif /* LOCKDIR */
+#endif
 
 			fprintf(stderr, "Aieee... cannot open serial file!\r\n");
 			exit(2);
@@ -534,7 +532,7 @@ void ReOpenSerial() {
 		}
 	}
 }
-
+*/
 int OpenX25Socket(char *local, char *remote) {
 	int ret = -1;
 
@@ -639,7 +637,8 @@ void ReOpenX25() {
 	//log_msg("ReOpenX25()\n");
 
 	///if (X25Fd >= 0) {
-	int i = 0;
+	///int i = 0;
+	/// TODO
 /*	for (i = 0; i < X25sCount; i++) {
 		if (X25s[i].fd < 0) continue;
 
@@ -665,7 +664,7 @@ void ReOpenX25() {
 
 		if (!LockName[0]) Done(5);
 #endif
-
+/* TODO
 		for (i = 0; i < X25sCount; i++) {
 			if (X25s[i].fd >= 0) continue;
 
@@ -676,7 +675,7 @@ void ReOpenX25() {
 #ifdef LOCKDIR
 			///if (X25s[i].fd < 0) exit(2);
 #endif
-		}
+		}*/
 	}
 }
 
@@ -777,40 +776,30 @@ void LogStr(char *s, int len) {
 }
 
 int SendChar(struct connection *c, char Chr) {
-	if (LoggedIn && c && c != connection) return -1;
+	if (c->LoggedIn && c) return -1;
 
 	if (c && c->authenticated < 2) return -1;
 
 	if (Chr > 32 || Chr == 10 || Chr == 8 || Chr == 13) LogChar(Chr);
 
 	if (Chr == 13) Chr = 10;
-  
-	// RS232 specific stuff
-	if (CuaFd >= 0) {
-		if (Chr == 10) Chr = ETX; /* end of text */
-	}
-  
+ 
 	pdebug("SendChar() %c/x%x \n", Chr, Chr);
 
 	pdebug("%p(%d)\n", c, c?c->IProtoState:-1);
 	if (c && c->IProtoState != IPR_DC4) {
-		// send back to clients
-		foreach_auth_conn (c) {
-			Write(c, &Chr, 1);
-		} foreach_auth_conn_end;
+		// send back to client
+		Write(c, &Chr, 1);
 	}
 
-	// TODO: solve this
-	///if (CuaFd < 0) return 1;
-
-	if (WriteBufLen >= WRITEBUF_MAX - 1) {
+	if (c->X25WriteBufLen >= WRITEBUF_MAX - 1) {
 		log_msg("--- ewrecv: write [%x] error, write buffer full! (over %d)\n", Chr, WRITEBUF_MAX);
 		return 0;
 	}
 
 	// filter newlines for X.25 connection
-	if (CuaFd >= 0 || Chr != 10) {
-		WriteBuf[WriteBufLen++] = Chr;
+	if (Chr != 10) {
+		c->X25WriteBuf[c->X25WriteBufLen++] = Chr;
 	}
 
 	return 1;
@@ -819,7 +808,7 @@ int SendChar(struct connection *c, char Chr) {
 int LastMask = 0;
 
 /* for serial communication */
-void ProcessExchangeChar(char Chr) {
+/*void ProcessExchangeChar(char Chr) {
 	static int prompt = 0;
 
 	pdebug("ProcessExchangeChar() Chr = %d\n", Chr);
@@ -910,7 +899,7 @@ void ProcessExchangeChar(char Chr) {
 		SendChar(NULL, ETX);
 	} else if (Chr == ACK) {
 		CommandMode = CM_PBUSY;
-		prompt = 1; /* schedule sending of prompt to ewterms */
+		prompt = 1; // schedule sending of prompt to ewterms
 	} else if (Chr == 10 || Chr >= 32) {
 		if (Chr == 10) {
 			static int NewLines, Header;
@@ -920,7 +909,7 @@ void ProcessExchangeChar(char Chr) {
 			while (*lastlinet == ' ') lastlinet++;
 			pdebug("Got newline, analyzing ::%s::\n", lastlinet);
 
-			/* Analyze this line */
+			// Analyze this line
 			if (!strncmp(lastlinet, "END JOB ", 8)) {
 				foreach_ipr_conn (NULL) {
 					if (!c->authenticated) continue;
@@ -961,11 +950,11 @@ void ProcessExchangeChar(char Chr) {
 
 				Header = 0;
 
-				/* 3882         OMT-01/PEBA           2977/00007 */
-				/* job          omt  [/uname]        [????/maskno] */
+				// 3882         OMT-01/PEBA           2977/00007
+				// job          omt  [/uname]        [????/maskno]
 				ActJob = atoi(job);
 				if (strlen(job) > 13) {
-					/* We already have it otherwise. */
+					// We already have it otherwise.
 					if (omt[0] && omt[0] != ' ') {
 						strncpy(ActOMT, omt, 6);
 						ActOMT[6] = 0;
@@ -1019,66 +1008,66 @@ void ProcessExchangeChar(char Chr) {
 				int LI = LoggedIn;
 
 				if (LastMask == 12062) {
-					/* NOT AUTHORIZED TO OPEN A SESSION. */
+					// NOT AUTHORIZED TO OPEN A SESSION.
 					foreach_ipr_conn (NULL) {
 						if (!c->authenticated) continue;
 						IProtoSEND(c, 0x42, NULL);
 					} foreach_ipr_conn_end;
 					LoggedIn = 0;
 				} else if (LastMask == 12060) {
-					/* LOCKED. */
+					// LOCKED.
 					foreach_ipr_conn (NULL) {
 						if (!c->authenticated) continue;
 						IProtoSEND(c, 0x42, NULL);
 					} foreach_ipr_conn_end;
 					LoggedIn = 0;
 				} else if (LastMask == 12048) {
-					/* SESSION REJECTED, NEW PASSWORD INVALID. */
+					// SESSION REJECTED, NEW PASSWORD INVALID.
 					foreach_ipr_conn (NULL) {
 						if (!c->authenticated) continue;
 						IProtoSEND(c, 0x42, NULL);
 					} foreach_ipr_conn_end;
 					LoggedIn = 0;
 				} else if (LastMask == 12055) {
-					/* CURRENT PASSWORD EXPIRED, PLEASE ENTER NEW PASSWORD. */
+					// CURRENT PASSWORD EXPIRED, PLEASE ENTER NEW PASSWORD.
 					Prompt = 'p';
 				} else if (LastMask == 12059) {
-					/* SESSION REJECTED, USERID PATR   IN USE. */
+					// SESSION REJECTED, USERID PATR   IN USE.
 					foreach_ipr_conn (NULL) {
 						if (!c->authenticated) continue;
 						IProtoSEND(c, 0x42, NULL);
 					} foreach_ipr_conn_end;
 					LoggedIn = 0;
 				} else if (LastMask == 10115 || LastMask == 6904) {
-					/* INVALID PASSWORD */
+					// INVALID PASSWORD
 					foreach_ipr_conn (NULL) {
 						if (!c->authenticated) continue;
 						IProtoSEND(c, 0x42, NULL);
 					} foreach_ipr_conn_end;
 					LoggedIn = 0;
 				} else if (LastMask == 6299) {
-					/* SESSION FOR PATR   CANCELLED! */
+					// SESSION FOR PATR   CANCELLED!
 					foreach_ipr_conn (NULL) {
 						if (!c->authenticated) continue;
 						IProtoSEND(c, 0x44, NULL);
 					} foreach_ipr_conn_end;
 					LoggedIn = 0;
 				} else if (LastMask == 10119) {
-					/* SESSION CANCELLED BY TIMEOUT */
+					// SESSION CANCELLED BY TIMEOUT
 					foreach_ipr_conn (NULL) {
 						if (!c->authenticated) continue;
 						IProtoSEND(c, 0x44, NULL);
 					} foreach_ipr_conn_end;
 					LoggedIn = 0;
 				} else if (LastMask == 10397) {
-					/* SESSION CANCELLED FROM TERMINAL */
+					// SESSION CANCELLED FROM TERMINAL
 					foreach_ipr_conn (NULL) {
 						if (!c->authenticated) continue;
 						IProtoSEND(c, 0x44, NULL);
 					} foreach_ipr_conn_end;
 					LoggedIn = 0;
 				} else if (LastMask == 7 && !strncmp(lastlinet, "ENDSESSION;", 11)) {
-					/* Logout - hope it will work properly.. */
+					// Logout - hope it will work properly..
 					foreach_ipr_conn (NULL) {
 						if (!c->authenticated) continue;
 						IProtoSEND(c, 0x44, NULL);
@@ -1099,7 +1088,7 @@ void ProcessExchangeChar(char Chr) {
 
 	if (LogRaw) fputc(Chr, LogRaw);
 }
-
+*/
 // TODO: move this to somewhere else
 void GenHeader(char *exch, char *apsver, char *patchver, char *date, char *time, unsigned short jobnr, char *omt, char *user, unsigned short msggrp, unsigned short mask, char *hint, char *out) {
 	// TODO: better condition
@@ -1118,7 +1107,7 @@ void GenHeader(char *exch, char *apsver, char *patchver, char *date, char *time,
 }
 
 /* for X.25 communication */
-void ProcessExchangePacket(struct packet *p) {
+void ProcessExchangePacket(struct connection *c, struct packet *p) {
 	pdebug("ProcessExchangePacket()\n");
 
 	// TODO: a quick hack to filter empty packets. remove!
@@ -1209,169 +1198,111 @@ printf("SEQ: %d\n", seq);
 	b = block_getchild(p->data, "7");
 	if (b && b->data) strncpy(answer, (char *)b->data, b->len);
 
-	foreach_auth_conn (NULL) {
-		Write(c, "\n\n", 2);
+	Write(c, "\n\n", 2);
 
-		if (seq > 0) {
-			char tmp[128] = "";
-			sprintf(tmp, "CONTINUATION TEXT %04d\n\n", seq-1);
-			Write(c, tmp, strlen(tmp));
-		}
+	if (seq > 0) {
+		char tmp[128] = "";
+		sprintf(tmp, "CONTINUATION TEXT %04d\n\n", seq-1);
+		Write(c, tmp, strlen(tmp));
+	}
 
-		char header[256] = "";
-		GenHeader(exch, apsver, patchver, date, time, jobnr, omt, user, msggrp, mask, hint, header);
-		if (strlen(header)) Write(c, header, strlen(header));
+	char header[256] = "";
+	GenHeader(exch, apsver, patchver, date, time, jobnr, omt, user, msggrp, mask, hint, header);
+	if (strlen(header)) Write(c, header, strlen(header));
 
-		// TODO: better condition
-		if (jobnr) {
-			char header[200] = "";
-			sprintf(header, "%d,%s,%s,%s", jobnr, omt, user, exch);
+	// TODO: better condition
+	if (jobnr) {
+		char header[200] = "";
+		sprintf(header, "%d,%s,%s,%s", jobnr, omt, user, exch);
 printf("HEADER: %s\n", header);
-			IProtoSEND(c, 0x47, header);
-		}
+		IProtoSEND(c, 0x47, header);
+	}
 
-		// TODO: better condition
-		if (mask) {
-			char mask_s[20] = "";
-			sprintf(mask_s, "%d", mask);
-			IProtoSEND(c, 0x46, mask_s);
+	// TODO: better condition
+	if (mask) {
+		char mask_s[20] = "";
+		sprintf(mask_s, "%d", mask);
+		IProtoSEND(c, 0x46, mask_s);
 printf("MASK: %d\n", mask);
+	}
+
+	if (strlen(err)) {
+		Write(c, err, strlen(err));
+	}
+	if (strlen(answer)) {
+		Write(c, answer, strlen(answer));
+	}
+
+	if (p->dir == 2) {
+		if (strlen(prompt)) {
+			// this is a command from EWSD
+			c->LastConnId = p->connid;
+			c->LastSessId = p->sessid;
+			c->LastTail = p->tail;
+
+			IProtoSEND(c, 0x40, NULL);
+			Write(c, prompt, strlen(prompt));
+			IProtoSEND(c, 0x41, "I");
+
+			c->Prompt = 'I';
+		} else {
+			c->Prompt = 0;
 		}
-
-		if (strlen(err)) {
-			Write(c, err, strlen(err));
-		}
-		if (strlen(answer)) {
-			Write(c, answer, strlen(answer));
-		}
-
-		if (p->dir == 2) {
-			if (strlen(prompt)) {
-				// this is a command from EWSD
-				LastConnId = p->connid;
-				LastSessId = p->sessid;
-				LastTail = p->tail;
-
-				IProtoSEND(c, 0x40, NULL);
-				Write(c, prompt, strlen(prompt));
-				IProtoSEND(c, 0x41, "I");
-
-				Prompt = 'I';
-			} else {
-				Prompt = 0;
-			}
-		} else if (p->dir == 3 && p->pltype == 1) {
-			// "Command accepted" confirmation
+	} else if (p->dir == 3 && p->pltype == 1) {
+		// "Command accepted" confirmation
 printf("USTREDNA TO PRIJALA\n");
-			///foreach_ipr_conn (NULL) {
-			///	if (!c->authenticated) continue;
-				// TODO: send job start to ewterms?
-				char tmp[256];
-				sprintf(tmp, "%d\n\n", jobnr);
-				Write(c, tmp, strlen(tmp));
-			///} foreach_ipr_conn_end;
-		} else if (p->dir == 0x0c && p->pltype == 1) {
-			if (strlen(unkx3_3)) {
-				// Login success
-				IProtoSEND(c, 0x43, NULL);
-
-				// TODO: is this really correct?
-				// send input prompt (some command may be waiting in ewterm)
-				IProtoSEND(c, 0x40, NULL);
-				Write(c, "<", 1);
-				IProtoSEND(c, 0x41, "<");
-
-				LoggedIn = 1;
-			} else {
-				// Login failure
-				IProtoSEND(c, 0x42, NULL);
-			}
-		} else if (p->dir == 0x0e && p->pltype == 0) {
-			// Session timeout, cancelled (maybe more errors)
-			///foreach_ipr_conn (NULL) {
-			///	if (!c->authenticated) continue;
-				IProtoSEND(c, 0x44, NULL);
-			///} foreach_ipr_conn_end;
-
-			LoggedIn = 0;
-		}
-
-		char jobnr_s[10] = "";
-		sprintf(jobnr_s, "%04d", jobnr);
-
-		// TODO: are these all cases?
-		if (unkx5_4 == 2
-		|| unkx5__0 == 2) {
-			char tmp[256] = "";
-			sprintf(tmp, "\nEND JOB %04d\n\n", jobnr);
-			Write(c, tmp, strlen(tmp));
-
-			IProtoSEND(c, 0x45, jobnr_s);
-		} else if (unkx5__0 == 1) {
-			char tmp[256] = "";
-			sprintf(tmp, "\nEND TEXT JOB %04d\n\n", jobnr);
-			Write(c, tmp, strlen(tmp));
-		} else if (unkx5__0 == 0) {
-			char tmp[256] = "";
-			sprintf(tmp, "\nINTERRUPTION TEXT JOB %04d\n\n", jobnr);
-			Write(c, tmp, strlen(tmp));
-		}
-	} foreach_auth_conn_end
-
-	// the same to log
-	// TODO: remove this duplicity
-	{
-		LogStr("\n\n", 2);
-
-		if (seq > 0) {
-			char tmp[128] = "";
-			sprintf(tmp, "CONTINUATION TEXT %04d\n\n", seq-1);
-			LogStr(tmp, strlen(tmp));
-		}
-
-		char header[256] = "";
-		GenHeader(exch, apsver, patchver, date, time, jobnr, omt, user, msggrp, mask, hint, header);
-		if (strlen(header)) LogStr(header, strlen(header));
-
-		if (strlen(err)) {
-			LogStr(err, strlen(err));
-		}
-		if (strlen(answer)) {
-			LogStr(answer, strlen(answer));
-		}
-
-		if (p->dir == 2) {
-			if (strlen(prompt)) {
-				LogStr(prompt, strlen(prompt));
-			}
-		} else if (p->dir == 3 && p->pltype == 1) {
-			// "Command accepted" confirmation
+		///foreach_ipr_conn (NULL) {
+		///	if (!c->authenticated) continue;
+			// TODO: send job start to ewterms?
 			char tmp[256];
 			sprintf(tmp, "%d\n\n", jobnr);
-			LogStr(tmp, strlen(tmp));
-		} else if (p->dir == 0x0c && p->pltype == 1) {
-			if (strlen(unkx3_3)) {
-				LogStr("<", 1);
-			}
-		} else if (p->dir == 0x0e && p->pltype == 0) {
-		}
+			Write(c, tmp, strlen(tmp));
+		///} foreach_ipr_conn_end;
+	} else if (p->dir == 0x0c && p->pltype == 1) {
+		if (strlen(unkx3_3)) {
+			// Login success
+			IProtoSEND(c, 0x43, NULL);
 
-		// TODO: are these all cases?
-		if (unkx5_4 == 2
-		|| unkx5__0 == 2) {
-			char tmp[256] = "";
-			sprintf(tmp, "\nEND JOB %04d\n\n", jobnr);
-			LogStr(tmp, strlen(tmp));
-		} else if (unkx5__0 == 1) {
-			char tmp[256] = "";
-			sprintf(tmp, "\nEND TEXT JOB %04d\n\n", jobnr);
-			LogStr(tmp, strlen(tmp));
-		} else if (unkx5__0 == 0) {
-			char tmp[256] = "";
-			sprintf(tmp, "\nINTERRUPTION TEXT JOB %04d\n\n", jobnr);
-			LogStr(tmp, strlen(tmp));
-		}
+			// TODO: is this really correct?
+			// send input prompt (some command may be waiting in ewterm)
+			IProtoSEND(c, 0x40, NULL);
+			Write(c, "<", 1);
+			IProtoSEND(c, 0x41, "<");
 
+			c->LoggedIn = 1;
+		} else {
+			// Login failure
+			IProtoSEND(c, 0x42, NULL);
+		}
+	} else if (p->dir == 0x0e && p->pltype == 0) {
+		// Session timeout, cancelled (maybe more errors)
+		///foreach_ipr_conn (NULL) {
+		///	if (!c->authenticated) continue;
+			IProtoSEND(c, 0x44, NULL);
+		///} foreach_ipr_conn_end;
+
+		c->LoggedIn = 0;
+	}
+
+	char jobnr_s[10] = "";
+	sprintf(jobnr_s, "%04d", jobnr);
+
+	// TODO: are these all cases?
+	if (unkx5_4 == 2
+	|| unkx5__0 == 2) {
+		char tmp[256] = "";
+		sprintf(tmp, "\nEND JOB %04d\n\n", jobnr);
+		Write(c, tmp, strlen(tmp));
+
+		IProtoSEND(c, 0x45, jobnr_s);
+	} else if (unkx5__0 == 1) {
+		char tmp[256] = "";
+		sprintf(tmp, "\nEND TEXT JOB %04d\n\n", jobnr);
+		Write(c, tmp, strlen(tmp));
+	} else if (unkx5__0 == 0) {
+		char tmp[256] = "";
+		sprintf(tmp, "\nINTERRUPTION TEXT JOB %04d\n\n", jobnr);
+		Write(c, tmp, strlen(tmp));
 	}
 }
 
@@ -1381,16 +1312,16 @@ void DestroyConnection(struct connection *conn) {
 	AnnounceUser(conn, 0x06);
 
 	close(conn->Fd);
-	if (conn == connection) {
-		if (conn->next != conn) {
-			connection = conn->next;
-			if (LoggedIn && !(connection->authenticated < 2)) IProtoSEND(connection, 0x04, "RW");
-		} else {
-			connection = NULL;
-		}
+/* TODO
+	if (conn->next != conn) {
+		connection = conn->next;
+		if (LoggedIn && !(connection->authenticated < 2)) IProtoSEND(connection, 0x04, "RW");
+	} else {
+		connection = NULL;
 	}
+
 	delete_from_list(conn);
-	FreeConnection(conn);
+*/	FreeConnection(conn);
 
 	/* Force rebuild of the fd tables. */
 	Reselect = 1;
@@ -1406,11 +1337,11 @@ void ErrorConnection(struct connection *conn) {
 	DestroyConnection(conn);
 }
 
-
+/*
 void SetMaster(struct connection *conn) {
 	if (conn->authenticated < 2) return;
 
-	/* *COUGH* ;-) --pasky */
+	// *COUGH* ;-) --pasky
 	connection = conn;
 
 	foreach_ipr_conn (connection) {
@@ -1420,7 +1351,7 @@ void SetMaster(struct connection *conn) {
 
 	if (LoggedIn) IProtoSEND(connection, 0x04, "RW");
 }
-
+*/
 char *ComposeUser(struct connection *conn, int self) {
 	static char s[1024];
 	snprintf(s, 1024, "%s@%s:%d", conn->user ? conn->user : "UNKNOWN", conn->host, conn->id);
@@ -1429,10 +1360,8 @@ char *ComposeUser(struct connection *conn, int self) {
 
 void AnnounceUser(struct connection *conn, int opcode) {
 	char *s = ComposeUser(conn, 0);
-	foreach_ipr_conn (conn) {
-		if (!c->authenticated) continue;
-		IProtoSEND(c, opcode, s);
-	} foreach_ipr_conn_end;
+	if (!conn->authenticated) return;
+	IProtoSEND(conn, opcode, s);
 }
 
 void AuthFailed(struct connection *conn) {
@@ -1442,9 +1371,7 @@ void AuthFailed(struct connection *conn) {
 	strcat(msg, conn->host);
 	strcat(msg, "!\n");
 
-	foreach_ipr_conn (conn) {
-		IProtoSEND(c, 0x3, msg);
-	} foreach_ipr_conn_end;
+	IProtoSEND(conn, 0x3, msg);
 
 	log_msg("--- ewrecv: unauthorized connection by client %d\n\n", conn->id);
 
@@ -1453,7 +1380,7 @@ void AuthFailed(struct connection *conn) {
 
 	/* Otherwise, FreeConnection() fails as ie. IProtoUser is at different
 	* position than suitable when handlers are called. */
-	to_destroy = conn;
+///	to_destroy = conn;
 	Reselect = 1;
 }
 
@@ -1481,42 +1408,40 @@ void GotPrivMsg(struct connection *conn, char *tg, int id, char *host, char *msg
 
 	snprintf(s, 1024, "%s@%s:%d=%s", conn->user?conn->user:"", conn->host, conn->id, msg);
 
-	foreach_ipr_conn (NULL) {
-		if (!c->authenticated) continue;
-		if (id >= 0) {
-			if (id == c->id) {
-				IProtoSEND(c, 0x03, s);
-				return;
-			}
-		} else if (tg && *tg) {
-			if (c->user && !strcasecmp(tg, c->user)) {
-				if (host && *host) {
-					if (!strcasecmp(host, c->host)) IProtoSEND(c, 0x03, s);
-				} else {
-					IProtoSEND(c, 0x03, s);
-				}
-			}
-		} else if (host && *host) {
-			if (!strcasecmp(host, c->host)) IProtoSEND(c, 0x03, s);
-		} else {
-			IProtoSEND(c, 0x03, s);
+	if (!conn->authenticated) return;
+	if (id >= 0) {
+		if (id == conn->id) {
+			IProtoSEND(conn, 0x03, s);
+			return;
 		}
-	} foreach_ipr_conn_end;
+	} else if (tg && *tg) {
+		if (conn->user && !strcasecmp(tg, conn->user)) {
+			if (host && *host) {
+				if (!strcasecmp(host, conn->host)) IProtoSEND(conn, 0x03, s);
+			} else {
+				IProtoSEND(conn, 0x03, s);
+			}
+		}
+	} else if (host && *host) {
+		if (!strcasecmp(host, conn->host)) IProtoSEND(conn, 0x03, s);
+	} else {
+		IProtoSEND(conn, 0x03, s);
+	}
 }
 
 
 void TakeOverRequest(struct connection *conn, char *d) {
 	if (conn && conn->authenticated < 2) return;
-	if (conn != connection) SetMaster(conn);
+///	if (conn != connection) SetMaster(conn);
 }
 
 void CancelPromptRequest(struct connection *conn, char *d) {
 	log_msg("CancelPromptRequest()\n");
 
-	if (conn != connection) return;
+///	if (conn != connection) return;
 	if (conn && conn->authenticated < 2) return;
   	if (CommandMode == CM_PROMPT) {
-		Prompt = 0;
+		conn->Prompt = 0;
 		CommandMode = CM_READY;
 		SendChar(NULL, EOT);
 	}
@@ -1525,36 +1450,30 @@ void CancelPromptRequest(struct connection *conn, char *d) {
 void LoginPromptRequest(struct connection *conn, char *d) {
 	log_msg("LoginPromptRequest()\n");
 
-	if (LoggedIn) return;
+	if (conn->LoggedIn) return;
 	if (conn && conn->authenticated < 2) return;
-	SetMaster(conn);
+///	SetMaster(conn);
 
-	if (CuaFd >= 0) {
-		SendChar(NULL, ETX);
-		SendChar(NULL, BEL);
-		SendChar(NULL, ACK);
-	} else {
-		X25User[0] = 0;
-		X25Passwd[0] = 0;
+	conn->X25User[0] = 0;
+	conn->X25Passwd[0] = 0;
 
-		//TODO: foreach?
-		IProtoSEND(conn, 0x41, "U");
+	///TODO: foreach?
+	IProtoSEND(conn, 0x41, "U");
 
-		Prompt = 'U';
-	}
+	conn->Prompt = 'U';
 }
 
 void PromptRequest(struct connection *conn, char *d) {
 	log_msg("PromptRequest()\n");
 
-	if (conn != connection || (conn && conn->authenticated < 2)) return;
-	if (CommandMode == CM_READY) {
+	if (conn && conn->authenticated < 2) return;
+/*	if (CommandMode == CM_READY) {
 		///SendChar(NULL, ACK);
-	} else //if (CommandMode != CM_PROMPT && CommandMode != CM_PBUSY) /* This may make some problems, maybe? There may be a situation when we'll want next prompt before processing the first one, possibly. Let's see. --pasky */
+	} else //if (CommandMode != CM_PROMPT && CommandMode != CM_PBUSY) // This may make some problems, maybe? There may be a situation when we'll want next prompt before processing the first one, possibly. Let's see. --pasky
 		WantPrompt = 1;
-
+*/
 	/// TODO: retain old compatibility -done?
-	if (X25sCount >= 0 && LoggedIn) {
+	if (conn->X25FdCount >= 0 && conn->LoggedIn) {
 		IProtoSEND(conn, 0x40, NULL);
 		Write(conn, "<", 1);
 		IProtoSEND(conn, 0x41, "<");
@@ -1588,14 +1507,12 @@ void SendBurst(struct connection *conn, char *lines, char *d) {
 void SendIntro(struct connection *conn) {
 	WriteChar(conn, SO); /* start burst */
 
-	foreach_conn (conn) {
-		if (!c->authenticated) continue;
-		IProtoSEND(conn, 0x05, ComposeUser(c, 0));
-	} foreach_conn_end;
+	if (!conn->authenticated) return;
+	IProtoSEND(conn, 0x05, ComposeUser(conn, 0));
 
-	if (LoggedIn == 2) IProtoSEND(conn, 0x43, NULL);
+	if (conn->LoggedIn == 2) IProtoSEND(conn, 0x43, NULL);
 
-	if ((conn != connection && LoggedIn) || conn->authenticated < 2) {
+	if (conn->authenticated < 2) {
 		IProtoSEND(conn, 0x04, "RO");
 	} else {
 		IProtoSEND(conn, 0x04, "RW");
@@ -1604,23 +1521,17 @@ void SendIntro(struct connection *conn) {
 	WriteChar(conn, SI); /* end burst */
 }
 
-void LogoutRequest(struct connection *conn, char *d) {
-	/// TODO
-	// note: when sending "ENDSESSION;" over serial. be sure to have prompt?
-	// not sure but just don't forget to investigate
-	
+void LogoutRequest(struct connection *c, char *d) {
 	// Just send success for now
-	foreach_ipr_conn (NULL) {
-		if (!c->authenticated) continue;
-		IProtoSEND(c, 0x44, NULL);
-	} foreach_ipr_conn_end;
+	if (!c->authenticated) return;
+	IProtoSEND(c, 0x44, NULL);
 
 // TODO: this is a hack to make it select()
-WriteBuf[WriteBufLen++] = 'c';
+c->X25WriteBuf[c->X25WriteBufLen++] = 'c';
 
-	LoggedIn = 0;
+	c->LoggedIn = 0;
 
-	Prompt = 'X';
+	c->Prompt = 'X';
 }
 
 struct connection *TryAccept(int Fd) {
@@ -1709,10 +1620,14 @@ struct connection *TryAccept(int Fd) {
 			endhostent();
 		}
 
+		Conns[ConnCount] = *conn;
+		ConnCount++;
+
+/* TODO
 		if (connection) {
 			{
-				/* less memory, more time.. but it should still be fast enough as we don't expect more than 3-5 users per ewrecv.. */
-				int lowest_spot = 0; /* lowest free place for us */
+				// less memory, more time.. but it should still be fast enough as we don't expect more than 3-5 users per ewrecv..
+				int lowest_spot = 0; // lowest free place for us
 				for (;;) {
 					int b = 1;
 					foreach_conn (NULL) {
@@ -1734,7 +1649,7 @@ struct connection *TryAccept(int Fd) {
 			connection->next = conn;
 			connection->prev = conn;
 			conn->id = 0;
-		}
+		}*/
 	}
 
 	WriteChar(conn, DC1);
@@ -1754,6 +1669,11 @@ struct connection *TryAccept(int Fd) {
 		conn->authenticated = 2;
 		/* SendBurst(conn); */ /* Clients request it now. */
 	}
+
+	// Initialize the X.25 part
+	conn->X25User[0] = 0;
+	conn->X25Passwd[0] = 0;
+	conn->X25FdCount = 0;
 
 	return conn;
 }
@@ -1870,13 +1790,13 @@ int main(int argc, char *argv[]) {
 	printf("X.25 functionality added by Radek Podgorny, 2006\n");
 
 	/* process options */  
-	strcpy(CuaName, DEFDEVICE);
-	strcpy(SpeedBuf, DEFSPEED);
+	///strcpy(CuaName, DEFDEVICE);
+	///strcpy(SpeedBuf, DEFSPEED);
   
 	for (ac = 1; ac < argc; ac++) {
 		switch (swp) {
-			case 1: strncpy(CuaName, argv[ac], CUANSIZE + 1); break;
-			case 2: strncpy(SpeedBuf, argv[ac], 11); break;
+///			case 1: strncpy(CuaName, argv[ac], CUANSIZE + 1); break;
+///			case 2: strncpy(SpeedBuf, argv[ac], 11); break;
 			case 3: strncpy(LogFName, argv[ac], 256); break;
 			case 4:
 				strncpy(SockName, argv[ac], 256);
@@ -1908,10 +1828,13 @@ int main(int argc, char *argv[]) {
 					char *p;
 					p = strtok(argv[ac],":;,");
 					while (p != NULL) {
-						X25s[X25sCount].fd = -1;
-						strcpy(X25s[X25sCount].address, p);
+						char *idx = index(p, '&');
+						int len = idx - p;
 
-						X25sCount++;
+						strncpy(X25ExchDB[X25ExchCount].name, p, len);
+						strcpy(X25ExchDB[X25ExchCount].address, idx);
+
+						X25ExchCount++;
 						p = strtok(NULL, ":;,");
 					}
 				}
@@ -1931,8 +1854,6 @@ int main(int argc, char *argv[]) {
 			printf("\t[-H|--host <host>[:<port>]] [-P|--port <port>] [-w|--password <pwd>]\n");
 			printf("\t[-W|--ropassword <pwd>] [-g|--fg] [-S|--silent] [-v|--verbose]\n\n");
 			printf("-h\tDisplay this help\n");
-			printf("-c\tConnect to <cuadev> cua device (defaults to %s)\n", DEFDEVICE);
-			printf("-s\tSet <speed> speed on cua device (defaults to %s)\n", DEFSPEED);
 			printf("--x25local\tLocal endpoint X.25 address\n");
 			printf("--x25remote\tRemote endpoint X.25 address\n");
 			printf("-f\tLog to file <file>\n");
@@ -1952,7 +1873,7 @@ int main(int argc, char *argv[]) {
 			exit(1);
 		}
 
-		if (!strcmp(argv[ac], "-c") || !strcmp(argv[ac], "--cuadev")) {
+/*		if (!strcmp(argv[ac], "-c") || !strcmp(argv[ac], "--cuadev")) {
 			swp = 1;
 			continue;
 		}
@@ -1961,7 +1882,7 @@ int main(int argc, char *argv[]) {
 			swp = 2;
 			continue;
 		}
-
+*/
 		if (!strcmp(argv[ac], "-f") || !strcmp(argv[ac], "--logfile")) {
 			swp = 3;
 			continue;
@@ -2040,34 +1961,9 @@ int main(int argc, char *argv[]) {
 
 	InstallSignals();
 
-	if (X25Local && *X25Local && X25sCount > 0) {
+	if (X25Local && *X25Local) {
 		/* open x25 device */
 		ReOpenX25();
-	} else if (CuaName && *CuaName) {
-		/* open cua device */
-		int Tmp;
-
-		ReOpenSerial();
-
-		while (!Tmp) {
-			Tmp = atoi(SpeedBuf);
-
-			switch (Tmp) {
-				case 300:
-				case 2400:
-				case 9600:
-				case 19200:
-				case 38400:
-				case 57600: CuaSpeed = Tmp; break;
-				default:
-					fprintf(stderr, "--- ewrecv: Invalid speed given! Switching to default.\r\n");
-					Tmp = 0;
-					strcpy(SpeedBuf, DEFSPEED);
-			}
-		}
-    
-		parse_io_mode(&ConfRec, SpeedBuf, PARAMS);
-		init_port(CuaFd, &ConfRec);
 	}
 
 	/* deploy socket */
@@ -2139,40 +2035,46 @@ int main(int argc, char *argv[]) {
 
 		/* prepare for select */
 		Reselect = 0;
-
+/* TODO
 		if (to_destroy && !to_destroy->WriteBufferLen) {
 			DestroyConnection(to_destroy);
 			to_destroy = NULL;
 		}
-
+*/
 		MaxFd = 0;
 
 		FD_ZERO(&ReadQ);
 		FD_ZERO(&WriteQ);
-
-		foreach_conn (NULL) { /* talking with terminal */
+/* TODO
+		foreach_conn (NULL) { // talking with terminal
 			FD_SET(c->Fd, &ReadQ);
 			if (c->Fd > MaxFd) MaxFd = c->Fd;
 			if (c->WriteBuffer) FD_SET(c->Fd, &WriteQ);
 			FD_SET(c->Fd, &ErrorQ);
 		} foreach_conn_end;
-
+*/
 		if (SockFd >= 0) { /* listening on socket */
 			FD_SET(SockFd, &ReadQ);
 			if (SockFd > MaxFd) MaxFd = SockFd;
-		}
-
-		if (CuaFd >= 0) { /* talking with EWSD */
-			FD_SET(CuaFd, &ReadQ);
-			if (CuaFd > MaxFd) MaxFd = CuaFd;
-			if (WriteBufLen > 0) FD_SET(CuaFd, &WriteQ);
 		}
 
 		/* talking with EWSD (X.25) */
 
 		// check connection and reconnect when something is broken
 		ReOpenX25();
+/* TODO
+		foreach_conn(NULL) {
+			int i = 0;
+			for (i = 0; i < c->X25FdCount; i++) {
+				if (c->X25Fds[i] < 0) continue;
 
+				FD_SET(c->X25Fds[i], &ReadQ);
+				if (c->X25Fds[i] > MaxFd) MaxFd = c->X25Fds[i];
+				if (c->X25WriteBufLen > 0) FD_SET(c->X25Fds[i], &WriteQ);
+			}
+		} foreach_conn_end
+*/
+/*
 		int i = 0;
 		for (i = 0; i < X25sCount; i++) {
 			if (X25s[i].fd < 0) continue;
@@ -2181,7 +2083,7 @@ int main(int argc, char *argv[]) {
 			if (X25s[i].fd > MaxFd) MaxFd = X25s[i].fd;
 			if (WriteBufLen > 0) FD_SET(X25s[i].fd, &WriteQ);
 		}
-
+*/
 		/* select */
 		if (select(MaxFd + 1, &ReadQ, &WriteQ, &ErrorQ, 0) < 0) {
 			if (errno == EINTR) continue; /* try once more, just some silly signal */
@@ -2189,7 +2091,10 @@ int main(int argc, char *argv[]) {
 			Done(4);
 		} else {
 			/* something from terminal */
-			foreach_conn (NULL) {
+			int i = 0;
+			for (i = 0; i < ConnCount; i++) {
+				struct connection *c = &Conns[i];
+
 				if (!FD_ISSET(c->Fd, &ReadQ)) continue;
 
 				errno = 0;
@@ -2201,25 +2106,28 @@ int main(int argc, char *argv[]) {
 				}
 
 				if (Reselect) goto reselect;
-			} foreach_conn_end;
+			}
 
 			/* something to terminal */
-			foreach_conn (NULL) {
+			for (i = 0; i < ConnCount; i++) {
+				struct connection *c = &Conns[i];
+
 				if (!FD_ISSET(c->Fd, &WriteQ)) continue;
 
 				errno = 0; /* XXX: Is write() returning 0 an error? */
 				if (DoWrite(c) < 0 && errno != EINTR) ErrorConnection(c);
 
 				if (Reselect) goto reselect;
-			} foreach_conn_end;
+			}
 
 			/* terminal error */
-			foreach_conn (NULL) {
+			for (i = 0; i < ConnCount; i++) {
+				struct connection *c = &Conns[i];
 				if (!FD_ISSET(c->Fd, &ErrorQ)) continue;
 
 				ErrorConnection(c);
 				goto reselect;
-			} foreach_conn_end;
+			}
 
 			/* new connection from terminal */
 			if (SockFd >= 0 && FD_ISSET(SockFd, &ReadQ)) {
@@ -2242,219 +2150,164 @@ int main(int argc, char *argv[]) {
 
 			if (Reselect) goto reselect;
 
-			/* something from cua */
-			if (CuaFd >= 0 && FD_ISSET(CuaFd, &ReadQ)) {
-				char Chr = 0;
-
-				/* TODO: Use some buffer, we should get huge performance boost. --pasky */
-				if (read(CuaFd, &Chr, 1) <= 0 && errno != EINTR) {
-					perror("--- ewrecv: Read from CuaFd failed");
-					Done(4);
-				} else {
-					if (CommandMode == CM_READY) CommandMode = CM_BUSY;
-
-					ProcessExchangeChar(Chr);
-
-					foreach_auth_conn (NULL) {
-						Write(c, &Chr, 1);
-					} foreach_auth_conn_end
-				}
-			}
-
-			/* something to cua */
-			if (CuaFd >= 0 && FD_ISSET(CuaFd, &WriteQ)) {
-				int written;
-
-				written = write(CuaFd, WriteBuf, WriteBufLen);
-				if (written < 0) {
-					if (errno == EINTR) {
-						written = 0;
-					} else {
-						perror("--- ewrecv: Write to CuaFd failed");
-						Done(4);
-					}
-				}
-
-				/* shrink buffer */
-				WriteBufLen -= written;
-				memmove(WriteBuf, WriteBuf + written, WriteBufLen);
-			}
-
 			/* something from x25 */
 			///if (X25Fd >= 0 && FD_ISSET(X25Fd, &ReadQ)) {
-			int i = 0;
-			for (i = 0; i < X25sCount; i++) {
-				if (X25s[i].fd < 0 || !FD_ISSET(X25s[i].fd, &ReadQ)) continue;
+			for (i = 0; i < ConnCount; i++) {
+				struct connection *c = &Conns[i];
 
-				log_msg("FROM X.25\n");
+				int j = 0;
+				for (j = 0; j < Conns[i].X25FdCount; j++) {
+					int fd = c->X25Fds[j];
 
-				static unsigned char pbuf[320000]; // persistent buffer
-				static int pbuflen = 0;
+					if (fd < 0 || !FD_ISSET(fd, &ReadQ)) continue;
 
-				unsigned char buf[32000];
 
-				int r = read(X25s[i].fd, buf, 32000);
+					log_msg("FROM X.25\n");
 
-				if (r <= 0 && errno != EINTR) {
-					perror("--- ewrecv: Read from X25Fd failed");
-					//Done(4);
+					static unsigned char pbuf[320000]; // persistent buffer
+					static int pbuflen = 0;
 
-					// TODO: shouldn't Done() be really called?
-					//printf("Trying to reconnect...\n");
+					unsigned char buf[32000];
 
-					shutdown(X25s[i].fd, SHUT_RDWR);
-					close(X25s[i].fd);
-					X25s[i].fd = -1;
+					int r = read(fd, buf, 32000);
 
-					//ReOpenX25();
-				} else {
-					// TODO: why else?
-					///if (CommandMode == CM_READY) CommandMode = CM_BUSY;
+					if (r <= 0 && errno != EINTR) {
+						perror("--- ewrecv: Read from X25Fd failed");
+						//Done(4);
 
-					struct packet *p = packet_deserialize(buf, r);
+						// TODO: shouldn't Done() be really called?
+						//printf("Trying to reconnect...\n");
 
-					// send confirmation
-					// TODO: create something like packet_copy()
-					///if (p->dir == 2 && p->pltype == 2) {
-					if (p && p->dir == 2 && p->pltype != 0) {
-						struct packet *confirm = malloc(sizeof(struct packet));
-						memcpy(confirm, p, sizeof(struct packet));
-						confirm->data = NULL;
-						confirm->rawdata = NULL;
-						confirm->dir = 3;
-						confirm->pltype = 6;
+						shutdown(fd, SHUT_RDWR);
+						close(fd);
+						c->X25Fds[j] = fd = -1;
 
-						unsigned char buf2[32000];
-						int l = packet_serialize(confirm, buf2);
-						write(X25s[i].fd, buf2, l);
-						packet_delete(confirm);
-					}
+						//ReOpenX25();
+					} else {
+						// TODO: why else?
+						///if (CommandMode == CM_READY) CommandMode = CM_BUSY;
 
-					if (p && p->rawdata && p->data == NULL) {
-						// the block deserialize failed
-						if (pbuflen == 0) {
-							// first truncated packet (copy with header)
-							memcpy(pbuf, buf, r);
-							pbuflen = r;
-							packet_delete(p); p = NULL;
-						} else {
-							// continuation (copy without header)
-							memcpy(pbuf+pbuflen, p->rawdata, p->rawdatalen);
-							pbuflen += p->rawdatalen;
-							packet_delete(p); p = NULL;
+						struct packet *p = packet_deserialize(buf, r);
+
+						// send confirmation
+						// TODO: create something like packet_copy()
+						///if (p->dir == 2 && p->pltype == 2) {
+						if (p && p->dir == 2 && p->pltype != 0) {
+							struct packet *confirm = malloc(sizeof(struct packet));
+							memcpy(confirm, p, sizeof(struct packet));
+							confirm->data = NULL;
+							confirm->rawdata = NULL;
+							confirm->dir = 3;
+							confirm->pltype = 6;
+
+							unsigned char buf2[32000];
+							int l = packet_serialize(confirm, buf2);
+							write(fd, buf2, l);
+							packet_delete(confirm);
 						}
-					}
 
-					// test whether the packet is now complete
-					if (!p && pbuflen > 0) {
-						p = packet_deserialize(pbuf, pbuflen);
-						if (!p || (p->rawdata && !p->data)) {
-							// not complete yet
-							packet_delete(p); p = NULL;
-						} else {
-							// complete
-							pbuflen = 0;
+						if (p && p->rawdata && p->data == NULL) {
+							// the block deserialize failed
+							if (pbuflen == 0) {
+								// first truncated packet (copy with header)
+								memcpy(pbuf, buf, r);
+								pbuflen = r;
+								packet_delete(p); p = NULL;
+							} else {
+								// continuation (copy without header)
+								memcpy(pbuf+pbuflen, p->rawdata, p->rawdatalen);
+								pbuflen += p->rawdatalen;
+								packet_delete(p); p = NULL;
+							}
 						}
-					}
+
+						// test whether the packet is now complete
+						if (!p && pbuflen > 0) {
+							p = packet_deserialize(pbuf, pbuflen);
+							if (!p || (p->rawdata && !p->data)) {
+								// not complete yet
+								packet_delete(p); p = NULL;
+							} else {
+								// complete
+								pbuflen = 0;
+							}
+						}
 				
-					if (p) {
-						packet_print(p);
+						if (p) {
+							packet_print(p);
 
-						ProcessExchangePacket(p);
+							ProcessExchangePacket(c, p);
 
-						packet_delete(p);
+							packet_delete(p);
+						}
 					}
-				}
 
-				log_msg("END FROM X.25\n");
+					log_msg("END FROM X.25\n");
+				}
 			}
 
 			/* something to x25 */
-			int something_sent_todo = 0;
 			///if (X25Fd >= 0 && FD_ISSET(X25Fd, &WriteQ)) {
-			for (i = 0; i < X25sCount; i++) {
-				if (X25s[i].fd < 0 || !FD_ISSET(X25s[i].fd, &WriteQ)) continue;
+			for (i = 0; i < ConnCount; i++) {
+				struct connection *c = &Conns[i];
 
-				something_sent_todo = 1;
+				int j = 0;
+				for (j = 0; j < Conns[i].X25FdCount; j++) {
+					int fd = c->X25Fds[j];
 
-				log_msg("TO X.25\n");
+					if (fd < 0 || !FD_ISSET(fd, &WriteQ)) continue;
 
-				struct packet *p = NULL;
-				if (!Prompt) {
-					p = command_packet(WriteBuf, WriteBufLen);
-				} else if (Prompt == 'I') {
-					p = command_confirmation_packet(LastConnId, LastSessId, LastTail, WriteBuf, WriteBufLen);
-					///Prompt = 0;
-				} else if (Prompt == 'U') {
-					strncpy(X25User, WriteBuf, WriteBufLen);
-					X25User[WriteBufLen] = 0;
+					log_msg("TO X.25\n");
 
-					// TODO: really foreach?
-					foreach_conn (NULL) {
+					struct packet *p = NULL;
+					if (!c->Prompt) {
+						p = command_packet(c->X25WriteBuf, c->X25WriteBufLen);
+					} else if (c->Prompt == 'I') {
+						p = command_confirmation_packet(c->LastConnId, c->LastSessId, c->LastTail, c->X25WriteBuf, c->X25WriteBufLen);
+						///c->Prompt = 0;
+					} else if (c->Prompt == 'U') {
+						strncpy(c->X25User, c->X25WriteBuf, c->X25WriteBufLen);
+						c->X25User[c->X25WriteBufLen] = 0;
+
 						IProtoSEND(c, 0x41, "P");
-					} foreach_conn_end
-					///Prompt = 'P';
-				} else if (Prompt == 'P') {
-					strncpy(X25Passwd, WriteBuf, WriteBufLen);
-					X25Passwd[WriteBufLen] = 0;
+						///c->Prompt = 'P';
+					} else if (c->Prompt == 'P') {
+						strncpy(c->X25Passwd, c->X25WriteBuf, c->X25WriteBufLen);
+						c->X25Passwd[c->X25WriteBufLen] = 0;
 
-					// Username and password are messed with newlines, fix it
-					char *idx = index(X25User, 10);
-					if (idx) *idx = 0;
-					idx = index(X25Passwd, 10);
-					if (idx) *idx = 0;
+						// Username and password are messed with newlines, fix it
+						char *idx = index(c->X25User, 10);
+						if (idx) *idx = 0;
+						idx = index(c->X25Passwd, 10);
+						if (idx) *idx = 0;
 
-					p = login_packet(X25User, X25Passwd);
+						p = login_packet(c->X25User, c->X25Passwd);
 printf("login_packet()\n");
-					///Prompt = 0;
-				} else if (Prompt == 'X') {
-					p = logout_packet();
+						///c->Prompt = 0;
+					} else if (c->Prompt == 'X') {
+						p = logout_packet();
 
-					///Prompt = 0;
-				}
+						///c->Prompt = 0;
+					}
 
-				unsigned char buf[32000];
-				int len = packet_serialize(p, buf);
-				packet_delete(p);
+					unsigned char buf[32000];
+					int len = packet_serialize(p, buf);
+					packet_delete(p);
 
-				/// TODO: loop until everything is sent
-				int written = write(X25s[i].fd, buf, len);
+					/// TODO: loop until everything is sent
+					int written = write(fd, buf, len);
 
-				if (written < 0) {
-					if (errno == EINTR) {
-						written = 0;
-					} else {
-						perror("--- ewrecv: Write to X25Fd failed");
-						Done(4);
+					if (written < 0) {
+						if (errno == EINTR) {
+							written = 0;
+						} else {
+							perror("--- ewrecv: Write to X25Fd failed");
+							Done(4);
+						}
 					}
 				}
-			}
 
-			// TODO: remove this duplicity!
-			if (something_sent_todo) {
-				if (!Prompt) {
-				} else if (Prompt == 'I') {
-					Prompt = 0;
-				} else if (Prompt == 'U') {
-					strncpy(X25User, WriteBuf, WriteBufLen);
-					X25User[WriteBufLen] = 0;
-					Prompt = 'P';
-				} else if (Prompt == 'P') {
-					strncpy(X25Passwd, WriteBuf, WriteBufLen);
-					X25Passwd[WriteBufLen] = 0;
-
-					// Username and password are messed with newlines, fix it
-					char *idx = index(X25User, 10);
-					if (idx) *idx = 0;
-					idx = index(X25Passwd, 10);
-					if (idx) *idx = 0;
-
-					Prompt = 0;
-				} else if (Prompt == 'X') {
-					Prompt = 0;
-				}
-
-				WriteBufLen = 0;
+				c->X25WriteBufLen = 0;
 			}
 reselect:
 			;
