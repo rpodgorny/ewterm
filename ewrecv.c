@@ -112,6 +112,9 @@ enum {
 ///char Prompt = 0; /* prompt type */
 ///int LoggedIn = 0; /* logged in or not? */ /* 0 == not, 1 == in progress, 2 == yes */
 
+/// TODO: get rid of this shit
+int LastId = 1;
+
 ///unsigned short LastConnId;
 ///unsigned short LastSessId;
 ///unsigned char LastTail;
@@ -128,13 +131,14 @@ int SockFd = -1; /* listening socket */
 int Reselect = 0;
 
 /* x25 database */
-struct X25ExchRecord {
+struct X25Connection {
 	char name[256];
 	char address[256];
+	int fd;
 };
 
-struct X25ExchRecord X25ExchDB[32];
-int X25ExchCount = 0;
+struct X25Connection X25Conns[32];
+int X25ConnCount = 0;
 
 char X25Local[256] = "";
 //char X25Remote[256] = "";
@@ -231,16 +235,11 @@ void Done(int Err) {
 	unlink(SockName);
 
 	int i = 0;
-	for (i = 0; i < ConnCount; i++) {
-		struct connection *c = Conns[i];
+	for (i = 0; i < X25ConnCount; i++) {
+		if (X25Conns[i].fd < 0) continue;
 
-		int j = 0;
-		for (j = 0; j < c->X25FdCount; j++) {
-			if (c->X25Fds[j] < 0) continue;
-
-			close(c->X25Fds[j]);
-			c->X25Fds[j] = -1;
-		}
+		close(X25Conns[i].fd);
+		X25Conns[i].fd = -1;
 	}
 
 	{
@@ -672,21 +671,16 @@ void ReOpenX25() {
 #endif
 
 		int i = 0;
-		for (i = 0; i < ConnCount; i++) {
-			struct connection *c = Conns[i];
+		for (i = 0; i < X25ConnCount; i++) {
+			if (X25Conns[i].fd >= 0) continue;
 
-			int j = 0;
-			for (j = 0; j < c->X25FdCount; j++) {
-				if (c->X25Fds[j] >= 0) continue;
+			printf("DEBUG: opening %s\n", X25Conns[i].address);
 
-				printf("DEBUG: opening %s\n", c->X25Addrs[j]);
-
-				c->X25Fds[j] = OpenX25Socket(X25Local, c->X25Addrs[j]);
+			X25Conns[i].fd = OpenX25Socket(X25Local, X25Conns[i].address);
 
 #ifdef LOCKDIR
-				///if (X25s[i].fd < 0) exit(2);
+			///if (X25s[i].fd < 0) exit(2);
 #endif
-			}
 		}
 	}
 }
@@ -819,289 +813,6 @@ printf("ADDED\n");
 }
 
 int LastMask = 0;
-
-/* for serial communication */
-/*void ProcessExchangeChar(char Chr) {
-	static int prompt = 0;
-
-	pdebug("ProcessExchangeChar() Chr = %d\n", Chr);
-
-	if (prompt && Chr != ENQ) {
-		prompt = 0;
-		foreach_ipr_conn (NULL) {
-			if (!c->authenticated) continue;
-			IProtoSEND(c, 0x40, NULL);
-		} foreach_ipr_conn_end;
-	}
-
-	if (Chr == ETX) {
-		pdebug("cm %d\n", CommandMode);
-		if (CommandMode == CM_PBUSY) {
-			CommandMode = CM_PROMPT;
-
-			LastMask = 0;
-			foreach_ipr_conn (NULL) {
-				if (!c->authenticated) continue;
-				IProtoSEND(c, 0x46, "0");
-			} foreach_ipr_conn_end;
-
-			if (!Prompt) {
-				char *lastlinet = Lines[LastLine];
-				int linelent = LineLen;
-				while (*lastlinet == ' ') lastlinet++, linelent--;
-
-				if (linelent == 1 && lastlinet[linelent - 1] == '<') {
-					Prompt = '<';
-					if (!LoggedIn || LoggedIn == 1) {
-						foreach_ipr_conn (NULL) {
-							if (!c->authenticated) continue;
-							IProtoSEND(c, 0x43, NULL);
-						} foreach_ipr_conn_end;
-						if (!LoggedIn) {
-							foreach_ipr_conn (connection) {
-								if (!c->authenticated) continue;
-								IProtoSEND(c, 0x04, "RO");
-							} foreach_ipr_conn_end;
-						}
-						LoggedIn = 2;
-					}
-				} else {
-					Prompt = 'I';
-				}
-			}
-
-			{
-				char s[256];
-
-				if (Prompt == '<') {
-#if 0
-					fprintf(stderr, "lines (%d) [%d] ::%s::%s::%s::\n", LastLine, (LastLine - 1 + HISTLEN) % HISTLEN,
-					Lines[(LastLine - 1 + HISTLEN) % HISTLEN],
-					Lines[(LastLine + HISTLEN) % HISTLEN],
-					Lines[LastLine]);
-#endif
-					snprintf(s, 256, "<%s", Lines[(LastLine - 1 + HISTLEN) % HISTLEN]);
-				} else {
-					snprintf(s, 256, "%c", Prompt);
-				}
-				Prompt = 0;
-
-				foreach_ipr_conn (NULL) {
-					if (!c->authenticated) continue;
-					pdebug("%p->%s\n", c, s);
-					IProtoSEND(c, 0x41, s);
-				} foreach_ipr_conn_end;
-			}
-		} else {
-			CommandMode = CM_READY;
-			if (WantPrompt) {
-				WantPrompt = 0;
-				SendChar(NULL, ACK);
-			}
-		}
-		SendChar(NULL, BEL);
-	} else if (Chr == ENQ) {
-		if (CommandMode == CM_PBUSY) {
-			CommandMode = CM_BUSY;
-			prompt = 0;
-		}
-		SendChar(NULL, NAK);
-		SendChar(NULL, '0');
-		SendChar(NULL, '0');
-		SendChar(NULL, '0');
-		SendChar(NULL, ETX);
-	} else if (Chr == ACK) {
-		CommandMode = CM_PBUSY;
-		prompt = 1; // schedule sending of prompt to ewterms
-	} else if (Chr == 10 || Chr >= 32) {
-		if (Chr == 10) {
-			static int NewLines, Header;
-			static char ActExchange[10] = "";
-			char *lastlinet = Lines[LastLine];
-
-			while (*lastlinet == ' ') lastlinet++;
-			pdebug("Got newline, analyzing ::%s::\n", lastlinet);
-
-			// Analyze this line
-			if (!strncmp(lastlinet, "END JOB ", 8)) {
-				foreach_ipr_conn (NULL) {
-					if (!c->authenticated) continue;
-					IProtoSEND(c, 0x45, lastlinet + 8);
-				} foreach_ipr_conn_end;
-			} else if (!strncmp(lastlinet, "PLEASE ENTER USERID", 19)) {
-				Prompt = 'U';
-				if (!LoggedIn) {
-					LoggedIn = 1;
-					foreach_ipr_conn (connection) {
-						if (!c->authenticated) continue;
-						IProtoSEND(c, 0x04, "RO");
-					} foreach_ipr_conn_end;
-				}
-			} else if (!strncmp(lastlinet, "PLEASE ENTER CURRENT PASSWORD", 29)) {
-				Prompt = 'P';
-			} else if (!strncmp(lastlinet, "PLEASE ENTER ", 13) && strstr(lastlinet, "PASSWORD")) {
-				if (strstr(lastlinet, " FILE ")) {
-					Prompt = 'F';
-				} else {
-					Prompt = 'p';
-				}
-			} else if (strstr(lastlinet, "MASKNO:")) {
-				char *m = strstr(lastlinet, "MASKNO:") + 7;
-				foreach_ipr_conn (NULL) {
-					if (!c->authenticated) continue;
-					IProtoSEND(c, 0x46, m);
-				} foreach_ipr_conn_end;
-				LastMask = atoi(m);
-			}
-			pdebug("P %c\n", Prompt);
-
-			if (Header) {
-				int ActJob; char ActOMT[6] = ""; char Usrname[10] = "";
-				char *job = lastlinet;
-				char *omt = job + 13;
-				char *mask= omt + 20;
-
-				Header = 0;
-
-				// 3882         OMT-01/PEBA           2977/00007
-				// job          omt  [/uname]        [????/maskno]
-				ActJob = atoi(job);
-				if (strlen(job) > 13) {
-					// We already have it otherwise.
-					if (omt[0] && omt[0] != ' ') {
-						strncpy(ActOMT, omt, 6);
-						ActOMT[6] = 0;
-					}
-					if (omt[6] == '/') {
-						strncpy(Usrname, omt + 7, 9);
-						Usrname[9] = 0;
-						if (strchr(Usrname, ' ')) *strchr(Usrname, ' ') = 0;
-						if (strchr(Usrname, '\n')) *strchr(Usrname, '\n') = 0;
-					}
-					if (strlen(omt) > 20) {
-						mask = strchr(mask, '/');
-						if (mask) LastMask = atoi(++mask);
-					} else {
-						LastMask = 0;
-					}
-					foreach_ipr_conn (NULL) {
-						char s[256];
-						sprintf(s, "%d", LastMask); pdebug("LM->%d\n", LastMask);
-						if (!c->authenticated) continue;
-						IProtoSEND(c, 0x46, s);
-					} foreach_ipr_conn_end;
-				}
-				{
-					char s[256];
-					snprintf(s, 256, "%d,%s,%s,%s", ActJob, ActOMT, Usrname, ActExchange);
-					pdebug("%s <- ::%s::\n", s, lastlinet);
-					foreach_ipr_conn (NULL) {
-						if (!c->authenticated) continue;
-						IProtoSEND(c, 0x47, s);
-					} foreach_ipr_conn_end;
-				}
-			}
-
-			if (!*lastlinet) {
-				NewLines++;
-			} else if (strncmp(lastlinet, "CONTINUATION TEXT", 17)) {
-				if (NewLines >= 4) {
-					Header = 1;
-					if (strchr(lastlinet, '/')) {
-						*strchr(lastlinet, '/') = 0;
-						strncpy(ActExchange, lastlinet, 9);
-						ActExchange[9] = 0;
-						lastlinet[strlen(lastlinet)] = '/';
-					}
-				}
-				NewLines = 0;
-			}
-
-			if (LastMask) {
-				int LI = LoggedIn;
-
-				if (LastMask == 12062) {
-					// NOT AUTHORIZED TO OPEN A SESSION.
-					foreach_ipr_conn (NULL) {
-						if (!c->authenticated) continue;
-						IProtoSEND(c, 0x42, NULL);
-					} foreach_ipr_conn_end;
-					LoggedIn = 0;
-				} else if (LastMask == 12060) {
-					// LOCKED.
-					foreach_ipr_conn (NULL) {
-						if (!c->authenticated) continue;
-						IProtoSEND(c, 0x42, NULL);
-					} foreach_ipr_conn_end;
-					LoggedIn = 0;
-				} else if (LastMask == 12048) {
-					// SESSION REJECTED, NEW PASSWORD INVALID.
-					foreach_ipr_conn (NULL) {
-						if (!c->authenticated) continue;
-						IProtoSEND(c, 0x42, NULL);
-					} foreach_ipr_conn_end;
-					LoggedIn = 0;
-				} else if (LastMask == 12055) {
-					// CURRENT PASSWORD EXPIRED, PLEASE ENTER NEW PASSWORD.
-					Prompt = 'p';
-				} else if (LastMask == 12059) {
-					// SESSION REJECTED, USERID PATR   IN USE.
-					foreach_ipr_conn (NULL) {
-						if (!c->authenticated) continue;
-						IProtoSEND(c, 0x42, NULL);
-					} foreach_ipr_conn_end;
-					LoggedIn = 0;
-				} else if (LastMask == 10115 || LastMask == 6904) {
-					// INVALID PASSWORD
-					foreach_ipr_conn (NULL) {
-						if (!c->authenticated) continue;
-						IProtoSEND(c, 0x42, NULL);
-					} foreach_ipr_conn_end;
-					LoggedIn = 0;
-				} else if (LastMask == 6299) {
-					// SESSION FOR PATR   CANCELLED!
-					foreach_ipr_conn (NULL) {
-						if (!c->authenticated) continue;
-						IProtoSEND(c, 0x44, NULL);
-					} foreach_ipr_conn_end;
-					LoggedIn = 0;
-				} else if (LastMask == 10119) {
-					// SESSION CANCELLED BY TIMEOUT
-					foreach_ipr_conn (NULL) {
-						if (!c->authenticated) continue;
-						IProtoSEND(c, 0x44, NULL);
-					} foreach_ipr_conn_end;
-					LoggedIn = 0;
-				} else if (LastMask == 10397) {
-					// SESSION CANCELLED FROM TERMINAL
-					foreach_ipr_conn (NULL) {
-						if (!c->authenticated) continue;
-						IProtoSEND(c, 0x44, NULL);
-					} foreach_ipr_conn_end;
-					LoggedIn = 0;
-				} else if (LastMask == 7 && !strncmp(lastlinet, "ENDSESSION;", 11)) {
-					// Logout - hope it will work properly..
-					foreach_ipr_conn (NULL) {
-						if (!c->authenticated) continue;
-						IProtoSEND(c, 0x44, NULL);
-					} foreach_ipr_conn_end;
-					LoggedIn = 0;
-				}
-
-				if (!LoggedIn && LI) {
-					foreach_ipr_conn (connection) {
-						if (c->authenticated < 2) continue;
-						IProtoSEND(c, 0x04, "RW");
-					} foreach_ipr_conn_end;
-				}
-			}
-		}
-		LogCh(Chr);
-	}
-
-	if (LogRaw) fputc(Chr, LogRaw);
-}
-*/
 // TODO: move this to somewhere else
 void GenHeader(char *exch, char *apsver, char *patchver, char *date, char *time, unsigned short jobnr, char *omt, char *user, unsigned short msggrp, unsigned short mask, char *hint, char *out) {
 	// TODO: better condition
@@ -1120,7 +831,7 @@ void GenHeader(char *exch, char *apsver, char *patchver, char *date, char *time,
 }
 
 /* for X.25 communication */
-void ProcessExchangePacket(struct connection *c, struct packet *p) {
+void ProcessExchangePacket(int fd, struct packet *p) {
 	pdebug("ProcessExchangePacket()\n");
 
 	// TODO: a quick hack to filter empty packets. remove!
@@ -1212,6 +923,28 @@ printf("SEQ: %d\n", seq);
 	if (b && b->data) strncpy(answer, (char *)b->data, b->len);
 
 
+	// find the owners
+	struct connection *c = NULL;
+	int gci = -1; // index of X.25 connection (global)
+	int cci = -1; // index of X.25 connection (connection)
+
+	int i = 0;
+	for (i = 0; i < ConnCount; i++) {
+		if (Conns[i]->id != p->sessid) continue;
+
+		c = Conns[i];
+		break;
+	}
+
+	for (i = 0; i < c->X25ConnCount; i++) {
+		if (X25Conns[c->X25Conns[i]].fd == fd) {
+			cci = i;
+			gci = c->X25Conns[i];
+			break;
+		}
+	}
+
+
 	Write(c, "\n\n", 2);
 
 	if (seq > 0) {
@@ -1251,7 +984,7 @@ printf("MASK: %d\n", mask);
 		if (strlen(prompt)) {
 			// this is a command from EWSD
 			c->LastConnId = p->connid;
-			c->LastSessId = p->sessid;
+			///c->LastSessId = p->sessid;
 			c->LastTail = p->tail;
 
 			IProtoSEND(c, 0x40, NULL);
@@ -1283,7 +1016,7 @@ printf("USTREDNA TO PRIJALA\n");
 			Write(c, "<", 1);
 			IProtoSEND(c, 0x41, "<");
 
-			c->LoggedIn = 1;
+			c->X25LoggedIn[cci] = 1;
 printf("LOGGED IN\n");
 		} else {
 			// Login failure
@@ -1296,7 +1029,7 @@ printf("LOGGED IN\n");
 			IProtoSEND(c, 0x44, NULL);
 		///} foreach_ipr_conn_end;
 
-		c->LoggedIn = 0;
+		c->X25LoggedIn[cci] = 0;
 	}
 
 	char jobnr_s[10] = "";
@@ -1464,21 +1197,22 @@ void CancelPromptRequest(struct connection *conn, char *d) {
 void LoginPromptRequest(struct connection *conn, char *exch, char *d) {
 	log_msg("LoginPromptRequest()\n");
 
-	if (conn->LoggedIn) return;
+	int i = 0;
+	for (i = 0; i < conn->X25ConnCount; i++) {
+		if (conn->X25LoggedIn[i]) return;
+	}
+
 	if (conn && conn->authenticated < 2) return;
 
 	char *p;
 	p = strtok(exch,",");
 	while (p != NULL) {
 		int i = 0;
-		for (i = 0; i < X25ExchCount; i++) {
-printf("RR: %s\n", X25ExchDB[i].name);
-			if (strcmp(X25ExchDB[i].name, p) != 0) continue;
+		for (i = 0; i < X25ConnCount; i++) {
+			if (strcmp(X25Conns[i].name, p) != 0) continue;
 			
-			strcpy(conn->X25Addrs[conn->X25FdCount], X25ExchDB[i].address);
-			conn->X25Fds[conn->X25FdCount] = -1;
-			conn->X25FdCount++;
-printf("ADDED EXCHANGE: %s\n", p);
+			conn->X25Conns[conn->X25ConnCount] = i;
+			conn->X25ConnCount++;
 		}
 
 		p = strtok(NULL, ",");
@@ -1501,11 +1235,17 @@ void PromptRequest(struct connection *conn, char *d) {
 	} else //if (CommandMode != CM_PROMPT && CommandMode != CM_PBUSY) // This may make some problems, maybe? There may be a situation when we'll want next prompt before processing the first one, possibly. Let's see. --pasky
 		WantPrompt = 1;
 */
-	if (conn->X25FdCount >= 0 && conn->LoggedIn) {
-		IProtoSEND(conn, 0x40, NULL);
-		Write(conn, "<", 1);
-		IProtoSEND(conn, 0x41, "<");
+
+	if (conn->X25ConnCount == 0) return;
+
+	int i = 0;
+	for (i = 0; i < conn->X25ConnCount; i++) {
+		if (conn->X25LoggedIn[i] == 0) return;
 	}
+
+	IProtoSEND(conn, 0x40, NULL);
+	Write(conn, "<", 1);
+	IProtoSEND(conn, 0x41, "<");
 }
 
 void SendBurst(struct connection *conn, char *lines, char *d) {
@@ -1537,9 +1277,9 @@ void SendIntro(struct connection *conn) {
 
 	if (!conn->authenticated) return;
 	IProtoSEND(conn, 0x05, ComposeUser(conn, 0));
-
+/* TODO
 	if (conn->LoggedIn == 2) IProtoSEND(conn, 0x43, NULL);
-
+*/
 	if (conn->authenticated < 2) {
 		IProtoSEND(conn, 0x04, "RO");
 	} else {
@@ -1557,7 +1297,10 @@ void LogoutRequest(struct connection *c, char *d) {
 // TODO: this is a hack to make it select()
 c->X25WriteBuf[c->X25WriteBufLen++] = 'c';
 
-	c->LoggedIn = 0;
+	int i = 0;
+	for (i = 0; i < c->X25ConnCount; i++) {
+		c->X25LoggedIn[i] = 0;
+	}
 
 	c->Prompt = 'X';
 }
@@ -1568,9 +1311,9 @@ void ExchangeListRequest(struct connection *c, char *d) {
 	char list[1024] = "";
 
 	int i = 0;
-	for (i = 0; i < X25ExchCount; i++) {
+	for (i = 0; i < X25ConnCount; i++) {
 		strcat(list, ",");
-		strcat(list, X25ExchDB[i].name);
+		strcat(list, X25Conns[i].name);
 	}
 
 	// cut off the trailing comma
@@ -1699,9 +1442,12 @@ struct connection *TryAccept(int Fd) {
 	}
 
 	// Initialize the X.25 part
+	/// TODO: move to generic place
 	conn->X25User[0] = 0;
 	conn->X25Passwd[0] = 0;
-	conn->X25FdCount = 0;
+	conn->X25ConnCount = 0;
+
+	conn->id = LastId++;
 
 	return conn;
 }
@@ -1859,10 +1605,11 @@ int main(int argc, char *argv[]) {
 						char *idx = index(p, '=');
 						int len = idx - p;
 
-						strncpy(X25ExchDB[X25ExchCount].name, p, len);
-						strcpy(X25ExchDB[X25ExchCount].address, idx+1);
+						strncpy(X25Conns[X25ConnCount].name, p, len);
+						strcpy(X25Conns[X25ConnCount].address, idx+1);
+						X25Conns[X25ConnCount].fd = -1;
 
-						X25ExchCount++;
+						X25ConnCount++;
 						p = strtok(NULL, ":;,");
 					}
 				}
@@ -2096,16 +1843,21 @@ int main(int argc, char *argv[]) {
 		// check connection and reconnect when something is broken
 		ReOpenX25();
 
-		for (i = 0; i < ConnCount; i++) {
-			struct connection *c = Conns[i];
+		for (i = 0; i < X25ConnCount; i++) {
+			if (X25Conns[i].fd < 0) continue;
 
+			FD_SET(X25Conns[i].fd, &ReadQ);
+			if (X25Conns[i].fd > MaxFd) MaxFd = X25Conns[i].fd;
+
+			// add to write queue on when we have something to write
 			int j = 0;
-			for (j = 0; j < c->X25FdCount; j++) {
-				if (c->X25Fds[j] < 0) continue;
-
-				FD_SET(c->X25Fds[j], &ReadQ);
-				if (c->X25Fds[j] > MaxFd) MaxFd = c->X25Fds[j];
-				if (c->X25WriteBufLen > 0) FD_SET(c->X25Fds[j], &WriteQ);
+			for (j = 0; j < ConnCount; j++) {
+				if (Conns[j]->X25WriteBufLen == 0) continue;
+				
+				int k = 0;
+				for (k = 0; k < Conns[j]->X25ConnCount; k++) {
+					if (Conns[j]->X25Conns[k] == i) FD_SET(X25Conns[i].fd, &WriteQ);
+				}
 			}
 		}
 
@@ -2176,110 +1928,108 @@ int main(int argc, char *argv[]) {
 			if (Reselect) goto reselect;
 
 			/* something from x25 */
-			for (i = 0; i < ConnCount; i++) {
-				struct connection *c = Conns[i];
+			for (i = 0; i < X25ConnCount; i++) {
+				int fd = X25Conns[i].fd;
 
-				int j = 0;
-				for (j = 0; j < c->X25FdCount; j++) {
-					int fd = c->X25Fds[j];
-
-					if (fd < 0 || !FD_ISSET(fd, &ReadQ)) continue;
+				if (fd < 0 || !FD_ISSET(fd, &ReadQ)) continue;
 
 
-					log_msg("FROM X.25\n");
+				log_msg("FROM X.25\n");
 
-					static unsigned char pbuf[320000]; // persistent buffer
-					static int pbuflen = 0;
+				/// TODO: this should be connection-specific
+				static unsigned char pbuf[320000]; // persistent buffer
+				static int pbuflen = 0;
 
-					unsigned char buf[32000];
+				unsigned char buf[32000];
 
-					int r = read(fd, buf, 32000);
+				int r = read(fd, buf, 32000);
 
-					if (r <= 0 && errno != EINTR) {
-						perror("--- ewrecv: Read from X25Fd failed");
-						//Done(4);
+				if (r <= 0 && errno != EINTR) {
+					perror("--- ewrecv: Read from X25Fd failed");
+					//Done(4);
 
-						// TODO: shouldn't Done() be really called?
-						//printf("Trying to reconnect...\n");
+					// TODO: shouldn't Done() be really called?
+					//printf("Trying to reconnect...\n");
 
-						shutdown(fd, SHUT_RDWR);
-						close(fd);
-						c->X25Fds[j] = fd = -1;
+					shutdown(fd, SHUT_RDWR);
+					close(fd);
+					X25Conns[i].fd = fd = -1;
 
-						//ReOpenX25();
-					} else {
-						// TODO: why else?
-						///if (CommandMode == CM_READY) CommandMode = CM_BUSY;
+					//ReOpenX25();
+				} else {
+					// TODO: why else?
+					///if (CommandMode == CM_READY) CommandMode = CM_BUSY;
 
-						struct packet *p = packet_deserialize(buf, r);
+					struct packet *p = packet_deserialize(buf, r);
 
-						// send confirmation
-						// TODO: create something like packet_copy()
-						///if (p->dir == 2 && p->pltype == 2) {
-						if (p && p->dir == 2 && p->pltype != 0) {
-							struct packet *confirm = malloc(sizeof(struct packet));
-							memcpy(confirm, p, sizeof(struct packet));
-							confirm->data = NULL;
-							confirm->rawdata = NULL;
-							confirm->dir = 3;
-							confirm->pltype = 6;
+					// send confirmation
+					// TODO: create something like packet_copy()
+					///if (p->dir == 2 && p->pltype == 2) {
+					if (p && p->dir == 2 && p->pltype != 0) {
+						struct packet *confirm = malloc(sizeof(struct packet));
+						memcpy(confirm, p, sizeof(struct packet));
+						confirm->data = NULL;
+						confirm->rawdata = NULL;
+						confirm->dir = 3;
+						confirm->pltype = 6;
 
-							unsigned char buf2[32000];
-							int l = packet_serialize(confirm, buf2);
-							write(fd, buf2, l);
-							packet_delete(confirm);
-						}
+						unsigned char buf2[32000];
+						int l = packet_serialize(confirm, buf2);
+						write(fd, buf2, l);
+						packet_delete(confirm);
+					}
 
-						if (p && p->rawdata && p->data == NULL) {
-							// the block deserialize failed
-							if (pbuflen == 0) {
-								// first truncated packet (copy with header)
-								memcpy(pbuf, buf, r);
-								pbuflen = r;
-								packet_delete(p); p = NULL;
-							} else {
-								// continuation (copy without header)
-								memcpy(pbuf+pbuflen, p->rawdata, p->rawdatalen);
-								pbuflen += p->rawdatalen;
-								packet_delete(p); p = NULL;
-							}
-						}
-
-						// test whether the packet is now complete
-						if (!p && pbuflen > 0) {
-							p = packet_deserialize(pbuf, pbuflen);
-							if (!p || (p->rawdata && !p->data)) {
-								// not complete yet
-								packet_delete(p); p = NULL;
-							} else {
-								// complete
-								pbuflen = 0;
-							}
-						}
-				
-						if (p) {
-							packet_print(p);
-
-							ProcessExchangePacket(c, p);
-
-							packet_delete(p);
+					if (p && p->rawdata && p->data == NULL) {
+						// the block deserialize failed
+						if (pbuflen == 0) {
+							// first truncated packet (copy with header)
+							memcpy(pbuf, buf, r);
+							pbuflen = r;
+							packet_delete(p); p = NULL;
+						} else {
+							// continuation (copy without header)
+							memcpy(pbuf+pbuflen, p->rawdata, p->rawdatalen);
+							pbuflen += p->rawdatalen;
+							packet_delete(p); p = NULL;
 						}
 					}
 
-					log_msg("END FROM X.25\n");
+					// test whether the packet is now complete
+					if (!p && pbuflen > 0) {
+						p = packet_deserialize(pbuf, pbuflen);
+						if (!p || (p->rawdata && !p->data)) {
+							// not complete yet
+							packet_delete(p); p = NULL;
+						} else {
+							// complete
+							pbuflen = 0;
+						}
+					}
+				
+					if (p) {
+						packet_print(p);
+
+						ProcessExchangePacket(fd, p);
+
+						packet_delete(p);
+					}
 				}
+
+				log_msg("END FROM X.25\n");
 			}
 
 			/* something to x25 */
 			for (i = 0; i < ConnCount; i++) {
 				struct connection *c = Conns[i];
 
+				if (c->X25WriteBufLen == 0) continue;
+
 				/// TODO: fix this workaround
 				int sent = 0;
 
 				int j = 0;
-				for (j = 0; j < c->X25FdCount; j++) {
-					int fd = c->X25Fds[j];
+				for (j = 0; j < c->X25ConnCount; j++) {
+					int fd = X25Conns[c->X25Conns[j]].fd;
 
 					if (fd < 0 || !FD_ISSET(fd, &WriteQ)) continue;
 
@@ -2288,9 +2038,9 @@ int main(int argc, char *argv[]) {
 
 					struct packet *p = NULL;
 					if (!c->Prompt) {
-						p = command_packet(c->X25WriteBuf, c->X25WriteBufLen);
+						p = command_packet(c->id, c->X25WriteBuf, c->X25WriteBufLen);
 					} else if (c->Prompt == 'I') {
-						p = command_confirmation_packet(c->LastConnId, c->LastSessId, c->LastTail, c->X25WriteBuf, c->X25WriteBufLen);
+						p = command_confirmation_packet(c->LastConnId, c->id, c->LastTail, c->X25WriteBuf, c->X25WriteBufLen);
 						c->Prompt = 0;
 					} else if (c->Prompt == 'U') {
 						strncpy(c->X25User, c->X25WriteBuf, c->X25WriteBufLen);
@@ -2308,11 +2058,11 @@ int main(int argc, char *argv[]) {
 						idx = index(c->X25Passwd, 10);
 						if (idx) *idx = 0;
 
-						p = login_packet(c->X25User, c->X25Passwd);
+						p = login_packet(c->id, c->X25User, c->X25Passwd);
 printf("login_packet()\n");
 						c->Prompt = 0;
 					} else if (c->Prompt == 'X') {
-						p = logout_packet();
+						p = logout_packet(c->id);
 
 						c->Prompt = 0;
 					}
