@@ -45,7 +45,7 @@
 /* TODO: All nonblocking stuff buffered! TCP support! */
 
 
-struct connection Conns[128];
+struct connection *Conns[128];
 int ConnCount;
 /*
 ///struct connection *connection = NULL;
@@ -229,15 +229,20 @@ void Done(int Err) {
 		SockFd = -1;
 	}
 	unlink(SockName);
-/* TODO
-	int i = 0;
-	for (i = 0; i < X25sCount; i++) {
-		if (X25s[i].fd < 0) continue;
 
-		close(X25s[i].fd);
-		X25s[i].fd = -1;
+	int i = 0;
+	for (i = 0; i < ConnCount; i++) {
+		struct connection *c = Conns[i];
+
+		int j = 0;
+		for (j = 0; j < c->X25FdCount; j++) {
+			if (c->X25Fds[j] < 0) continue;
+
+			close(c->X25Fds[j]);
+			c->X25Fds[j] = -1;
+		}
 	}
-*/
+
 	{
 		char *time_s;
 		time_t tv;
@@ -638,6 +643,7 @@ void ReOpenX25() {
 
 	///if (X25Fd >= 0) {
 	///int i = 0;
+
 	/// TODO
 /*	for (i = 0; i < X25sCount; i++) {
 		if (X25s[i].fd < 0) continue;
@@ -664,18 +670,24 @@ void ReOpenX25() {
 
 		if (!LockName[0]) Done(5);
 #endif
-/* TODO
-		for (i = 0; i < X25sCount; i++) {
-			if (X25s[i].fd >= 0) continue;
 
-			printf("DEBUG: opening %s\n", X25s[i].address);
+		int i = 0;
+		for (i = 0; i < ConnCount; i++) {
+			struct connection *c = Conns[i];
 
-			X25s[i].fd = OpenX25Socket(X25Local, X25s[i].address);
+			int j = 0;
+			for (j = 0; j < c->X25FdCount; j++) {
+				if (c->X25Fds[j] >= 0) continue;
+
+				printf("DEBUG: opening %s\n", c->X25Addrs[j]);
+
+				c->X25Fds[j] = OpenX25Socket(X25Local, c->X25Addrs[j]);
 
 #ifdef LOCKDIR
-			///if (X25s[i].fd < 0) exit(2);
+				///if (X25s[i].fd < 0) exit(2);
 #endif
-		}*/
+			}
+		}
 	}
 }
 
@@ -776,7 +788,7 @@ void LogStr(char *s, int len) {
 }
 
 int SendChar(struct connection *c, char Chr) {
-	if (c->LoggedIn && c) return -1;
+///	if (c && !c->LoggedIn) return -1;
 
 	if (c && c->authenticated < 2) return -1;
 
@@ -800,6 +812,7 @@ int SendChar(struct connection *c, char Chr) {
 	// filter newlines for X.25 connection
 	if (Chr != 10) {
 		c->X25WriteBuf[c->X25WriteBufLen++] = Chr;
+printf("ADDED\n");
 	}
 
 	return 1;
@@ -1198,6 +1211,7 @@ printf("SEQ: %d\n", seq);
 	b = block_getchild(p->data, "7");
 	if (b && b->data) strncpy(answer, (char *)b->data, b->len);
 
+
 	Write(c, "\n\n", 2);
 
 	if (seq > 0) {
@@ -1270,6 +1284,7 @@ printf("USTREDNA TO PRIJALA\n");
 			IProtoSEND(c, 0x41, "<");
 
 			c->LoggedIn = 1;
+printf("LOGGED IN\n");
 		} else {
 			// Login failure
 			IProtoSEND(c, 0x42, NULL);
@@ -1312,16 +1327,18 @@ void DestroyConnection(struct connection *conn) {
 	AnnounceUser(conn, 0x06);
 
 	close(conn->Fd);
-/* TODO
-	if (conn->next != conn) {
-		connection = conn->next;
-		if (LoggedIn && !(connection->authenticated < 2)) IProtoSEND(connection, 0x04, "RW");
-	} else {
-		connection = NULL;
+
+	// find the index and move the connection from end there
+	int i = 0;
+	for (i = 0; i < ConnCount; i++) {
+		if (Conns[i] == conn) break;
 	}
 
-	delete_from_list(conn);
-*/	FreeConnection(conn);
+	if (i < ConnCount-1) Conns[i] = Conns[ConnCount-1];
+
+	ConnCount--;
+
+	FreeConnection(conn);
 
 	/* Force rebuild of the fd tables. */
 	Reselect = 1;
@@ -1432,32 +1449,44 @@ void GotPrivMsg(struct connection *conn, char *tg, int id, char *host, char *msg
 
 void TakeOverRequest(struct connection *conn, char *d) {
 	if (conn && conn->authenticated < 2) return;
-///	if (conn != connection) SetMaster(conn);
 }
 
 void CancelPromptRequest(struct connection *conn, char *d) {
 	log_msg("CancelPromptRequest()\n");
-
-///	if (conn != connection) return;
+/*
 	if (conn && conn->authenticated < 2) return;
   	if (CommandMode == CM_PROMPT) {
 		conn->Prompt = 0;
 		CommandMode = CM_READY;
-		SendChar(NULL, EOT);
-	}
+	}*/
 }
 
-void LoginPromptRequest(struct connection *conn, char *d) {
+void LoginPromptRequest(struct connection *conn, char *exch, char *d) {
 	log_msg("LoginPromptRequest()\n");
 
 	if (conn->LoggedIn) return;
 	if (conn && conn->authenticated < 2) return;
-///	SetMaster(conn);
+
+	char *p;
+	p = strtok(exch,",");
+	while (p != NULL) {
+		int i = 0;
+		for (i = 0; i < X25ExchCount; i++) {
+printf("RR: %s\n", X25ExchDB[i].name);
+			if (strcmp(X25ExchDB[i].name, p) != 0) continue;
+			
+			strcpy(conn->X25Addrs[conn->X25FdCount], X25ExchDB[i].address);
+			conn->X25Fds[conn->X25FdCount] = -1;
+			conn->X25FdCount++;
+printf("ADDED EXCHANGE: %s\n", p);
+		}
+
+		p = strtok(NULL, ",");
+	}
 
 	conn->X25User[0] = 0;
 	conn->X25Passwd[0] = 0;
 
-	///TODO: foreach?
 	IProtoSEND(conn, 0x41, "U");
 
 	conn->Prompt = 'U';
@@ -1472,7 +1501,6 @@ void PromptRequest(struct connection *conn, char *d) {
 	} else //if (CommandMode != CM_PROMPT && CommandMode != CM_PBUSY) // This may make some problems, maybe? There may be a situation when we'll want next prompt before processing the first one, possibly. Let's see. --pasky
 		WantPrompt = 1;
 */
-	/// TODO: retain old compatibility -done?
 	if (conn->X25FdCount >= 0 && conn->LoggedIn) {
 		IProtoSEND(conn, 0x40, NULL);
 		Write(conn, "<", 1);
@@ -1534,6 +1562,24 @@ c->X25WriteBuf[c->X25WriteBufLen++] = 'c';
 	c->Prompt = 'X';
 }
 
+void ExchangeListRequest(struct connection *c, char *d) {
+	if (!c->authenticated) return;
+
+	char list[1024] = "";
+
+	int i = 0;
+	for (i = 0; i < X25ExchCount; i++) {
+		strcat(list, ",");
+		strcat(list, X25ExchDB[i].name);
+	}
+
+	// cut off the trailing comma
+	if (i > 0) list[strlen(list)-1] = 0;
+
+	IProtoSEND(c, 0x50, list);
+}
+
+
 struct connection *TryAccept(int Fd) {
 	struct connection *conn;
 	int NewFd;
@@ -1580,6 +1626,9 @@ struct connection *TryAccept(int Fd) {
 			NULL,
 			NULL,
 
+			/* 6.1 */
+			NULL,
+
 			/* 2.1a */
 			NULL,
 			NULL,
@@ -1601,6 +1650,9 @@ struct connection *TryAccept(int Fd) {
 			NULL,
 			LogoutRequest,
 
+			/* 6.1 */
+			ExchangeListRequest,
+
 			/* 0.5pre3 */
 			SendIntro /* AuthSuccess */,
 			AuthFailed,
@@ -1620,36 +1672,12 @@ struct connection *TryAccept(int Fd) {
 			endhostent();
 		}
 
-		Conns[ConnCount] = *conn;
-		ConnCount++;
+		/// TODO: make this static or free it!
+		conn->X25WriteBuf = malloc(WRITEBUF_MAX);
+		conn->X25WriteBufLen = 0;
 
-/* TODO
-		if (connection) {
-			{
-				// less memory, more time.. but it should still be fast enough as we don't expect more than 3-5 users per ewrecv..
-				int lowest_spot = 0; // lowest free place for us
-				for (;;) {
-					int b = 1;
-					foreach_conn (NULL) {
-						if (lowest_spot == c->id) {
-							lowest_spot++;
-							b = 0;
-						}
-					} foreach_conn_end;
-					if (b) break;
-				}
-				conn->id = lowest_spot;
-			}
-			connection->prev->next = conn;
-			conn->prev = connection->prev;
-			connection->prev = conn;
-			conn->next = connection;
-		} else {
-			connection = conn;
-			connection->next = conn;
-			connection->prev = conn;
-			conn->id = 0;
-		}*/
+		Conns[ConnCount] = conn;
+		ConnCount++;
 	}
 
 	WriteChar(conn, DC1);
@@ -1828,11 +1856,11 @@ int main(int argc, char *argv[]) {
 					char *p;
 					p = strtok(argv[ac],":;,");
 					while (p != NULL) {
-						char *idx = index(p, '&');
+						char *idx = index(p, '=');
 						int len = idx - p;
 
 						strncpy(X25ExchDB[X25ExchCount].name, p, len);
-						strcpy(X25ExchDB[X25ExchCount].address, idx);
+						strcpy(X25ExchDB[X25ExchCount].address, idx+1);
 
 						X25ExchCount++;
 						p = strtok(NULL, ":;,");
@@ -2045,14 +2073,19 @@ int main(int argc, char *argv[]) {
 
 		FD_ZERO(&ReadQ);
 		FD_ZERO(&WriteQ);
-/* TODO
-		foreach_conn (NULL) { // talking with terminal
+
+		int i = 0;
+
+		// terminals
+		for (i = 0; i < ConnCount; i++) {
+			struct connection *c = Conns[i];
+
 			FD_SET(c->Fd, &ReadQ);
 			if (c->Fd > MaxFd) MaxFd = c->Fd;
 			if (c->WriteBuffer) FD_SET(c->Fd, &WriteQ);
 			FD_SET(c->Fd, &ErrorQ);
-		} foreach_conn_end;
-*/
+		}
+
 		if (SockFd >= 0) { /* listening on socket */
 			FD_SET(SockFd, &ReadQ);
 			if (SockFd > MaxFd) MaxFd = SockFd;
@@ -2062,28 +2095,20 @@ int main(int argc, char *argv[]) {
 
 		// check connection and reconnect when something is broken
 		ReOpenX25();
-/* TODO
-		foreach_conn(NULL) {
-			int i = 0;
-			for (i = 0; i < c->X25FdCount; i++) {
-				if (c->X25Fds[i] < 0) continue;
 
-				FD_SET(c->X25Fds[i], &ReadQ);
-				if (c->X25Fds[i] > MaxFd) MaxFd = c->X25Fds[i];
-				if (c->X25WriteBufLen > 0) FD_SET(c->X25Fds[i], &WriteQ);
+		for (i = 0; i < ConnCount; i++) {
+			struct connection *c = Conns[i];
+
+			int j = 0;
+			for (j = 0; j < c->X25FdCount; j++) {
+				if (c->X25Fds[j] < 0) continue;
+
+				FD_SET(c->X25Fds[j], &ReadQ);
+				if (c->X25Fds[j] > MaxFd) MaxFd = c->X25Fds[j];
+				if (c->X25WriteBufLen > 0) FD_SET(c->X25Fds[j], &WriteQ);
 			}
-		} foreach_conn_end
-*/
-/*
-		int i = 0;
-		for (i = 0; i < X25sCount; i++) {
-			if (X25s[i].fd < 0) continue;
-
-			FD_SET(X25s[i].fd, &ReadQ);
-			if (X25s[i].fd > MaxFd) MaxFd = X25s[i].fd;
-			if (WriteBufLen > 0) FD_SET(X25s[i].fd, &WriteQ);
 		}
-*/
+
 		/* select */
 		if (select(MaxFd + 1, &ReadQ, &WriteQ, &ErrorQ, 0) < 0) {
 			if (errno == EINTR) continue; /* try once more, just some silly signal */
@@ -2093,7 +2118,7 @@ int main(int argc, char *argv[]) {
 			/* something from terminal */
 			int i = 0;
 			for (i = 0; i < ConnCount; i++) {
-				struct connection *c = &Conns[i];
+				struct connection *c = Conns[i];
 
 				if (!FD_ISSET(c->Fd, &ReadQ)) continue;
 
@@ -2110,7 +2135,7 @@ int main(int argc, char *argv[]) {
 
 			/* something to terminal */
 			for (i = 0; i < ConnCount; i++) {
-				struct connection *c = &Conns[i];
+				struct connection *c = Conns[i];
 
 				if (!FD_ISSET(c->Fd, &WriteQ)) continue;
 
@@ -2122,7 +2147,7 @@ int main(int argc, char *argv[]) {
 
 			/* terminal error */
 			for (i = 0; i < ConnCount; i++) {
-				struct connection *c = &Conns[i];
+				struct connection *c = Conns[i];
 				if (!FD_ISSET(c->Fd, &ErrorQ)) continue;
 
 				ErrorConnection(c);
@@ -2151,12 +2176,11 @@ int main(int argc, char *argv[]) {
 			if (Reselect) goto reselect;
 
 			/* something from x25 */
-			///if (X25Fd >= 0 && FD_ISSET(X25Fd, &ReadQ)) {
 			for (i = 0; i < ConnCount; i++) {
-				struct connection *c = &Conns[i];
+				struct connection *c = Conns[i];
 
 				int j = 0;
-				for (j = 0; j < Conns[i].X25FdCount; j++) {
+				for (j = 0; j < c->X25FdCount; j++) {
 					int fd = c->X25Fds[j];
 
 					if (fd < 0 || !FD_ISSET(fd, &ReadQ)) continue;
@@ -2247,30 +2271,33 @@ int main(int argc, char *argv[]) {
 			}
 
 			/* something to x25 */
-			///if (X25Fd >= 0 && FD_ISSET(X25Fd, &WriteQ)) {
 			for (i = 0; i < ConnCount; i++) {
-				struct connection *c = &Conns[i];
+				struct connection *c = Conns[i];
+
+				/// TODO: fix this workaround
+				int sent = 0;
 
 				int j = 0;
-				for (j = 0; j < Conns[i].X25FdCount; j++) {
+				for (j = 0; j < c->X25FdCount; j++) {
 					int fd = c->X25Fds[j];
 
 					if (fd < 0 || !FD_ISSET(fd, &WriteQ)) continue;
 
 					log_msg("TO X.25\n");
+					sent = 1;
 
 					struct packet *p = NULL;
 					if (!c->Prompt) {
 						p = command_packet(c->X25WriteBuf, c->X25WriteBufLen);
 					} else if (c->Prompt == 'I') {
 						p = command_confirmation_packet(c->LastConnId, c->LastSessId, c->LastTail, c->X25WriteBuf, c->X25WriteBufLen);
-						///c->Prompt = 0;
+						c->Prompt = 0;
 					} else if (c->Prompt == 'U') {
 						strncpy(c->X25User, c->X25WriteBuf, c->X25WriteBufLen);
 						c->X25User[c->X25WriteBufLen] = 0;
 
 						IProtoSEND(c, 0x41, "P");
-						///c->Prompt = 'P';
+						c->Prompt = 'P';
 					} else if (c->Prompt == 'P') {
 						strncpy(c->X25Passwd, c->X25WriteBuf, c->X25WriteBufLen);
 						c->X25Passwd[c->X25WriteBufLen] = 0;
@@ -2283,11 +2310,11 @@ int main(int argc, char *argv[]) {
 
 						p = login_packet(c->X25User, c->X25Passwd);
 printf("login_packet()\n");
-						///c->Prompt = 0;
+						c->Prompt = 0;
 					} else if (c->Prompt == 'X') {
 						p = logout_packet();
 
-						///c->Prompt = 0;
+						c->Prompt = 0;
 					}
 
 					unsigned char buf[32000];
@@ -2307,7 +2334,7 @@ printf("login_packet()\n");
 					}
 				}
 
-				c->X25WriteBufLen = 0;
+				if (sent) c->X25WriteBufLen = 0;
 			}
 reselect:
 			;

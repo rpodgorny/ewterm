@@ -47,11 +47,13 @@ struct conn_handlers {
 	void (*SENDAlarmsStart)(struct connection *, char *);
 	void (*SENDAlarmsEnd)(struct connection *, char *);
 
+	void (*SENDExchangeList)(struct connection*, char *, char *);
+
 	void (*ASKVersion)(struct connection *, char *);
 	void (*ASKUser)(struct connection *, char *);
 
 	void (*ASKPrompt)(struct connection *, char *);
-	void (*ASKLoginPrompt)(struct connection *, char *);
+	void (*ASKLoginPrompt)(struct connection *, char *, char *);
 	void (*ASKCancelPrompt)(struct connection *, char *);
 	void (*ASKTakeOver)(struct connection *, char *);
 
@@ -62,6 +64,8 @@ struct conn_handlers {
 	void (*ASKAlarmsStart)(struct connection *, char *);
 	void (*ASKAlarmsEnd)(struct connection *, char *);
 	void (*ASKLogout)(struct connection *, char *);
+
+	void (*ASKExchangeList)(struct connection *, char *);
 
 	void (*AuthSuccess)(struct connection *);
 	void (*AuthFailed)(struct connection *);
@@ -95,6 +99,7 @@ struct connection {
 	char X25User[256];
 	char X25Passwd[256];
 
+	char X25Addrs[32][256];
 	int X25Fds[32];
 	int X25FdCount;
 

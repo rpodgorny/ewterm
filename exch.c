@@ -395,7 +395,7 @@ void StartLogOn() {
 	MainMenu[8].Text = "Stop";
 	MainMenu[8].Addr = StopLogOn;
 	RedrawKeys();
-	IProtoASK(connection, 0x41, NULL);
+	IProtoASK(connection, 0x41, "test1,test2");
 }
 
 void DispOMTUser(struct mml_command *mml) {
@@ -845,6 +845,9 @@ struct connection *MkConnection(int SockFd) {
 		NULL,
 		NULL,
 
+		/* 6.1 */
+		NULL,
+
 		/* 2.1a */
 		NULL,
 		GotUserRequest,
@@ -864,6 +867,9 @@ struct connection *MkConnection(int SockFd) {
 		/* 6.0 */
 		NULL,
 		NULL,
+		NULL,
+
+		/* 6.1 */
 		NULL,
 
 		/* 0.5pre3 */
