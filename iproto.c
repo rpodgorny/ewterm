@@ -409,7 +409,7 @@ ProcessIProtoChar(struct connection *conn, unsigned char Chr) {
 	  break;
 	case 0x41: /* login prompt request */
 	  if (conn->handlers->ASKLoginPrompt) {
-	    conn->handlers->ASKLoginPrompt(conn, conn->IProtoPacket);
+	    conn->handlers->ASKLoginPrompt(conn, conn->IProtoPacket, NULL);
 	    break;
 	  }
 	  IProtoSEND(conn, 0x80, "");
@@ -455,6 +455,12 @@ ProcessIProtoChar(struct connection *conn, unsigned char Chr) {
 		break;
 	  }
 	  IProtoSEND(conn, 0x80, "");
+	case 0x50: /* exchange list request */
+	  if (conn->handlers->ASKExchangeList) {
+        conn->handlers->ASKExchangeList(conn, conn->IProtoPacket);
+        break;
+      }
+      IProtoSEND(conn, 0x80, "");
 	default:
 	  IProtoSEND(conn, 0x80, "");
 	  break;

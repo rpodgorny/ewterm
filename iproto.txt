@@ -86,6 +86,10 @@ DC2:
 	0x48	I will start sending alarm messages.
 	0x49	I will stop sending alarm messages.
 
+== 6.1 ==
+
+	0x50	Exchange list - List of exchanges, delimitied by ","
+
 DC3:
 	We ASK the peer for something. The packet has format:
 	<DC3> <opcode> [<data>] <DCx>
@@ -105,7 +109,8 @@ DC3:
 	These (0x40-0x43) are valid only for ewterm->ewrecv direction.
 
 	0x40	Prompt request - Request prompt from the exchange, no <data> (lb).
-	0x41	Login request - Request login prompt from the exchange, no <data> (lb).
+	0x41	Login request - Request login prompt from the exchange. Contains
+			a list of exchanges to connect to separated by ",".
 	0x42	Cancel prompt - Cancel current prompt, no data (lb).
 
 == 2.2b ==
@@ -129,6 +134,10 @@ DC3:
 	0x44	Start sending alarm messages.
 	0x45	Stop sending alarm messages.
 	0x46	Logout request.
+
+== 6.1 ==
+
+	0x50	Request list of exchanges.
 
 DC4:
  	Like DC1, but we don't forward the stuff to other ewterms. Nice for passwords stuff.
