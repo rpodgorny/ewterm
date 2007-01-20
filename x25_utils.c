@@ -43,7 +43,7 @@ int to_bcd(unsigned char *buf, char *str) {
 	return ret;
 }
 
-struct packet *login_packet(char *username, char *password) {
+struct packet *login_packet(unsigned short sessid, char *username, char *password) {
 	struct packet *ret = packet_alloc();
 	ret->family = 0xf1;
 	ret->unk1 = 0xe0;
@@ -52,7 +52,7 @@ struct packet *login_packet(char *username, char *password) {
 	ret->connid = 0x9ec6;
 	ret->subseq = 0;
 	ret->unk2 = 0;
-	ret->sessid = 0x0675;//// same
+	ret->sessid = sessid;
 	ret->tail = 0;
 
 	ret->data = block_alloc();
@@ -66,7 +66,7 @@ struct packet *login_packet(char *username, char *password) {
 
 	*(unsigned short *)(xxx) = htons(0);
 	*(unsigned short *)(xxx+2) = htons(0); // job nr.
-	*(unsigned short *)(xxx+4) = htons(0x675);
+	*(unsigned short *)(xxx+4) = htons(sessid);
 	*(unsigned short *)(xxx+6) = htons(0x4501);
 	xxx[8] = 0x20;//
 	xxx[9] = 0x0c;//
@@ -90,7 +90,7 @@ struct packet *login_packet(char *username, char *password) {
 	return ret;
 }
 
-struct packet *logout_packet() {
+struct packet *logout_packet(unsigned short sessid) {
 	struct packet *ret = packet_alloc();
 	ret->family = 0xf1;
 	ret->unk1 = 0xe0;
@@ -99,7 +99,7 @@ struct packet *logout_packet() {
 	ret->connid = 0x1509;
 	ret->subseq = 0;
 	ret->unk2 = 0;
-	ret->sessid = 0x0675;
+	ret->sessid = sessid;
 	ret->tail = 0;
 
 	ret->data = block_alloc();
@@ -123,7 +123,7 @@ struct packet *logout_packet() {
 }
 
 
-struct packet *command_packet(char *c, int len) {
+struct packet *command_packet(unsigned short sessid, char *c, int len) {
 	struct packet *ret = packet_alloc();
 	ret->family = 0xf1;
 	ret->unk1 = 0xe0;
@@ -132,7 +132,7 @@ struct packet *command_packet(char *c, int len) {
 	ret->connid = 0x9ecb;
 	ret->subseq = 0;
 	ret->unk2 = 0;
-	ret->sessid = 0x0675;
+	ret->sessid = sessid;
 	ret->tail = 0;
 
 	ret->data = block_alloc();

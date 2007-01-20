@@ -99,18 +99,17 @@ struct connection {
 	char X25User[256];
 	char X25Passwd[256];
 
-	char X25Addrs[32][256];
-	int X25Fds[32];
-	int X25FdCount;
+	int X25Conns[32];
+	int X25LoggedIn[32];
+	int X25ConnCount;
 
 	char *X25WriteBuf;
 	int X25WriteBufLen;
 
 	char Prompt;
-	int LoggedIn;
 
 	unsigned short LastConnId;
-	unsigned short LastSessId;
+	///unsigned short LastSessId;
 	unsigned char LastTail;
 };
 
