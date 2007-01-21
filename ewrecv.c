@@ -959,7 +959,18 @@ printf("MASK: %d\n", mask);
 	}
 
 	if (p->dir == 2) {
-		if (strlen(prompt)) {
+		/// TODO: make this condition more generic
+		if (seq == 0x0701) {
+			/// TODO: consolidate with the ones below
+			c->X25LastConnId[cci] = p->connid;
+			c->X25LastTail[cci] = p->tail;
+
+			IProtoSEND(c, 0x40, NULL);
+			Write(c, prompt, strlen(prompt));
+			IProtoSEND(c, 0x41, "p");
+
+			c->X25Prompt[cci] = 'p';
+		} else if (strlen(prompt)) {
 			// this is a command from EWSD
 			c->X25LastConnId[cci] = p->connid;
 			c->X25LastTail[cci] = p->tail;
@@ -2050,7 +2061,7 @@ int main(int argc, char *argv[]) {
 					struct packet *p = NULL;
 					if (!c->X25Prompt[cci]) {
 						p = command_packet(c->id, c->X25WriteBuf, c->X25WriteBufLen);
-					} else if (c->X25Prompt[cci] == 'I') {
+					} else if (c->X25Prompt[cci] == 'I' || c->X25Prompt[cci] == 'p') {
 						p = command_confirmation_packet(c->X25LastConnId[cci], c->id, c->X25LastTail[cci], c->X25WriteBuf, c->X25WriteBufLen);
 						c->X25Prompt[cci] = 0;
 					} else if (c->X25Prompt[cci] == 'U') {
@@ -2069,7 +2080,7 @@ int main(int argc, char *argv[]) {
 						idx = index(c->X25Passwd, 10);
 						if (idx) *idx = 0;
 
-						p = login_packet(c->id, c->X25User, c->X25Passwd);
+						p = login_packet(c->id, c->X25User, c->X25Passwd, 0);
 						c->X25Prompt[cci] = 0;
 					} else if (c->X25Prompt[cci] == 'X') {
 						p = logout_packet(c->id);

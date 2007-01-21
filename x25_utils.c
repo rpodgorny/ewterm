@@ -43,7 +43,7 @@ int to_bcd(unsigned char *buf, char *str) {
 	return ret;
 }
 
-struct packet *login_packet(unsigned short sessid, char *username, char *password) {
+struct packet *login_packet(unsigned short sessid, char *username, char *password, unsigned char reopen) {
 	struct packet *ret = packet_alloc();
 	ret->family = 0xf1;
 	ret->unk1 = 0xe0;
@@ -84,7 +84,7 @@ struct packet *login_packet(unsigned short sessid, char *username, char *passwor
 
 	block_addchild(ret->data, "4-3-2-3", (unsigned char *)password, strlen(password));
 
-	memset(xxx, 0x01, 1);
+	xxx[0] = reopen;
 	block_addchild(ret->data, "4-3-2-5", xxx, 1);
 
 	return ret;
