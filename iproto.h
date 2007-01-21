@@ -101,16 +101,13 @@ struct connection {
 
 	int X25Conns[32];
 	int X25LoggedIn[32];
+	char X25Prompt[32];
+	unsigned short X25LastConnId[32];
+	unsigned char X25LastTail[32];
 	int X25ConnCount;
 
 	char *X25WriteBuf;
 	int X25WriteBufLen;
-
-	char Prompt;
-
-	unsigned short LastConnId;
-	///unsigned short LastSessId;
-	unsigned char LastTail;
 };
 
 struct connection *MakeConnection(int Fd, struct conn_handlers *);
