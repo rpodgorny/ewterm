@@ -791,13 +791,13 @@ int SendChar(struct connection *c, char Chr) {
 	if (Chr == 13) Chr = 10;
  
 	pdebug("SendChar() %c/x%x \n", Chr, Chr);
-
+/* TODO: remove echo altogether?
 	pdebug("%p(%d)\n", c, c?c->IProtoState:-1);
 	if (c && c->IProtoState != IPR_DC4) {
 		// send back to client
 		Write(c, &Chr, 1);
 	}
-
+*/
 	if (c->X25WriteBufLen >= WRITEBUF_MAX - 1) {
 		log_msg("--- ewrecv: write [%x] error, write buffer full! (over %d)\n", Chr, WRITEBUF_MAX);
 		return 0;
@@ -996,14 +996,10 @@ printf("MASK: %d\n", mask);
 		}
 	} else if (p->dir == 3 && p->pltype == 1) {
 		// "Command accepted" confirmation
-printf("USTREDNA TO PRIJALA\n");
-		///foreach_ipr_conn (NULL) {
-		///	if (!c->authenticated) continue;
-			// TODO: send job start to ewterms?
-			char tmp[256];
-			sprintf(tmp, "%d\n\n", jobnr);
-			Write(c, tmp, strlen(tmp));
-		///} foreach_ipr_conn_end;
+		// TODO: send job start to ewterms?
+		char tmp[256];
+		sprintf(tmp, "%d\n\n", jobnr);
+		Write(c, tmp, strlen(tmp));
 	} else if (p->dir == 0x0c && p->pltype == 1) {
 		if (strlen(unkx3_3)) {
 			// Login success
@@ -1016,17 +1012,13 @@ printf("USTREDNA TO PRIJALA\n");
 			IProtoSEND(c, 0x41, "<");
 
 			c->X25LoggedIn[cci] = 1;
-printf("LOGGED IN\n");
 		} else {
 			// Login failure
 			IProtoSEND(c, 0x42, NULL);
 		}
 	} else if (p->dir == 0x0e && p->pltype == 0) {
-		// Session timeout, cancelled (maybe more errors)
-		///foreach_ipr_conn (NULL) {
-		///	if (!c->authenticated) continue;
-			IProtoSEND(c, 0x44, NULL);
-		///} foreach_ipr_conn_end;
+		// Session timeout (or maybe something else, too...)
+		IProtoSEND(c, 0x44, NULL);
 
 		c->X25LoggedIn[cci] = 0;
 	}
@@ -1441,12 +1433,6 @@ struct connection *TryAccept(int Fd) {
 		conn->authenticated = 2;
 		/* SendBurst(conn); */ /* Clients request it now. */
 	}
-
-	// Initialize the X.25 part
-	/// TODO: move to generic place
-	conn->X25User[0] = 0;
-	conn->X25Passwd[0] = 0;
-	conn->X25ConnCount = 0;
 
 	conn->id = LastId++;
 
@@ -2042,13 +2028,11 @@ int main(int argc, char *argv[]) {
 						p = command_packet(c->id, c->X25WriteBuf, c->X25WriteBufLen);
 					} else if (c->Prompt == 'I') {
 						p = command_confirmation_packet(c->LastConnId, c->id, c->LastTail, c->X25WriteBuf, c->X25WriteBufLen);
-						c->Prompt = 0;
 					} else if (c->Prompt == 'U') {
 						strncpy(c->X25User, c->X25WriteBuf, c->X25WriteBufLen);
 						c->X25User[c->X25WriteBufLen] = 0;
 
 						IProtoSEND(c, 0x41, "P");
-						c->Prompt = 'P';
 					} else if (c->Prompt == 'P') {
 						strncpy(c->X25Passwd, c->X25WriteBuf, c->X25WriteBufLen);
 						c->X25Passwd[c->X25WriteBufLen] = 0;
@@ -2060,12 +2044,8 @@ int main(int argc, char *argv[]) {
 						if (idx) *idx = 0;
 
 						p = login_packet(c->id, c->X25User, c->X25Passwd);
-printf("login_packet()\n");
-						c->Prompt = 0;
 					} else if (c->Prompt == 'X') {
 						p = logout_packet(c->id);
-
-						c->Prompt = 0;
 					}
 
 					unsigned char buf[32000];
@@ -2085,7 +2065,15 @@ printf("login_packet()\n");
 					}
 				}
 
-				if (sent) c->X25WriteBufLen = 0;
+				if (sent) {
+					if (c->Prompt == 'U') {
+						c->Prompt = 'P';
+					} else {
+						c->Prompt = 0;
+					}
+
+					c->X25WriteBufLen = 0;
+				}
 			}
 reselect:
 			;
