@@ -244,91 +244,6 @@ void Done(int Err) {
 	exit(Err);
 }
 
-/* Configure serial port */
-/*int set_baud_rate(struct termios *t, int rate) {
-	int i;
-
-	switch (rate) {
-		case 50: i=B50; break;
-		case 75: i=B75; break;
-		case 110: i=B110; break;
-		case 134: i=B134; break;
-		case 150: i=B150; break;
-		case 200: i=B200; break;
-		case 300: i=B300; break;
-		case 600: i=B600; break;
-		case 1200: i=B1200; break;
-		case 1800: i=B1800; break;
-		case 2400: i=B2400; break;
-		case 4800: i=B4800; break;
-		case 9600: i=B9600; break;
-		case 19200: i=B19200; break;
-		case 38400: i=B38400; break;
-		case 57600: i=B57600; break;
-		case 115200: i=B115200; break;
-		case 230400: i=B230400; break;
-//		case 460800: i=B460800; break;
-		default: return -1;
-	}
-	t->c_cflag = (t->c_cflag & ~CBAUD) | i;
-	return 0;
-}*/
-/*
-static void parse_io_mode(struct config_record *r, char *baud, char *flags) {
-	wl = wl;
-	sscanf(baud, "%ld", &r->baud);
-
-	if (strlen(flags) != 6) return;
-
-	if ((flags[0] == '7' || flags[0] == '8')
-	&& (flags[1] == 'N' || flags[1] == 'E' || flags[1] == 'O')
-	&& (flags[2] == '1' || flags[2] == '2')
-	&& (flags[3] == 'H' || flags[3] == 'S' || flags[3] == 'N')
-	&& (flags[4] == 'C' || flags[4] == 'N' || flags[4] == 'B')
-	&& (flags[5] == 'C' || flags[5] == 'N' || flags[5] == 'B')) {
-		r->csize = flags[0] - '0';
-		r->parity = flags[1];
-		r->stops = flags[2] - '0';
-		r->shake = flags[3];
-		r->crnli = flags[4];
-		r->crnlo = flags[5];
-		return;
-	}
-}
-*/
-/*
-void init_port(int Handle, struct config_record *r) {
-	struct termios *t;
-	int Ret;
-
-	t = r->linemode==1 ? &tios_line : &tios_raw;
-	t->c_cflag |= (r->csize == 8) ? CS8 : CS7;
-	if (r->parity != 'N') t->c_cflag |= PARENB;
-	if (r->parity == 'O') t->c_cflag |= PARODD;
-	if (r->stops == 2) t->c_cflag |= CSTOPB;
-	if (r->shake == 'H') {
-		t->c_cflag |= CRTSCTS;
-	} else if (r->shake == 'S') {
-		t->c_iflag = IXON;
-		t->c_cc[VSTART] = 0x11;
-		t->c_cc[VSTOP] = 0x13;
-	}
-	if (r->linemode == 1) {
-		switch (r->crnli) {
-			case 'N': t->c_iflag |= INLCR; break;
-			case 'B': t->c_iflag |= ICRNL; break;
-		}
-	}
-
-	if (set_baud_rate(t, r->baud)) fprintf(stderr, "Invalid baud rate\r\n");
-	t->c_cflag |= HUPCL; // Hangup on close
-	Ret = tcsetattr(Handle, TCSANOW, t);
-	if (Ret) {
-		perror("Cannot set termios - tcsetattr()");
-		Done(6);
-	}
-}
-*/
 void SigTermCaught() {
 	/* Quit properly */
 	Done(0);
@@ -483,47 +398,7 @@ void TryLock(char *name) {
 
 	Lock(Fl);
 }
-/*
-void ReOpenSerial() {
-	log_msg("ReOpenSerial()\n");
 
-	// Close old cua file and unlock it
-	if (CuaFd >= 0) {
-		close(CuaFd);
-		CuaFd = -1;
-	}
-#ifdef LOCKDIR
-	Unlock();
-#endif
-
-	// Open new file
-	{
-		// Lock new
-#ifdef LOCKDIR
-		// Make lock name
-		char *FirstPtr = rindex(CuaName, '/');
-		sprintf(LockName, "%s/LCK..%s", LOCKDIR, FirstPtr);
-
-		TryLock(LockName);
-
-		if (!LockName[0]) Done(5);
-#endif
-
-		// Open modem file itself
-		if (CuaName) CuaFd = open(CuaName, O_RDWR);
-		if (CuaFd < 0) {
-#ifdef LOCKDIR
-			Unlock();
-#endif
-
-			fprintf(stderr, "Aieee... cannot open serial file!\r\n");
-			exit(2);
-		} else {
-			fcntl(CuaFd, F_SETFL, O_NONBLOCK);
-		}
-	}
-}
-*/
 int OpenX25Socket(char *local, char *remote) {
 	int ret = -1;
 
@@ -1022,6 +897,7 @@ printf("MASK: %d\n", mask);
 		}
 	} else if (p->dir == 0x0e && p->pltype == 0) {
 		// Session timeout (or maybe something else, too...)
+		IProtoSEND(c, 0x44, NULL);
 		c->X25LoggedIn[cci] = 0;
 
 		// logout from other exchanges, too...
