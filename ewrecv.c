@@ -806,7 +806,6 @@ int SendChar(struct connection *c, char Chr) {
 	// filter newlines for X.25 connection
 	if (Chr != 10) {
 		c->X25WriteBuf[c->X25WriteBufLen++] = Chr;
-printf("ADDED\n");
 	}
 
 	return 1;
@@ -1203,6 +1202,8 @@ void LoginPromptRequest(struct connection *conn, char *exch, char *d) {
 	}
 
 	if (conn && conn->authenticated < 2) return;
+
+	conn->X25ConnCount = 0;
 
 	char *p;
 	p = strtok(exch,",");
