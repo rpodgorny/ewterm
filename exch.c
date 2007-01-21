@@ -72,6 +72,8 @@ int ActJob = 0;
 int LastMask = 0;
 int WeKnowItIsComing = 0;
 
+char X25Exchange[64];
+
 char ConnUsername[32];
 
 void LogOff(), GetJobData();
@@ -320,6 +322,29 @@ void ChangePassword2() {
 	GetString(ActPasswd, 29, "Password", DoSendPassword, CancelCommand);
 }
 
+void DoSendX25Exchange() {
+	// proceed with login (username) request
+	IProtoASK(connection, 0x41, X25Exchange);
+}
+
+void ChangeX25Exchange(char *list) {
+	char title[256] = "";
+	sprintf(title, "Exchanges: %s", list);
+
+	beep();
+	InputRequest = 1;
+	ShadowHelp = 1;
+	GetString(X25Exchange, 63, title, DoSendX25Exchange, CancelCommand);
+}
+
+void SendX25Exchange(char *list) {
+	if (X25Exchange[0] == 0) {
+		ChangeX25Exchange(list);
+	} else {
+		DoSendX25Exchange();
+	}
+}
+
 void DoSendCommonPassword() {
 	char *TmpPtr;
 
@@ -395,7 +420,6 @@ void StartLogOn() {
 	MainMenu[8].Text = "Stop";
 	MainMenu[8].Addr = StopLogOn;
 	RedrawKeys();
-	///IProtoASK(connection, 0x41, "test1,test2");
 	IProtoASK(connection, 0x50, NULL);
 }
 
@@ -722,6 +746,7 @@ void GotPromptEnd(struct connection *c, char type, char *job, char *d) {
 }
 
 void GotLoginError(struct connection *c, char *d) {
+	X25Exchange[0] = 0;
 	ActUsrname[0] = 0; ActPasswd[0] = 0;
 	LoggedOff = 1;
 	RefreshLogTxt();
@@ -770,7 +795,7 @@ void GotUserRequest(struct connection *c, char *d) {
 }
 
 void GotExchangeList(struct connection *c, char *exch, char *d) {
-	IProtoASK(connection, 0x41, exch);
+	SendX25Exchange(exch);
 }
 
 void AskForBurst() {
