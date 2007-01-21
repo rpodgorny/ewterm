@@ -237,6 +237,7 @@ void ForceCommand() {
 }
 
 void DoLogOff() {
+	X25Exchange[0] = 0;
 	ActUsrname[0] = 0;
 	ActPasswd[0] = 0; /* Clear password when logon invoked by user */
 
