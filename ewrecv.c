@@ -1305,12 +1305,9 @@ void ExchangeListRequest(struct connection *c, char *d) {
 
 	int i = 0;
 	for (i = 0; i < X25ConnCount; i++) {
-		strcat(list, ",");
+		if (i > 0) strcat(list, ",");
 		strcat(list, X25Conns[i].name);
 	}
-
-	// cut off the trailing comma
-	if (i > 0) list[strlen(list)-1] = 0;
 
 	IProtoSEND(c, 0x50, list);
 }

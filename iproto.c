@@ -371,6 +371,12 @@ ProcessIProtoChar(struct connection *conn, unsigned char Chr) {
 	    break;
 	  }
 	  break;
+	case 0x50: /* exchange list */
+	  if (conn->handlers->SENDExchangeList) {
+	    conn->handlers->SENDExchangeList(conn, conn->IProtoPacket, NULL);
+	    break;
+	  }
+	  break;
 	default:
 	  break;
       }
