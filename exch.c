@@ -395,7 +395,8 @@ void StartLogOn() {
 	MainMenu[8].Text = "Stop";
 	MainMenu[8].Addr = StopLogOn;
 	RedrawKeys();
-	IProtoASK(connection, 0x41, "test1,test2");
+	///IProtoASK(connection, 0x41, "test1,test2");
+	IProtoASK(connection, 0x50, NULL);
 }
 
 void DispOMTUser(struct mml_command *mml) {
@@ -760,12 +761,16 @@ void GotHeader(struct connection *c, char *job, char *omt, char *uname, char *ex
 	RedrawStatus();
 }
 
-void GotUserRequest(struct connection *c, char *unknown_radekp) {
+void GotUserRequest(struct connection *c, char *d) {
 	if (ConnUsername[0] != 0) {
 		IProtoSEND(c, 0x01, ConnUsername);
 	} else {
 		IProtoSEND(c, 0x01, getenv("USER"));
 	}
+}
+
+void GotExchangeList(struct connection *c, char *exch, char *d) {
+	IProtoASK(connection, 0x41, exch);
 }
 
 void AskForBurst() {
@@ -846,7 +851,7 @@ struct connection *MkConnection(int SockFd) {
 		NULL,
 
 		/* 6.1 */
-		NULL,
+		GotExchangeList,
 
 		/* 2.1a */
 		NULL,
