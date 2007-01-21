@@ -84,7 +84,7 @@ struct packet *login_packet(unsigned short sessid, char *username, char *passwor
 
 	block_addchild(ret->data, "4-3-2-3", (unsigned char *)password, strlen(password));
 
-	memset(xxx, 0x00, 1);
+	memset(xxx, 0x01, 1);
 	block_addchild(ret->data, "4-3-2-5", xxx, 1);
 
 	return ret;
