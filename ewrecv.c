@@ -982,17 +982,16 @@ printf("MASK: %d\n", mask);
 	if (p->dir == 2) {
 		if (strlen(prompt)) {
 			// this is a command from EWSD
-			c->LastConnId = p->connid;
-			///c->LastSessId = p->sessid;
-			c->LastTail = p->tail;
+			c->X25LastConnId[cci] = p->connid;
+			c->X25LastTail[cci] = p->tail;
 
 			IProtoSEND(c, 0x40, NULL);
 			Write(c, prompt, strlen(prompt));
 			IProtoSEND(c, 0x41, "I");
 
-			c->Prompt = 'I';
+			c->X25Prompt[cci] = 'I';
 		} else {
-			c->Prompt = 0;
+			c->X25Prompt[cci] = 0;
 		}
 	} else if (p->dir == 3 && p->pltype == 1) {
 		// "Command accepted" confirmation
@@ -1240,7 +1239,9 @@ void LoginPromptRequest(struct connection *conn, char *exch, char *d) {
 
 	IProtoSEND(conn, 0x41, "U");
 
-	conn->Prompt = 'U';
+	for (i = 0; i < conn->X25ConnCount; i++) {
+		conn->X25Prompt[i] = 'U';
+	}
 }
 
 void PromptRequest(struct connection *conn, char *d) {
@@ -1319,7 +1320,9 @@ c->X25WriteBuf[c->X25WriteBufLen++] = 'c';
 		c->X25LoggedIn[i] = 0;
 	}
 
-	c->Prompt = 'X';
+	for (i = 0; i < c->X25ConnCount; i++) {
+		c->X25Prompt[i] = 'X';
+	}
 }
 
 void ExchangeListRequest(struct connection *c, char *d) {
@@ -2038,6 +2041,7 @@ int main(int argc, char *argv[]) {
 				int j = 0;
 				for (j = 0; j < c->X25ConnCount; j++) {
 					int fd = X25Conns[c->X25Conns[j]].fd;
+					int cci = j;
 
 					if (fd < 0 || !FD_ISSET(fd, &WriteQ)) continue;
 
@@ -2045,16 +2049,18 @@ int main(int argc, char *argv[]) {
 					sent = 1;
 
 					struct packet *p = NULL;
-					if (!c->Prompt) {
+					if (!c->X25Prompt[cci]) {
 						p = command_packet(c->id, c->X25WriteBuf, c->X25WriteBufLen);
-					} else if (c->Prompt == 'I') {
-						p = command_confirmation_packet(c->LastConnId, c->id, c->LastTail, c->X25WriteBuf, c->X25WriteBufLen);
-					} else if (c->Prompt == 'U') {
+					} else if (c->X25Prompt[cci] == 'I') {
+						p = command_confirmation_packet(c->X25LastConnId[cci], c->id, c->X25LastTail[cci], c->X25WriteBuf, c->X25WriteBufLen);
+						c->X25Prompt[cci] = 0;
+					} else if (c->X25Prompt[cci] == 'U') {
 						strncpy(c->X25User, c->X25WriteBuf, c->X25WriteBufLen);
 						c->X25User[c->X25WriteBufLen] = 0;
 
 						IProtoSEND(c, 0x41, "P");
-					} else if (c->Prompt == 'P') {
+						c->X25Prompt[cci] = 'P';
+					} else if (c->X25Prompt[cci] == 'P') {
 						strncpy(c->X25Passwd, c->X25WriteBuf, c->X25WriteBufLen);
 						c->X25Passwd[c->X25WriteBufLen] = 0;
 
@@ -2065,8 +2071,10 @@ int main(int argc, char *argv[]) {
 						if (idx) *idx = 0;
 
 						p = login_packet(c->id, c->X25User, c->X25Passwd);
-					} else if (c->Prompt == 'X') {
+						c->X25Prompt[cci] = 0;
+					} else if (c->X25Prompt[cci] == 'X') {
 						p = logout_packet(c->id);
+						c->X25Prompt[cci] = 0;
 					}
 
 					unsigned char buf[32000];
@@ -2086,15 +2094,7 @@ int main(int argc, char *argv[]) {
 					}
 				}
 
-				if (sent) {
-					if (c->Prompt == 'U') {
-						c->Prompt = 'P';
-					} else {
-						c->Prompt = 0;
-					}
-
-					c->X25WriteBufLen = 0;
-				}
+				if (sent) c->X25WriteBufLen = 0;
 			}
 reselect:
 			;
