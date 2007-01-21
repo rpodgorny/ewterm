@@ -1944,12 +1944,30 @@ int main(int argc, char *argv[]) {
 
 				if (fd < 0 || !FD_ISSET(fd, &ReadQ)) continue;
 
-
 				log_msg("FROM X.25\n");
 
+				// find owner
+				struct connection *c = NULL;
+				int cci = -1;
+
+				int j = 0;
+				for (j = 0; j < ConnCount; j++) {
+					int k = 0;
+					for (k = 0; k < Conns[j]->X25ConnCount; k++) {
+						if (X25Conns[Conns[j]->X25Conns[k]].fd == fd) {
+							c = Conns[j];
+							cci = k;
+							break;
+						}
+					}
+
+					// found
+					if (c) break;
+				}
+
 				/// TODO: this should be connection-specific
-				static unsigned char pbuf[320000]; // persistent buffer
-				static int pbuflen = 0;
+///				static unsigned char pbuf[320000]; // persistent buffer
+///				static int pbuflen = 0;
 
 				unsigned char buf[32000];
 
@@ -1992,28 +2010,28 @@ int main(int argc, char *argv[]) {
 
 					if (p && p->rawdata && p->data == NULL) {
 						// the block deserialize failed
-						if (pbuflen == 0) {
+						if (c->X25BufLen[cci] == 0) {
 							// first truncated packet (copy with header)
-							memcpy(pbuf, buf, r);
-							pbuflen = r;
+							memcpy(c->X25Buf[cci], buf, r);
+							c->X25BufLen[cci] = r;
 							packet_delete(p); p = NULL;
 						} else {
 							// continuation (copy without header)
-							memcpy(pbuf+pbuflen, p->rawdata, p->rawdatalen);
-							pbuflen += p->rawdatalen;
+							memcpy(c->X25Buf[cci]+c->X25BufLen[cci], p->rawdata, p->rawdatalen);
+							c->X25BufLen[cci] += p->rawdatalen;
 							packet_delete(p); p = NULL;
 						}
 					}
 
 					// test whether the packet is now complete
-					if (!p && pbuflen > 0) {
-						p = packet_deserialize(pbuf, pbuflen);
+					if (!p && c->X25BufLen[cci] > 0) {
+						p = packet_deserialize(c->X25Buf[cci], c->X25BufLen[cci]);
 						if (!p || (p->rawdata && !p->data)) {
 							// not complete yet
 							packet_delete(p); p = NULL;
 						} else {
 							// complete
-							pbuflen = 0;
+							c->X25BufLen[cci] = 0;
 						}
 					}
 				
