@@ -1965,10 +1965,6 @@ int main(int argc, char *argv[]) {
 					if (c) break;
 				}
 
-				/// TODO: this should be connection-specific
-///				static unsigned char pbuf[320000]; // persistent buffer
-///				static int pbuflen = 0;
-
 				unsigned char buf[32000];
 
 				int r = read(fd, buf, 32000);
