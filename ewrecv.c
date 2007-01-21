@@ -1002,16 +1002,24 @@ printf("MASK: %d\n", mask);
 		Write(c, tmp, strlen(tmp));
 	} else if (p->dir == 0x0c && p->pltype == 1) {
 		if (strlen(unkx3_3)) {
-			// Login success
-			IProtoSEND(c, 0x43, NULL);
-
-			// TODO: is this really correct?
-			// send input prompt (some command may be waiting in ewterm)
-			IProtoSEND(c, 0x40, NULL);
-			Write(c, "<", 1);
-			IProtoSEND(c, 0x41, "<");
-
 			c->X25LoggedIn[cci] = 1;
+
+			// Login success to terms (only when logged to all exchanges)
+			//int i = 0;
+			for (i = 0; i < c->X25ConnCount; i++) {
+				if (c->X25LoggedIn[i] != 1) break;
+			}
+
+			// all exchanges have us logged in
+			if (i == c->X25ConnCount) {
+				IProtoSEND(c, 0x43, NULL);
+
+				// TODO: is this really correct?
+				// send input prompt (some command may be waiting in ewterm)
+				IProtoSEND(c, 0x40, NULL);
+				Write(c, "<", 1);
+				IProtoSEND(c, 0x41, "<");
+			}
 		} else {
 			// Login failure
 			IProtoSEND(c, 0x42, NULL);
@@ -1190,7 +1198,10 @@ void LoginPromptRequest(struct connection *conn, char *exch, char *d) {
 
 	int i = 0;
 	for (i = 0; i < conn->X25ConnCount; i++) {
-		if (conn->X25LoggedIn[i]) return;
+		if (conn->X25LoggedIn[i]) {
+			Write(conn, "ALREADY LOGGED IN, THIS SHOULDN'T HAPPEN!\n", 42);
+			return;
+		}
 	}
 
 	if (conn && conn->authenticated < 2) return;
@@ -1200,12 +1211,25 @@ void LoginPromptRequest(struct connection *conn, char *exch, char *d) {
 	char *p;
 	p = strtok(exch,",");
 	while (p != NULL) {
+		int found = 0;
+
 		int i = 0;
 		for (i = 0; i < X25ConnCount; i++) {
-			if (strcmp(X25Conns[i].name, p) != 0) continue;
+			if (strcasecmp(X25Conns[i].name, p) != 0) continue;
 			
 			conn->X25Conns[conn->X25ConnCount] = i;
 			conn->X25ConnCount++;
+
+			found = 1;
+		}
+
+		// not found
+		if (found == 0) {
+			char msg[256];
+			sprintf(msg, "EXCHANGE %s NOT FOUND IN LIST!\n\n", p);
+			Write(conn, msg, strlen(msg));
+			IProtoSEND(conn, 0x42, NULL);
+			return;
 		}
 
 		p = strtok(NULL, ",");
