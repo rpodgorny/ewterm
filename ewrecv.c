@@ -946,7 +946,7 @@ printf("SEQ: %d\n", seq);
 
 	Write(c, "\n\n", 2);
 
-	if (seq > 0) {
+	if (seq > 1) {
 		char tmp[128] = "";
 		sprintf(tmp, "CONTINUATION TEXT %04d\n\n", seq-1);
 		Write(c, tmp, strlen(tmp));
