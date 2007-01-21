@@ -99,12 +99,14 @@ struct connection {
 	char X25User[256];
 	char X25Passwd[256];
 
+	int X25ConnCount;
 	int X25Conns[32];
 	int X25LoggedIn[32];
 	char X25Prompt[32];
 	unsigned short X25LastConnId[32];
 	unsigned char X25LastTail[32];
-	int X25ConnCount;
+	unsigned char X25Buf[32][320000]; // persistent buffer for data coming from X.25
+	int X25BufLen[32];
 
 	char *X25WriteBuf;
 	int X25WriteBufLen;
