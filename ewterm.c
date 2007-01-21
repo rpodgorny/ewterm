@@ -143,7 +143,7 @@ void MainProc() {
 	RecreateWindows();
   
 	AddStr("EWTerm "VERSION" written by Petr Baudis, 2001, 2002, 2003\n", 0, 0);
-	AddStr("X.25 functionality added by Radek Podgorny, 2006\n\n", 0, 0);
+	AddStr("X.25 functionality added by Radek Podgorny, 2006, 2007\n\n", 0, 0);
 	AddStr("Press F1 for help\n\n", 0, 0);
   
 	if (BadOpt) AddEStr("WARNING: Couldn't read option file: Bad version\n\n", 0, 0);
@@ -448,7 +448,7 @@ int main(int argc, char **argv) {
 	wl = wl;
 
 	printf("EWTerm "VERSION" written by Petr Baudis, 2001, 2002\n");
-	printf("X.25 functionality added by Radek Podgorny, 2006\n");
+	printf("X.25 functionality added by Radek Podgorny, 2006, 2007\n");
 
 	/* Set some directories to CWD */
 	getcwd(LogFName, 255);

@@ -1570,7 +1570,7 @@ int main(int argc, char *argv[]) {
 	int ac, swp = 0, ForkOut = 1, PrintLog = 0, OldPID;
 
 	printf("EWReceiver "VERSION" written by Petr Baudis, 2001, 2002\n");
-	printf("X.25 functionality added by Radek Podgorny, 2006\n");
+	printf("X.25 functionality added by Radek Podgorny, 2006, 2007\n");
 
 	/* process options */  
 	///strcpy(CuaName, DEFDEVICE);
