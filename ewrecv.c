@@ -108,19 +108,10 @@ enum {
 	CM_PROMPT, /* exchange prompt ready */
 } CommandMode = 0;
 
-///int WantPrompt = 0; /* get prompt when CMD_READY */
-///char Prompt = 0; /* prompt type */
-///int LoggedIn = 0; /* logged in or not? */ /* 0 == not, 1 == in progress, 2 == yes */
-
 /// TODO: get rid of this shit
 int LastId = 1;
 
-///unsigned short LastConnId;
-///unsigned short LastSessId;
-///unsigned char LastTail;
-
 #define WRITEBUF_MAX 16329
-///char WriteBuf[WRITEBUF_MAX] = ""; int WriteBufLen;
 
 /* Sockets */
 
@@ -141,10 +132,6 @@ struct X25Connection X25Conns[32];
 int X25ConnCount = 0;
 
 char X25Local[256] = "";
-//char X25Remote[256] = "";
-
-///char X25User[256] = "";
-///char X25Passwd[256] = "";
 
 /* Log files */
 
@@ -782,8 +769,6 @@ void LogStr(char *s, int len) {
 }
 
 int SendChar(struct connection *c, char Chr) {
-///	if (c && !c->LoggedIn) return -1;
-
 	if (c && c->authenticated < 2) return -1;
 
 	if (Chr > 32 || Chr == 10 || Chr == 8 || Chr == 13) LogChar(Chr);
@@ -791,20 +776,14 @@ int SendChar(struct connection *c, char Chr) {
 	if (Chr == 13) Chr = 10;
  
 	pdebug("SendChar() %c/x%x \n", Chr, Chr);
-/* TODO: remove echo altogether?
-	pdebug("%p(%d)\n", c, c?c->IProtoState:-1);
-	if (c && c->IProtoState != IPR_DC4) {
-		// send back to client
-		Write(c, &Chr, 1);
-	}
-*/
+
 	if (c->X25WriteBufLen >= WRITEBUF_MAX - 1) {
 		log_msg("--- ewrecv: write [%x] error, write buffer full! (over %d)\n", Chr, WRITEBUF_MAX);
 		return 0;
 	}
 
-	// filter newlines for X.25 connection
-	if (Chr != 10) {
+	// filter newlines for X.25 connection but only when it's not the first char in buffer
+	if (Chr != 10 || c->X25WriteBufLen == 0) {
 		c->X25WriteBuf[c->X25WriteBufLen++] = Chr;
 	}
 
@@ -1003,6 +982,10 @@ printf("MASK: %d\n", mask);
 		if (strlen(unkx3_3)) {
 			c->X25LoggedIn[cci] = 1;
 
+			char msg[256] = "";
+			sprintf(msg, "\n\n:::LOGIN SUCCESS ON %s\n\n", X25Conns[c->X25Conns[cci]].name);
+			Write(c, msg, strlen(msg));
+
 			// Login success to terms (only when logged to all exchanges)
 			//int i = 0;
 			for (i = 0; i < c->X25ConnCount; i++) {
@@ -1022,12 +1005,16 @@ printf("MASK: %d\n", mask);
 		} else {
 			// Login failure
 			IProtoSEND(c, 0x42, NULL);
+
+			// logout from other exchanges, too...
+			LogoutRequest(c, NULL);
 		}
 	} else if (p->dir == 0x0e && p->pltype == 0) {
 		// Session timeout (or maybe something else, too...)
-		IProtoSEND(c, 0x44, NULL);
-
 		c->X25LoggedIn[cci] = 0;
+
+		// logout from other exchanges, too...
+		LogoutRequest(c, NULL);
 	}
 
 	char jobnr_s[10] = "";
@@ -1295,7 +1282,7 @@ void SendIntro(struct connection *conn) {
 
 	if (!conn->authenticated) return;
 	IProtoSEND(conn, 0x05, ComposeUser(conn, 0));
-/* TODO
+/* TODO: what is this?
 	if (conn->LoggedIn == 2) IProtoSEND(conn, 0x43, NULL);
 */
 	if (conn->authenticated < 2) {
@@ -1308,20 +1295,20 @@ void SendIntro(struct connection *conn) {
 }
 
 void LogoutRequest(struct connection *c, char *d) {
-	// Just send success for now
 	if (!c->authenticated) return;
-	IProtoSEND(c, 0x44, NULL);
-
-// TODO: this is a hack to make it select()
-c->X25WriteBuf[c->X25WriteBufLen++] = 'c';
 
 	int i = 0;
 	for (i = 0; i < c->X25ConnCount; i++) {
-		c->X25LoggedIn[i] = 0;
-	}
+		if (c->X25LoggedIn[i] == 0) continue;
 
-	for (i = 0; i < c->X25ConnCount; i++) {
+		c->X25LoggedIn[i] = 0;
 		c->X25Prompt[i] = 'X';
+
+		char msg[256] = "";
+		sprintf(msg, "\n\n:::LOGOUT FROM %s\n\n", X25Conns[c->X25Conns[i]].name);
+		Write(c, msg, strlen(msg));
+
+		IProtoSEND(c, 0x44, NULL);
 	}
 }
 
@@ -1860,12 +1847,17 @@ int main(int argc, char *argv[]) {
 			FD_SET(X25Conns[i].fd, &ReadQ);
 			if (X25Conns[i].fd > MaxFd) MaxFd = X25Conns[i].fd;
 
-			// add to write queue on when we have something to write
+			// add to write queue on when we have something to write or have a logout pending
 			int j = 0;
 			for (j = 0; j < ConnCount; j++) {
-				if (Conns[j]->X25WriteBufLen == 0) continue;
-				
+				char logout = 0;
 				int k = 0;
+				for (k = 0; k < Conns[j]->X25ConnCount; k++) {
+					if (Conns[j]->X25Prompt[k] == 'X') logout = 1;
+				}
+
+				if (Conns[j]->X25WriteBufLen == 0 && !logout) continue;
+				
 				for (k = 0; k < Conns[j]->X25ConnCount; k++) {
 					if (Conns[j]->X25Conns[k] == i) FD_SET(X25Conns[i].fd, &WriteQ);
 				}
@@ -1971,16 +1963,10 @@ int main(int argc, char *argv[]) {
 
 				if (r <= 0 && errno != EINTR) {
 					perror("--- ewrecv: Read from X25Fd failed");
-					//Done(4);
-
-					// TODO: shouldn't Done() be really called?
-					//printf("Trying to reconnect...\n");
 
 					shutdown(fd, SHUT_RDWR);
 					close(fd);
 					X25Conns[i].fd = fd = -1;
-
-					//ReOpenX25();
 				} else {
 					// TODO: why else?
 					///if (CommandMode == CM_READY) CommandMode = CM_BUSY;
@@ -1989,7 +1975,6 @@ int main(int argc, char *argv[]) {
 
 					// send confirmation
 					// TODO: create something like packet_copy()
-					///if (p->dir == 2 && p->pltype == 2) {
 					if (p && p->dir == 2 && p->pltype != 0) {
 						struct packet *confirm = malloc(sizeof(struct packet));
 						memcpy(confirm, p, sizeof(struct packet));
