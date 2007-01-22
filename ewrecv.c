@@ -1737,16 +1737,19 @@ int main(int argc, char *argv[]) {
 			// add to write queue on when we have something to write or have a logout pending
 			int j = 0;
 			for (j = 0; j < ConnCount; j++) {
+				struct connection *c = Conns[j];
+
+				/// TODO: make function for this?
 				char logout = 0;
 				int k = 0;
-				for (k = 0; k < Conns[j]->X25ConnCount; k++) {
-					if (Conns[j]->X25Prompt[k] == 'X') logout = 1;
+				for (k = 0; k < c->X25ConnCount; k++) {
+					if (c->X25Prompt[k] == 'X') logout = 1;
 				}
 
-				if (Conns[j]->X25WriteBufLen == 0 && !logout) continue;
+				if (c->X25WriteBufLen == 0 && !logout) continue;
 				
-				for (k = 0; k < Conns[j]->X25ConnCount; k++) {
-					if (Conns[j]->X25Conns[k] == i) FD_SET(X25Conns[i].fd, &WriteQ);
+				for (k = 0; k < c->X25ConnCount; k++) {
+					if (c->X25Conns[k] == i) FD_SET(X25Conns[i].fd, &WriteQ);
 				}
 			}
 		}
@@ -1790,6 +1793,7 @@ int main(int argc, char *argv[]) {
 			/* terminal error */
 			for (i = 0; i < ConnCount; i++) {
 				struct connection *c = Conns[i];
+
 				if (!FD_ISSET(c->Fd, &ErrorQ)) continue;
 
 				ErrorConnection(c);
@@ -1919,7 +1923,14 @@ int main(int argc, char *argv[]) {
 			for (i = 0; i < ConnCount; i++) {
 				struct connection *c = Conns[i];
 
-				if (c->X25WriteBufLen == 0) continue;
+				/// TODO: handle this better (make a function)
+				char logout = 0;
+				int k = 0;
+				for (k = 0; k < c->X25ConnCount; k++) {
+					if (c->X25Prompt[k] == 'X') logout = 1;
+				}
+
+				if (c->X25WriteBufLen == 0 && !logout) continue;
 
 				/// TODO: fix this workaround
 				int sent = 0;
