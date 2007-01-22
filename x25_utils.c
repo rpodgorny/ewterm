@@ -113,7 +113,8 @@ struct packet *logout_packet(unsigned short sessid) {
 
 	*(unsigned short *)(xxx) = htons(0);
 	*(unsigned short *)(xxx+2) = htons(0); // job nr.
-	*(unsigned short *)(xxx+4) = htons(0xbd6c);
+	//*(unsigned short *)(xxx+4) = htons(0xbd6c);
+	*(unsigned short *)(xxx+4) = htons(sessid);
 	*(unsigned short *)(xxx+6) = htons(0x0001);
 	xxx[8] = 0x20;//
 	xxx[9] = 0x0b;//
