@@ -888,8 +888,25 @@ printf("MASK: %d\n", mask);
 				Write(c, "<", 1);
 				IProtoSEND(c, 0x41, "<");
 			}
+		} else if (seq == 0x0303) {
+			// INVALID PASSWORD
+
+			IProtoSEND(c, 0x42, NULL);
+
+			// logout from other exchanges, too...
+			LogoutRequest(c, NULL);
+		} else if (seq == 0x0307) {
+			// SESSION IN USE
+			char msg[256] = "";
+			sprintf(msg, "\n\n:::SESSION ON %s IN USE, FORCE LOGIN? (+/-)\n\n", X25Conns[c->X25Conns[cci]].name);
+
+			IProtoSEND(c, 0x40, NULL);
+			Write(c, msg, strlen(msg));
+			IProtoSEND(c, 0x41, "I");
+
+			c->X25Prompt[cci] = 'R';
 		} else {
-			// Login failure
+			// other errors
 			IProtoSEND(c, 0x42, NULL);
 
 			// logout from other exchanges, too...
@@ -1971,6 +1988,16 @@ int main(int argc, char *argv[]) {
 						c->X25Prompt[cci] = 0;
 					} else if (c->X25Prompt[cci] == 'X') {
 						p = logout_packet(c->id);
+						c->X25Prompt[cci] = 0;
+					} else if (c->X25Prompt[cci] == 'R') {
+						if (c->X25WriteBufLen == 1 && c->X25WriteBuf[0] == '+') {
+							p = login_packet(c->id, c->X25User, c->X25Passwd, 1);
+						} else {
+							char msg[256] = "";
+							sprintf(msg, "\n\n:::WRONG ANSWER!!!\n\n");
+							Write(c, msg, strlen(msg));
+						}
+
 						c->X25Prompt[cci] = 0;
 					}
 
