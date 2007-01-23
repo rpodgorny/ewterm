@@ -245,7 +245,13 @@ void Done(int Err) {
 }
 
 void SigTermCaught() {
-	/* Quit properly */
+	/// TODO: this does not work since we quit before next select
+	// Logout all connections
+	int i = 0;
+	for (i = 0; i < ConnCount; i++) {
+		LogoutRequest(Conns[i], NULL);
+	}
+
 	Done(0);
 }
 
@@ -890,7 +896,6 @@ printf("MASK: %d\n", mask);
 			}
 		} else if (seq == 0x0303) {
 			// INVALID PASSWORD
-
 			IProtoSEND(c, 0x42, NULL);
 
 			// logout from other exchanges, too...
@@ -1086,15 +1091,10 @@ void CancelPromptRequest(struct connection *conn, char *d) {
 void LoginPromptRequest(struct connection *conn, char *exch, char *d) {
 	log_msg("LoginPromptRequest()\n");
 
-	int i = 0;
-	for (i = 0; i < conn->X25ConnCount; i++) {
-		if (conn->X25LoggedIn[i]) {
-			Write(conn, "ALREADY LOGGED IN, THIS SHOULDN'T HAPPEN!\n", 42);
-			return;
-		}
-	}
-
 	if (conn && conn->authenticated < 2) return;
+
+	// logout first when needed
+	LogoutRequest(conn, NULL);
 
 	conn->X25ConnCount = 0;
 
@@ -1130,6 +1130,7 @@ void LoginPromptRequest(struct connection *conn, char *exch, char *d) {
 
 	IProtoSEND(conn, 0x41, "U");
 
+	int i = 0;
 	for (i = 0; i < conn->X25ConnCount; i++) {
 		conn->X25Prompt[i] = 'U';
 	}
