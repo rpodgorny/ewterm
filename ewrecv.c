@@ -1963,8 +1963,19 @@ int main(int argc, char *argv[]) {
 					sent = 1;
 
 					struct packet *p = NULL;
-					if (!c->X25Prompt[cci]) {
-						p = command_packet(c->id, c->X25WriteBuf, c->X25WriteBufLen);
+					if (c->X25Prompt[cci] == 0) {
+						// TODO: create function for this test
+						// are all exchanges ready?
+						int alllogged = 1;
+
+						int k = 0;
+						for (k = 0; k < c->X25ConnCount; k++) {
+							if (c->X25LoggedIn[k] != 1) alllogged = 0;;
+						}
+
+						if (alllogged) {
+							p = command_packet(c->id, c->X25WriteBuf, c->X25WriteBufLen);
+						}
 					} else if (c->X25Prompt[cci] == 'I' || c->X25Prompt[cci] == 'p') {
 						p = command_confirmation_packet(c->X25LastConnId[cci], c->id, c->X25LastTail[cci], c->X25WriteBuf, c->X25WriteBufLen);
 						c->X25Prompt[cci] = 0;
@@ -1996,6 +2007,8 @@ int main(int argc, char *argv[]) {
 							char msg[256] = "";
 							sprintf(msg, "\n\n:::WRONG ANSWER!!!\n\n");
 							Write(c, msg, strlen(msg));
+
+							LogoutRequest(c, NULL);
 						}
 
 						c->X25Prompt[cci] = 0;
