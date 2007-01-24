@@ -126,6 +126,7 @@ struct X25Connection {
 	char name[256];
 	char address[256];
 	int fd;
+	int conn;
 };
 
 struct X25Connection X25Conns[32];
@@ -169,10 +170,10 @@ int LineLen = 0; /* length of the last line */
 char LockName[100] = "";
 #endif
 
-static char *wl = "4z";
+///static char *wl = "4z";
 
 /* Terminal thingies */
-
+/*
 static struct termios tios_line = {
 	IGNBRK | IGNPAR,
 	0,
@@ -190,7 +191,7 @@ static struct termios tios_raw = {
 	N_TTY,
 	{ 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 };
-
+*/
 struct config_record {
 	struct config_record *next;
 	char channel[64];
@@ -243,6 +244,9 @@ void Done(int Err) {
 
 	exit(Err);
 }
+
+/// TODO: remove this shit
+void LogoutRequest(struct connection *, char *);
 
 void SigTermCaught() {
 	/// TODO: this does not work since we quit before next select
@@ -495,12 +499,21 @@ int OpenX25Socket(char *local, char *remote) {
 		return -1;
 	}
 
-	res = connect(ret, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
+/*	res = connect(ret, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
 	if (res < 0) {
 		perror("connect");
 		close(ret);
 		return -1;
 	}
+*/
+
+	// set non-blocking mode
+	long arg = fcntl(ret, F_GETFL, NULL);
+	arg |= O_NONBLOCK; 
+	fcntl(ret, F_SETFL, arg);
+
+	// this will always fail but that's ok
+	connect(ret, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
 
 	return ret;
 }
@@ -540,11 +553,13 @@ void ReOpenX25() {
 
 		int i = 0;
 		for (i = 0; i < X25ConnCount; i++) {
-			if (X25Conns[i].fd >= 0) continue;
+			if (X25Conns[i].fd >= 0 || X25Conns[i].conn == 1) continue;
 
-			printf("DEBUG: opening %s\n", X25Conns[i].address);
+//printf("DEBUG: opening %s\n", X25Conns[i].address);
 
 			X25Conns[i].fd = OpenX25Socket(X25Local, X25Conns[i].address);
+			X25Conns[i].conn = 0;
+//printf("DEBUG: done opening %s\n", X25Conns[i].address);
 
 #ifdef LOCKDIR
 			///if (X25s[i].fd < 0) exit(2);
@@ -1747,37 +1762,53 @@ int main(int argc, char *argv[]) {
 		ReOpenX25();
 
 		for (i = 0; i < X25ConnCount; i++) {
-			if (X25Conns[i].fd < 0) continue;
+			int fd = X25Conns[i].fd;
 
-			FD_SET(X25Conns[i].fd, &ReadQ);
-			if (X25Conns[i].fd > MaxFd) MaxFd = X25Conns[i].fd;
+			if (fd < 0) continue;
 
-			// add to write queue on when we have something to write or have a logout pending
-			int j = 0;
-			for (j = 0; j < ConnCount; j++) {
-				struct connection *c = Conns[j];
+			// read queue
+			if (X25Conns[i].conn == 1) {
+				FD_SET(fd, &ReadQ);
+				if (fd > MaxFd) MaxFd = fd;
+			}
 
-				/// TODO: make function for this?
-				char logout = 0;
-				int k = 0;
-				for (k = 0; k < c->X25ConnCount; k++) {
-					if (c->X25Prompt[k] == 'X') logout = 1;
+			// write queue
+			if (X25Conns[i].conn == 0) {
+				// wait for connect() result
+				FD_SET(fd, &WriteQ);
+				if (fd > MaxFd) MaxFd = fd;
+			} else {
+				// connected, add only if we have something to say
+				int add = 0;
+
+				int j = 0;
+				for (j = 0; j < ConnCount; j++) {
+					if (Conns[j]->X25WriteBufLen > 0) add = 1;
+
+					int k = 0;
+					for (k = 0; k < Conns[j]->X25ConnCount; k++) {
+						if (Conns[j]->X25Prompt[k] == 'X') add = 1;
+					}
 				}
 
-				if (c->X25WriteBufLen == 0 && !logout) continue;
-				
-				for (k = 0; k < c->X25ConnCount; k++) {
-					if (c->X25Conns[k] == i) FD_SET(X25Conns[i].fd, &WriteQ);
+				if (add) {
+					FD_SET(fd, &WriteQ);
+					if (fd > MaxFd) MaxFd = fd;
 				}
 			}
 		}
 
-		/* select */
+		// timeout variables
+		struct timeval tv;
+		tv.tv_sec = 5;
+		tv.tv_usec = 0;
+
 		if (select(MaxFd + 1, &ReadQ, &WriteQ, &ErrorQ, 0) < 0) {
 			if (errno == EINTR) continue; /* try once more, just some silly signal */
 			perror("--- ewrecv: Select failed");
 			Done(4);
 		} else {
+printf("SELECT\n");
 			/* something from terminal */
 			int i = 0;
 			for (i = 0; i < ConnCount; i++) {
@@ -1871,7 +1902,9 @@ int main(int argc, char *argv[]) {
 				int r = read(fd, buf, 32000);
 
 				if (r <= 0 && errno != EINTR) {
-					perror("--- ewrecv: Read from X25Fd failed");
+					char msg[256] = "";
+					sprintf(msg, "Read from %s failed", X25Conns[i].address);
+					perror(msg);
 
 					shutdown(fd, SHUT_RDWR);
 					close(fd);
@@ -1937,18 +1970,41 @@ int main(int argc, char *argv[]) {
 				log_msg("END FROM X.25\n");
 			}
 
+			// new (or renewed) X.25 connections
+			for (i = 0; i < X25ConnCount; i++) {
+				int fd = X25Conns[i].fd;
+
+				if (fd < 0 || !FD_ISSET(fd, &WriteQ) || X25Conns[i].conn == 1) continue;
+
+				int val;
+				socklen_t len = sizeof(val);
+				getsockopt(fd, SOL_SOCKET, SO_ERROR, &val, &len);
+///printf("CONNECT %s -> %d\n", X25Conns[i].address, val);
+
+				if (val == 0) {
+					// success
+printf("CONNECT %s -> %d\n", X25Conns[i].address, val);
+					X25Conns[i].conn = 1;
+
+
+					// set blocking mode
+					long arg = fcntl(fd, F_GETFL, NULL);
+					arg &= ~O_NONBLOCK; 
+					fcntl(fd, F_SETFL, arg);
+				} else {
+					//failure
+printf("CONNECT %s -> %d\n", X25Conns[i].address, val);
+errno = val;
+perror("CONN");
+					close(X25Conns[i].fd);
+					X25Conns[i].fd = -1;
+				}
+
+			}
+
 			/* something to x25 */
 			for (i = 0; i < ConnCount; i++) {
 				struct connection *c = Conns[i];
-
-				/// TODO: handle this better (make a function)
-				char logout = 0;
-				int k = 0;
-				for (k = 0; k < c->X25ConnCount; k++) {
-					if (c->X25Prompt[k] == 'X') logout = 1;
-				}
-
-				if (c->X25WriteBufLen == 0 && !logout) continue;
 
 				/// TODO: fix this workaround
 				int sent = 0;
@@ -1959,6 +2015,8 @@ int main(int argc, char *argv[]) {
 					int cci = j;
 
 					if (fd < 0 || !FD_ISSET(fd, &WriteQ)) continue;
+
+					if (c->X25WriteBufLen == 0 && c->X25Prompt[cci] != 'X') continue;
 
 					log_msg("TO X.25\n");
 					sent = 1;
@@ -1971,7 +2029,7 @@ int main(int argc, char *argv[]) {
 
 						int k = 0;
 						for (k = 0; k < c->X25ConnCount; k++) {
-							if (c->X25LoggedIn[k] != 1) alllogged = 0;;
+							if (c->X25LoggedIn[k] != 1) alllogged = 0;
 						}
 
 						if (alllogged) {
