@@ -801,169 +801,172 @@ printf("SEQ: %d\n", seq);
 	if (b && b->data) strncpy(answer, (char *)b->data, b->len);
 
 
-	// find the owners
-	struct connection *c = NULL;
-	int gci = -1; // index of X.25 connection (global)
-	int cci = -1; // index of X.25 connection (connection)
-
 	int i = 0;
 	for (i = 0; i < ConnCount; i++) {
-		if (Conns[i]->id != p->sessid) continue;
+		struct connection *c = Conns[i];
 
-		c = Conns[i];
-		break;
-	}
-
-	for (i = 0; i < c->X25ConnCount; i++) {
-		if (X25Conns[c->X25Conns[i]].fd == fd) {
-			cci = i;
-			gci = c->X25Conns[i];
-			break;
+		if (p->sessid == 0 && c->alarms) {
+			// it's alarm but we want it
+		} else if (c->id == p->sessid) {
+			// it's a message for us
+		} else {
+			// we don't want this message
+			continue;
 		}
-	}
 
+		int gci = -1; // index of X.25 connection (global)
+		int cci = -1; // index of X.25 connection (connection)
 
-	Write(c, "\n\n", 2);
+		for (i = 0; i < c->X25ConnCount; i++) {
+			if (X25Conns[c->X25Conns[i]].fd == fd) {
+				cci = i;
+				gci = c->X25Conns[i];
+				break;
+			}
+		}
 
-	if (seq > 1) {
-		char tmp[128] = "";
-		sprintf(tmp, "CONTINUATION TEXT %04d\n\n", seq-1);
-		Write(c, tmp, strlen(tmp));
-	}
+		Write(c, "\n\n", 2);
 
-	char header[256] = "";
-	GenHeader(exch, apsver, patchver, date, time, jobnr, omt, user, msggrp, mask, hint, header);
-	if (strlen(header)) Write(c, header, strlen(header));
+		if (seq > 1) {
+			char tmp[128] = "";
+			sprintf(tmp, "CONTINUATION TEXT %04d\n\n", seq-1);
+			Write(c, tmp, strlen(tmp));
+		}
 
-	// TODO: better condition
-	if (jobnr) {
-		char header[200] = "";
-		sprintf(header, "%d,%s,%s,%s", jobnr, omt, user, exch);
+		char header[256] = "";
+		GenHeader(exch, apsver, patchver, date, time, jobnr, omt, user, msggrp, mask, hint, header);
+		if (strlen(header)) Write(c, header, strlen(header));
+
+		// TODO: better condition
+		if (jobnr) {
+			char header[200] = "";
+			sprintf(header, "%d,%s,%s,%s", jobnr, omt, user, exch);
 printf("HEADER: %s\n", header);
-		IProtoSEND(c, 0x47, header);
-	}
+			IProtoSEND(c, 0x47, header);
+		}
 
-	// TODO: better condition
-	if (mask) {
-		char mask_s[20] = "";
-		sprintf(mask_s, "%d", mask);
-		IProtoSEND(c, 0x46, mask_s);
+		// TODO: better condition
+		if (mask) {
+			char mask_s[20] = "";
+			sprintf(mask_s, "%d", mask);
+			IProtoSEND(c, 0x46, mask_s);
 printf("MASK: %d\n", mask);
-	}
-
-	if (strlen(err)) {
-		Write(c, err, strlen(err));
-	}
-	if (strlen(answer)) {
-		Write(c, answer, strlen(answer));
-	}
-
-	if (p->dir == 2) {
-		/// TODO: make this condition more generic
-		if (seq == 0x0701) {
-			/// TODO: consolidate with the ones below
-			c->X25LastConnId[cci] = p->connid;
-			c->X25LastTail[cci] = p->tail;
-
-			IProtoSEND(c, 0x40, NULL);
-			Write(c, prompt, strlen(prompt));
-			IProtoSEND(c, 0x41, "p");
-
-			c->X25Prompt[cci] = 'p';
-		} else if (strlen(prompt)) {
-			// this is a command from EWSD
-			c->X25LastConnId[cci] = p->connid;
-			c->X25LastTail[cci] = p->tail;
-
-			IProtoSEND(c, 0x40, NULL);
-			Write(c, prompt, strlen(prompt));
-			IProtoSEND(c, 0x41, "I");
-
-			c->X25Prompt[cci] = 'I';
-		} else {
-			c->X25Prompt[cci] = 0;
 		}
-	} else if (p->dir == 3 && p->pltype == 1) {
-		// "Command accepted" confirmation
-		// TODO: send job start to ewterms?
-		char tmp[256];
-		sprintf(tmp, "%d\n\n", jobnr);
-		Write(c, tmp, strlen(tmp));
-	} else if (p->dir == 0x0c && p->pltype == 1) {
-		if (strlen(unkx3_3)) {
-			c->X25LoggedIn[cci] = 1;
 
-			char msg[256] = "";
-			sprintf(msg, "\n\n:::LOGIN SUCCESS ON %s\n\n", X25Conns[c->X25Conns[cci]].name);
-			Write(c, msg, strlen(msg));
+		if (strlen(err)) {
+			Write(c, err, strlen(err));
+		}
+		if (strlen(answer)) {
+			Write(c, answer, strlen(answer));
+		}
 
-			// Login success to terms (only when logged to all exchanges)
-			//int i = 0;
-			for (i = 0; i < c->X25ConnCount; i++) {
-				if (c->X25LoggedIn[i] != 1) break;
-			}
+		if (p->dir == 2) {
+			/// TODO: make this condition more generic
+			if (seq == 0x0701) {
+				/// TODO: consolidate with the ones below
+				c->X25LastConnId[cci] = p->connid;
+				c->X25LastTail[cci] = p->tail;
 
-			// all exchanges have us logged in
-			if (i == c->X25ConnCount) {
-				IProtoSEND(c, 0x43, NULL);
-
-				// TODO: is this really correct?
-				// send input prompt (some command may be waiting in ewterm)
 				IProtoSEND(c, 0x40, NULL);
-				Write(c, "<", 1);
-				IProtoSEND(c, 0x41, "<");
+				Write(c, prompt, strlen(prompt));
+				IProtoSEND(c, 0x41, "p");
+
+				c->X25Prompt[cci] = 'p';
+			} else if (strlen(prompt)) {
+				// this is a command from EWSD
+				c->X25LastConnId[cci] = p->connid;
+				c->X25LastTail[cci] = p->tail;
+
+				IProtoSEND(c, 0x40, NULL);
+				Write(c, prompt, strlen(prompt));
+				IProtoSEND(c, 0x41, "I");
+
+				c->X25Prompt[cci] = 'I';
+			} else {
+				c->X25Prompt[cci] = 0;
 			}
-		} else if (seq == 0x0303) {
-			// INVALID PASSWORD
-			IProtoSEND(c, 0x42, NULL);
+		} else if (p->dir == 3 && p->pltype == 1) {
+			// "Command accepted" confirmation
+			// TODO: send job start to ewterms?
+			char tmp[256];
+			sprintf(tmp, "%d\n\n", jobnr);
+			Write(c, tmp, strlen(tmp));
+		} else if (p->dir == 0x0c && p->pltype == 1) {
+			if (strlen(unkx3_3)) {
+				c->X25LoggedIn[cci] = 1;
 
-			// logout from other exchanges, too...
-			LogoutRequest(c, NULL);
-		} else if (seq == 0x0307) {
-			// SESSION IN USE
-			char msg[256] = "";
-			sprintf(msg, "\n\n:::SESSION ON %s IN USE, FORCE LOGIN? (+/-)\n\n", X25Conns[c->X25Conns[cci]].name);
+				char msg[256] = "";
+				sprintf(msg, "\n\n:::LOGIN SUCCESS ON %s\n\n", X25Conns[c->X25Conns[cci]].name);
+				Write(c, msg, strlen(msg));
 
-			IProtoSEND(c, 0x40, NULL);
-			Write(c, msg, strlen(msg));
-			IProtoSEND(c, 0x41, "I");
+				// Login success to terms (only when logged to all exchanges)
+				//int i = 0;
+				for (i = 0; i < c->X25ConnCount; i++) {
+					if (c->X25LoggedIn[i] != 1) break;
+				}
 
-			c->X25Prompt[cci] = 'R';
-		} else {
-			// other errors
-			IProtoSEND(c, 0x42, NULL);
+				// all exchanges have us logged in
+				if (i == c->X25ConnCount) {
+					IProtoSEND(c, 0x43, NULL);
+
+					// TODO: is this really correct?
+					// send input prompt (some command may be waiting in ewterm)
+					IProtoSEND(c, 0x40, NULL);
+					Write(c, "<", 1);
+					IProtoSEND(c, 0x41, "<");
+				}
+			} else if (seq == 0x0303) {
+				// INVALID PASSWORD
+				IProtoSEND(c, 0x42, NULL);
+
+				// logout from other exchanges, too...
+				LogoutRequest(c, NULL);
+			} else if (seq == 0x0307) {
+				// SESSION IN USE
+				char msg[256] = "";
+				sprintf(msg, "\n\n:::SESSION ON %s IN USE, FORCE LOGIN? (+/-)\n\n", X25Conns[c->X25Conns[cci]].name);
+
+				IProtoSEND(c, 0x40, NULL);
+				Write(c, msg, strlen(msg));
+				IProtoSEND(c, 0x41, "I");
+
+				c->X25Prompt[cci] = 'R';
+			} else {
+				// other errors
+				IProtoSEND(c, 0x42, NULL);
+
+				// logout from other exchanges, too...
+				LogoutRequest(c, NULL);
+			}
+		} else if (p->dir == 0x0e && p->pltype == 0) {
+			// Session timeout (or maybe something else, too...)
+			IProtoSEND(c, 0x44, NULL);
+			c->X25LoggedIn[cci] = 0;
 
 			// logout from other exchanges, too...
 			LogoutRequest(c, NULL);
 		}
-	} else if (p->dir == 0x0e && p->pltype == 0) {
-		// Session timeout (or maybe something else, too...)
-		IProtoSEND(c, 0x44, NULL);
-		c->X25LoggedIn[cci] = 0;
 
-		// logout from other exchanges, too...
-		LogoutRequest(c, NULL);
-	}
+		char jobnr_s[10] = "";
+		sprintf(jobnr_s, "%04d", jobnr);
 
-	char jobnr_s[10] = "";
-	sprintf(jobnr_s, "%04d", jobnr);
+		// TODO: are these all cases?
+		if (unkx5_4 == 2
+		|| unkx5__0 == 2) {
+			char tmp[256] = "";
+			sprintf(tmp, "\nEND JOB %04d\n\n", jobnr);
+			Write(c, tmp, strlen(tmp));
 
-	// TODO: are these all cases?
-	if (unkx5_4 == 2
-	|| unkx5__0 == 2) {
-		char tmp[256] = "";
-		sprintf(tmp, "\nEND JOB %04d\n\n", jobnr);
-		Write(c, tmp, strlen(tmp));
-
-		IProtoSEND(c, 0x45, jobnr_s);
-	} else if (unkx5__0 == 1) {
-		char tmp[256] = "";
-		sprintf(tmp, "\nEND TEXT JOB %04d\n\n", jobnr);
-		Write(c, tmp, strlen(tmp));
-	} else if (unkx5__0 == 0) {
-		char tmp[256] = "";
-		sprintf(tmp, "\nINTERRUPTION TEXT JOB %04d\n\n", jobnr);
-		Write(c, tmp, strlen(tmp));
+			IProtoSEND(c, 0x45, jobnr_s);
+		} else if (unkx5__0 == 1) {
+			char tmp[256] = "";
+			sprintf(tmp, "\nEND TEXT JOB %04d\n\n", jobnr);
+			Write(c, tmp, strlen(tmp));
+		} else if (unkx5__0 == 0) {
+			char tmp[256] = "";
+			sprintf(tmp, "\nINTERRUPTION TEXT JOB %04d\n\n", jobnr);
+			Write(c, tmp, strlen(tmp));
+		}
 	}
 }
 
@@ -1092,6 +1095,25 @@ void GotPrivMsg(struct connection *conn, char *tg, int id, char *host, char *msg
 	}
 }
 
+void AlarmsOnRequest(struct connection *conn, char *d) {
+	log_msg("AlarmsOnRequest()\n");
+
+	if (conn && conn->authenticated < 2) return;
+
+	conn->alarms = 1;
+
+	IProtoSEND(conn, 0x48, NULL);
+}
+
+void AlarmsOffRequest(struct connection *conn, char *d) {
+	log_msg("AlarmsOffRequest()\n");
+
+	if (conn && conn->authenticated < 2) return;
+
+	conn->alarms = 0;
+
+	IProtoSEND(conn, 0x49, NULL);
+}
 
 void TakeOverRequest(struct connection *conn, char *d) {
 	if (conn && conn->authenticated < 2) return;
@@ -1252,6 +1274,8 @@ void ExchangeListRequest(struct connection *c, char *d) {
 
 
 struct connection *TryAccept(int Fd) {
+	printf("TryAccept()\n");
+
 	struct connection *conn;
 	int NewFd;
 	static struct sockaddr_in remote;
@@ -1317,8 +1341,8 @@ struct connection *TryAccept(int Fd) {
 			SendBurst,
 
 			/* 6.0 */
-			NULL,
-			NULL,
+			AlarmsOnRequest,
+			AlarmsOffRequest,
 			LogoutRequest,
 
 			/* 6.1 */
@@ -1819,6 +1843,7 @@ printf("SELECT\n");
 				struct connection *c = Conns[i];
 
 				if (!FD_ISSET(c->Fd, &ReadQ)) continue;
+printf("FROM TERMINAL\n");
 
 				errno = 0;
 				if (DoRead(c) <= 0 && errno != EINTR) {

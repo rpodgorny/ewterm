@@ -20,9 +20,11 @@ struct MenuEntry MainMenu[10] = {
   {"Cancel", 0, CancelCommand},	/*2 */
   {"Buffer", 0, StartShowBuf}, 	/*3 */
   {"Force", 0, ForceCommand},	/*4 */
-  {"SendFile", 0, SendFile},	/*5 */
+//  {"SendFile", 0, SendFile},	/*5 */
+  {"", 0, NULL},	/*5 */
   {"History", 0, ShowHistoryMenu}, /*6 */
-  {"", 0, NULL}, 		/*7 */ /* Reserved when in forms */
+//  {"", 0, NULL}, 		/*7 */ /* Reserved when in forms */
+  {"AlarmsOn", 0, AlarmsOn}, 		/*7 */
   {"Options", 0, ShowOptions}, 	/*8 */
   {"LogOn", 0, StartLogOn}, 	/*9 */
   {"Quit", 0, AskQuit}		/*10 */

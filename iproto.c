@@ -42,6 +42,8 @@ struct connection *MakeConnection(int Fd, struct conn_handlers *handlers) {
 	conn->handlers = handlers;
 	StartHandshake(conn);
 
+	conn->alarms = 0;
+
 	return conn;
 }
 
@@ -371,6 +373,18 @@ ProcessIProtoChar(struct connection *conn, unsigned char Chr) {
 	    break;
 	  }
 	  break;
+	case 0x48: /* alarms sending starts */
+	  if (conn->handlers->SENDAlarmsOn) {
+	    conn->handlers->SENDAlarmsOn(conn, conn->IProtoPacket);
+	    break;
+	  }
+	  break;
+	case 0x49: /* alarms sending ends */
+	  if (conn->handlers->SENDAlarmsOff) {
+	    conn->handlers->SENDAlarmsOff(conn, conn->IProtoPacket);
+	    break;
+	  }
+	  break;
 	case 0x50: /* exchange list */
 	  if (conn->handlers->SENDExchangeList) {
 	    conn->handlers->SENDExchangeList(conn, conn->IProtoPacket, NULL);
@@ -455,6 +469,18 @@ ProcessIProtoChar(struct connection *conn, unsigned char Chr) {
 	  }
 	  IProtoSEND(conn, 0x80, "");
 	  break;
+	case 0x44: /* start sending alarms */
+	  if (conn->handlers->ASKAlarmsOn) {
+	    conn->handlers->ASKAlarmsOn(conn, conn->IProtoPacket);
+		break;
+	  }
+	  IProtoSEND(conn, 0x80, "");
+	case 0x45: /* stop sending alarms */
+	  if (conn->handlers->ASKAlarmsOff) {
+	    conn->handlers->ASKAlarmsOff(conn, conn->IProtoPacket);
+		break;
+	  }
+	  IProtoSEND(conn, 0x80, "");
 	case 0x46: /* logout request */
 	  if (conn->handlers->ASKLogout) {
 	    conn->handlers->ASKLogout(conn, conn->IProtoPacket);

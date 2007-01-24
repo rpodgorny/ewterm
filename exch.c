@@ -409,6 +409,17 @@ void SendCommonPassword() {
 	ChangeCommonPassword();
 }
 
+void AlarmsOn() {
+	if (!connection) return;
+
+	IProtoASK(connection, 0x44, NULL);
+}
+
+void AlarmsOff() {
+	if (!connection) return;
+
+	IProtoASK(connection, 0x45, NULL);
+}
 
 void StartLogOn() {
 	if (!connection) return;
@@ -612,6 +623,18 @@ void GotPrivMsg(struct connection *c, char *from, int id, char *host, char *msg,
 
 	snprintf(str, 1024, "[ewrecv] [%s@%s:%d->] %s\n", from, host, id, msg);
 	AddEStr(str, 0, 0);
+}
+
+void GotAlarmsOn(struct connection *c, char *d) {
+	MainMenu[6].Text = "AlarmsOff";
+	MainMenu[6].Addr = AlarmsOff;
+	RedrawKeys();
+}
+
+void GotAlarmsOff(struct connection *c, char *d) {
+	MainMenu[6].Text = "AlarmsOn";
+	MainMenu[6].Addr = AlarmsOn;
+	RedrawKeys();
 }
 
 void GotFwMode(struct connection *c, enum fwmode fwmode, char *d) {
@@ -873,8 +896,8 @@ struct connection *MkConnection(int SockFd) {
 		GotPrivMsg,
 
 		/* 6.0 */
-		NULL,
-		NULL,
+		GotAlarmsOn,
+		GotAlarmsOff,
 
 		/* 6.1 */
 		GotExchangeList,
