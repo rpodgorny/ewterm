@@ -127,6 +127,7 @@ struct X25Connection {
 	char address[256];
 	int fd;
 	int conn;
+	time_t nexttry;
 };
 
 struct X25Connection X25Conns[32];
@@ -555,10 +556,13 @@ void ReOpenX25() {
 		for (i = 0; i < X25ConnCount; i++) {
 			if (X25Conns[i].fd >= 0 || X25Conns[i].conn == 1) continue;
 
+			if (X25Conns[i].nexttry > time(NULL)) continue;
+
 //printf("DEBUG: opening %s\n", X25Conns[i].address);
 
 			X25Conns[i].fd = OpenX25Socket(X25Local, X25Conns[i].address);
 			X25Conns[i].conn = 0;
+			X25Conns[i].nexttry = time(NULL) + 30;
 //printf("DEBUG: done opening %s\n", X25Conns[i].address);
 
 #ifdef LOCKDIR
@@ -1803,7 +1807,7 @@ int main(int argc, char *argv[]) {
 		tv.tv_sec = 5;
 		tv.tv_usec = 0;
 
-		if (select(MaxFd + 1, &ReadQ, &WriteQ, &ErrorQ, 0) < 0) {
+		if (select(MaxFd + 1, &ReadQ, &WriteQ, &ErrorQ, &tv) < 0) {
 			if (errno == EINTR) continue; /* try once more, just some silly signal */
 			perror("--- ewrecv: Select failed");
 			Done(4);
