@@ -86,6 +86,7 @@ extern void (*NoInputRequestHook)();
 extern void (*CancelHook)();
 extern void ESendChar(char);
 extern void ForceCommand(), CancelCommand(), ELogOff(), StartLogOn();
+extern void AlarmsOn(), AlarmsOff();
 extern void AddCommandToQueue(char *, char);
 extern void AttachConnection();
 

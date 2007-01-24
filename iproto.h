@@ -44,8 +44,8 @@ struct conn_handlers {
 
 	void (*SENDPrivMsg)(struct connection *, char *, int, char *, char *, char *);
 
-	void (*SENDAlarmsStart)(struct connection *, char *);
-	void (*SENDAlarmsEnd)(struct connection *, char *);
+	void (*SENDAlarmsOn)(struct connection *, char *);
+	void (*SENDAlarmsOff)(struct connection *, char *);
 
 	void (*SENDExchangeList)(struct connection*, char *, char *);
 
@@ -61,8 +61,8 @@ struct conn_handlers {
 
 	void (*ASKBurstMe)(struct connection *, char *, char *);
 
-	void (*ASKAlarmsStart)(struct connection *, char *);
-	void (*ASKAlarmsEnd)(struct connection *, char *);
+	void (*ASKAlarmsOn)(struct connection *, char *);
+	void (*ASKAlarmsOff)(struct connection *, char *);
 	void (*ASKLogout)(struct connection *, char *);
 
 	void (*ASKExchangeList)(struct connection *, char *);
@@ -110,6 +110,7 @@ struct connection {
 
 	char *X25WriteBuf;
 	int X25WriteBufLen;
+	int alarms; // do we want to receive alarms?
 };
 
 struct connection *MakeConnection(int Fd, struct conn_handlers *);
