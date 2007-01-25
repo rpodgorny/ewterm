@@ -29,6 +29,7 @@ else
   install -s -o root -g root -m 755 ewrecv $BINDIR
 fi
 
+install -s -o root -g root -m 755 ewalarm $BINDIR
 install -s -o root -g root -m 755 ewterm $BINDIR
 install -o root -g root -m 755 ewterm.options $EWDIR
 
