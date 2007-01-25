@@ -82,10 +82,10 @@ RM   = rm -f
 EWTERM_SRCS = bfu.c buffer.c colors.c edit.c ewterm.c exch.c frq.c gstr.c help.c history.c lists.c menu.c options.c forms.c formshlp.c formstk.c parseforms.tab.c lex.yy.c iproto.c mml.c sendfile.c md5.c filter.c
 EWTERM_OBJS = $(EWTERM_SRCS:.c=.o)
 
-all: .deps mkforms ewterm ewrecv alarmer
+all: .deps mkforms ewterm ewrecv ewalarm
 
-alarmer: alarmer.o iproto.o md5.o
-	$(CC) $(CFLAGS) $(LDFLAGS) -o alarmer alarmer.o iproto.o md5.o
+ewalarm: ewalarm.o iproto.o md5.o
+	$(CC) $(CFLAGS) $(LDFLAGS) -o ewalarm ewalarm.o iproto.o md5.o
 
 ewterm: $(EWTERM_OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o ewterm $(EWTERM_OBJS) -lpanel -lncurses -lfl
@@ -112,7 +112,7 @@ lex.yy.c: scanforms.l
 
 
 clean:
-	$(RM) *.o alarmer ewterm ewrecv mkforms forms *~ lex.yy.c parseforms.tab.*
+	$(RM) *.o ewalarm ewterm ewrecv mkforms forms *~ lex.yy.c parseforms.tab.*
 
 
 install: all
