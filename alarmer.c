@@ -247,7 +247,7 @@ void ProcessArgs(int argc, char *argv[]) {
 		}
 
 		if (!strcmp(argv[ac], "-h") || !strcmp(argv[ac], "--help")) {
-			printf("written by Radek Podgorny <radek@podgorny.cz>, 2006, 2007\n\n");
+			printf("alarmer "VERSION" written by Radek Podgorny, 2006, 2007\n\n");
 			printf("Usage:\t%s [-h|--help] [-c|--connect <host>[:<port>]\n", argv[0]);
 			printf("\t[-p|--port <port>]\n\n");
 			printf("-h\tDisplay this help\n");
