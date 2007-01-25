@@ -817,10 +817,11 @@ printf("SEQ: %d\n", seq);
 		int gci = -1; // index of X.25 connection (global)
 		int cci = -1; // index of X.25 connection (connection)
 
-		for (i = 0; i < c->X25ConnCount; i++) {
-			if (X25Conns[c->X25Conns[i]].fd == fd) {
-				cci = i;
-				gci = c->X25Conns[i];
+		int j = 0;
+		for (j = 0; j < c->X25ConnCount; j++) {
+			if (X25Conns[c->X25Conns[j]].fd == fd) {
+				cci = j;
+				gci = c->X25Conns[j];
 				break;
 			}
 		}
@@ -900,13 +901,12 @@ printf("MASK: %d\n", mask);
 				Write(c, msg, strlen(msg));
 
 				// Login success to terms (only when logged to all exchanges)
-				//int i = 0;
-				for (i = 0; i < c->X25ConnCount; i++) {
-					if (c->X25LoggedIn[i] != 1) break;
+				for (j = 0; j < c->X25ConnCount; j++) {
+					if (c->X25LoggedIn[j] != 1) break;
 				}
 
 				// all exchanges have us logged in
-				if (i == c->X25ConnCount) {
+				if (j == c->X25ConnCount) {
 					IProtoSEND(c, 0x43, NULL);
 
 					// TODO: is this really correct?
