@@ -1938,6 +1938,7 @@ printf("FROM TERMINAL\n");
 					shutdown(fd, SHUT_RDWR);
 					close(fd);
 					X25Conns[i].fd = fd = -1;
+					X25Conns[i].conn = 0;
 				} else {
 					// TODO: why else?
 					///if (CommandMode == CM_READY) CommandMode = CM_BUSY;
