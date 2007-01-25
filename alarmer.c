@@ -246,10 +246,10 @@ void ProcessArgs(int argc, char *argv[]) {
 			continue;
 		}
 
-		if (! strcmp(argv[ac], "-h") || ! strcmp(argv[ac], "--help")) {
-			printf("\nUsage:\t%s [-h|--help] [-c|--connect <host>[:<port>]\n", argv[0]);
-			printf("\t[-p|--port <port>]\n");
-			printf("Parameters override values from config file which override defaults.\n\n");
+		if (!strcmp(argv[ac], "-h") || !strcmp(argv[ac], "--help")) {
+			printf("written by Radek Podgorny <radek@podgorny.cz>, 2006, 2007\n\n");
+			printf("Usage:\t%s [-h|--help] [-c|--connect <host>[:<port>]\n", argv[0]);
+			printf("\t[-p|--port <port>]\n\n");
 			printf("-h\tDisplay this help\n");
 			printf("-c\tConnect to <host> (defaults to %s)\n", HostName);
 			printf("-p\tConnect to <port> (defaults to %d)\n", HostPort);
