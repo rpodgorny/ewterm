@@ -191,8 +191,6 @@ void MainProc() {
 		}
 
 		if (select(MaxFd + 1, &ReadQ, &WriteQ, 0, 0) < 0) {
-			char estr[256];
-
 			if (errno == EINTR) continue;
 			perror("Select failed");
 			Done(1);
@@ -215,7 +213,6 @@ void MainProc() {
 			// Exchange output
 			if (connection && FD_ISSET(connection->Fd, &WriteQ)) {
 				if (DoWrite(connection) < 0) {
-					char estr[256];
 					perror("Write to fd failed");
 					Done(1);
 				}
@@ -225,7 +222,6 @@ void MainProc() {
 }
 
 void ProcessArgs(int argc, char *argv[]) {
-	static int been_here;
 	int ac, swp = 0;
 
 	for (ac = 1; ac < argc; ac++) {
@@ -266,12 +262,8 @@ void ProcessArgs(int argc, char *argv[]) {
 			fprintf(stderr, "Unknown option \"%s\". Use -h or --help to get list of all the\n", argv[ac]);
 			fprintf(stderr, "available options.\n");
 			exit(1);
-		} else if (!been_here) {
-			int TODO;
 		}
 	}
-
-	been_here = 1;
 }
 
 int main(int argc, char **argv) {
