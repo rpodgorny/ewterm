@@ -1789,6 +1789,8 @@ int main(int argc, char *argv[]) {
 		// check connection and reconnect when something is broken
 		ReOpenX25();
 
+printf("ADDING ");
+
 		for (i = 0; i < X25ConnCount; i++) {
 			int fd = X25Conns[i].fd;
 
@@ -1796,6 +1798,7 @@ int main(int argc, char *argv[]) {
 
 			// read queue
 			if (X25Conns[i].conn == 1) {
+printf("%s ", X25Conns[i].address);
 				FD_SET(fd, &ReadQ);
 				if (fd > MaxFd) MaxFd = fd;
 			}
@@ -1805,6 +1808,7 @@ int main(int argc, char *argv[]) {
 				// wait for connect() result
 				FD_SET(fd, &WriteQ);
 				if (fd > MaxFd) MaxFd = fd;
+printf("*%s ", X25Conns[i].address);
 			} else {
 				// connected, add only if we have something to say
 				int add = 0;
@@ -1820,11 +1824,13 @@ int main(int argc, char *argv[]) {
 				}
 
 				if (add) {
+printf("**%s ", X25Conns[i].address);
 					FD_SET(fd, &WriteQ);
 					if (fd > MaxFd) MaxFd = fd;
 				}
 			}
 		}
+printf("\n");
 
 		// timeout variables
 		struct timeval tv;
