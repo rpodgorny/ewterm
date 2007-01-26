@@ -141,6 +141,7 @@ void AttachConnection() {
 		struct hostent *host = gethostbyname(HostName);
 		if (!host) {
 			perror("gethostbyname()");
+			close(SockFd);
 			exit(6);
 		}
 		addr.sin_addr.s_addr = ((struct in_addr *)host->h_addr)->s_addr;
@@ -149,12 +150,14 @@ void AttachConnection() {
 
 	if (connect(SockFd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
 		perror("connect()");
+		close(SockFd);
 		exit(6);
 	}
 	connection = MkConnection(SockFd);
 
 	if (!connection) {
 		fprintf(stderr, "Unable to create connection!\n");
+		close(SockFd);
 		exit(9);
 	}
 
@@ -181,8 +184,6 @@ void MainProc() {
 
 		FD_ZERO(&ReadQ);
 		FD_ZERO(&WriteQ);
-
-		FD_SET(0, &ReadQ);
 
 		if (connection) {
 			FD_SET(connection->Fd, &ReadQ);
