@@ -1517,14 +1517,8 @@ int main(int argc, char *argv[]) {
 	printf("EWReceiver "VERSION" written by Petr Baudis, 2001, 2002\n");
 	printf("X.25 functionality added by Radek Podgorny, 2006, 2007\n");
 
-	/* process options */  
-	///strcpy(CuaName, DEFDEVICE);
-	///strcpy(SpeedBuf, DEFSPEED);
-  
 	for (ac = 1; ac < argc; ac++) {
 		switch (swp) {
-///			case 1: strncpy(CuaName, argv[ac], CUANSIZE + 1); break;
-///			case 2: strncpy(SpeedBuf, argv[ac], 11); break;
 			case 3: strncpy(LogFName, argv[ac], 256); break;
 			case 4:
 				strncpy(SockName, argv[ac], 256);
@@ -1584,7 +1578,8 @@ int main(int argc, char *argv[]) {
 			printf("\t[-W|--ropassword <pwd>] [-g|--fg] [-S|--silent] [-v|--verbose]\n\n");
 			printf("-h\tDisplay this help\n");
 			printf("--x25local\tLocal endpoint X.25 address\n");
-			printf("--x25remote\tRemote endpoint X.25 address\n");
+			printf("--x25remote\tRemote endpoints X.25 addresses\n");
+			printf("\t\t(PHA1=10000002-101:DAT1=10000003-101:...)\n");
 			printf("-f\tLog to file <file>\n");
 			printf("-L\tTake -f parameter as directory name and log each day to separate\n");
 			printf("\tfile, each one named <file>/YYYY-MM-DD\n");
@@ -1602,16 +1597,6 @@ int main(int argc, char *argv[]) {
 			exit(1);
 		}
 
-/*		if (!strcmp(argv[ac], "-c") || !strcmp(argv[ac], "--cuadev")) {
-			swp = 1;
-			continue;
-		}
-
-		if (!strcmp(argv[ac], "-s") || !strcmp(argv[ac], "--speed")) {
-			swp = 2;
-			continue;
-		}
-*/
 		if (!strcmp(argv[ac], "-f") || !strcmp(argv[ac], "--logfile")) {
 			swp = 3;
 			continue;
