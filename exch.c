@@ -807,8 +807,13 @@ void GotMask(struct connection *c, char *mask, char *d) {
 
 void GotHeader(struct connection *c, char *job, char *omt, char *uname, char *exchange, char *d) {
 	strcpy(ActExchange, exchange);
-	if (atoi(job) == ActJob && *uname && *uname != 0 && c->fwmode != FWD_IN && !LoggedOff) strcpy(ActUsrname, uname);
-	if (!strcasecmp(ActUsrname, uname)) strcpy(ActOMT, omt);
+
+	/// TODO: is it ok to copy always?
+	strcpy(ActUsrname, uname); // added by Radek Podgorny
+	strcpy(ActOMT, omt); // added by Radek Podgorny
+
+	///if (atoi(job) == ActJob && *uname && *uname != 0 && c->fwmode != FWD_IN && !LoggedOff) strcpy(ActUsrname, uname);
+	///if (!strcasecmp(ActUsrname, uname)) strcpy(ActOMT, omt);
 	RedrawStatus();
 }
 
