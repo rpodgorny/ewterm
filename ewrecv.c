@@ -1553,6 +1553,11 @@ int main(int argc, char *argv[]) {
 						char *idx = index(p, '=');
 						int len = idx - p;
 
+						if (!idx || idx == p || !*(idx+1)) {
+							printf("\nWrong --x25remote format!!!\n\n");
+							Done(1);
+						}
+
 						strncpy(X25Conns[X25ConnCount].name, p, len);
 						strcpy(X25Conns[X25ConnCount].address, idx+1);
 						X25Conns[X25ConnCount].fd = -1;
