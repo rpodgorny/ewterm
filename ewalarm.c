@@ -56,7 +56,8 @@ void Init() {
 void CheckChr(struct connection *c, int Chr) {
 	if (Chr < 32 && Chr != 9 && Chr != 10) {
 	} else {
-		printf("%c", Chr);
+		fprintf(stdout, "%c", Chr);
+		fflush(stdout);
 	}
 }
 
