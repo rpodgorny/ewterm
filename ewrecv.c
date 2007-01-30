@@ -1121,6 +1121,14 @@ void TakeOverRequest(struct connection *conn, char *d) {
 
 void CancelPromptRequest(struct connection *conn, char *d) {
 	log_msg("CancelPromptRequest()\n");
+
+	int i = 0;
+	for (i = 0; i < conn->X25ConnCount; i++) {
+		conn->X25Prompt[i] = 0;
+	}
+
+	IProtoSEND(conn, 0x42, NULL);
+
 /*
 	if (conn && conn->authenticated < 2) return;
   	if (CommandMode == CM_PROMPT) {
