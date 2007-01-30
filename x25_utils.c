@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <ctype.h>
 #include <arpa/inet.h>
@@ -72,7 +73,9 @@ struct packet *login_packet(unsigned short sessid, char *username, char *passwor
 	xxx[9] = 0x0c;//
 	block_addchild(ret->data, "2", xxx, 0x0a);
 
-	block_addchild(ret->data, "4-1", (unsigned char *)"LINUX", 5);
+	char hostname[256];
+	gethostname(hostname, 256);
+	block_addchild(ret->data, "4-1", (unsigned char *)hostname, strlen(hostname));
 
 	memset(xxx, 0xff, 0x01b8);
 	block_addchild(ret->data, "4-3-1", xxx, 0x01b8);
