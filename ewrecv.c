@@ -709,7 +709,7 @@ void GenHeader(char *exch, char *apsver, char *patchver, char *date, char *time,
 }
 
 /* for X.25 communication */
-void ProcessExchangePacket(int fd, struct packet *p) {
+void ProcessExchangePacket(struct connection *c, int fd, struct packet *p) {
 	pdebug("ProcessExchangePacket()\n");
 
 	// TODO: a quick hack to filter empty packets. remove!
@@ -801,172 +801,165 @@ printf("SEQ: %d\n", seq);
 	if (b && b->data) strncpy(answer, (char *)b->data, b->len);
 
 
-	int i = 0;
-	for (i = 0; i < ConnCount; i++) {
-		struct connection *c = Conns[i];
+	// ...and now, send the parsed data to clients
 
-		if (p->sessid == 0 && c->alarms) {
-			// it's alarm but we want it
-		} else if (c->id == p->sessid) {
-			// it's a message for us
-		} else {
-			// we don't want this message
-			continue;
+	int gci = -1; // index of X.25 connection (global)
+	int cci = -1; // index of X.25 connection (connection)
+
+	int j = 0;
+	for (j = 0; j < c->X25ConnCount; j++) {
+		if (X25Conns[c->X25Conns[j]].fd == fd) {
+			cci = j;
+			gci = c->X25Conns[j];
+			break;
 		}
+	}
 
-		int gci = -1; // index of X.25 connection (global)
-		int cci = -1; // index of X.25 connection (connection)
+	if (gci == -1 || cci == -1) {
+		fprintf(stderr, "Something is broken!!!\n");
+		return;
+	}
 
-		int j = 0;
-		for (j = 0; j < c->X25ConnCount; j++) {
-			if (X25Conns[c->X25Conns[j]].fd == fd) {
-				cci = j;
-				gci = c->X25Conns[j];
-				break;
-			}
-		}
+	Write(c, "\n\n", 2);
 
-		Write(c, "\n\n", 2);
+	if (seq > 1) {
+		char tmp[128] = "";
+		sprintf(tmp, "CONTINUATION TEXT %04d\n\n", seq-1);
+		Write(c, tmp, strlen(tmp));
+	}
 
-		if (seq > 1) {
-			char tmp[128] = "";
-			sprintf(tmp, "CONTINUATION TEXT %04d\n\n", seq-1);
-			Write(c, tmp, strlen(tmp));
-		}
+	char header[256] = "";
+	GenHeader(exch, apsver, patchver, date, time, jobnr, omt, user, msggrp, mask, hint, header);
+	if (strlen(header)) Write(c, header, strlen(header));
 
-		char header[256] = "";
-		GenHeader(exch, apsver, patchver, date, time, jobnr, omt, user, msggrp, mask, hint, header);
-		if (strlen(header)) Write(c, header, strlen(header));
-
-		// TODO: better condition
-		if (jobnr) {
-			char header[200] = "";
-			sprintf(header, "%d,%s,%s,%s", jobnr, omt, user, exch);
+	// TODO: better condition
+	if (jobnr) {
+		char header[200] = "";
+		sprintf(header, "%d,%s,%s,%s", jobnr, omt, user, exch);
 printf("HEADER: %s\n", header);
-			IProtoSEND(c, 0x47, header);
-		}
+		IProtoSEND(c, 0x47, header);
+	}
 
-		// TODO: better condition
-		if (mask) {
-			char mask_s[20] = "";
-			sprintf(mask_s, "%d", mask);
-			IProtoSEND(c, 0x46, mask_s);
+	// TODO: better condition
+	if (mask) {
+		char mask_s[20] = "";
+		sprintf(mask_s, "%d", mask);
+		IProtoSEND(c, 0x46, mask_s);
 printf("MASK: %d\n", mask);
+	}
+
+	if (strlen(err)) {
+		Write(c, err, strlen(err));
+	}
+	if (strlen(answer)) {
+		Write(c, answer, strlen(answer));
+	}
+
+	if (p->dir == 2) {
+		/// TODO: make this condition more generic
+		if (seq == 0x0701) {
+			/// TODO: consolidate with the ones below
+			c->X25LastConnId[cci] = p->connid;
+			c->X25LastTail[cci] = p->tail;
+
+			IProtoSEND(c, 0x40, NULL);
+			Write(c, prompt, strlen(prompt));
+			IProtoSEND(c, 0x41, "p");
+
+			c->X25Prompt[cci] = 'p';
+		} else if (strlen(prompt)) {
+			// this is a command from EWSD
+			c->X25LastConnId[cci] = p->connid;
+			c->X25LastTail[cci] = p->tail;
+
+			IProtoSEND(c, 0x40, NULL);
+			Write(c, prompt, strlen(prompt));
+			IProtoSEND(c, 0x41, "I");
+
+			c->X25Prompt[cci] = 'I';
+		} else {
+			c->X25Prompt[cci] = 0;
 		}
+	} else if (p->dir == 3 && p->pltype == 1) {
+		// "Command accepted" confirmation
+		// TODO: send job start to ewterms?
+		char tmp[256];
+		sprintf(tmp, "%d\n\n", jobnr);
+		Write(c, tmp, strlen(tmp));
+	} else if (p->dir == 0x0c && p->pltype == 1) {
+		if (strlen(unkx3_3)) {
+			c->X25LoggedIn[cci] = 1;
 
-		if (strlen(err)) {
-			Write(c, err, strlen(err));
-		}
-		if (strlen(answer)) {
-			Write(c, answer, strlen(answer));
-		}
+			char msg[256] = "";
+			sprintf(msg, "\n\n:::LOGIN SUCCESS ON %s\n\n", X25Conns[c->X25Conns[cci]].name);
+			Write(c, msg, strlen(msg));
 
-		if (p->dir == 2) {
-			/// TODO: make this condition more generic
-			if (seq == 0x0701) {
-				/// TODO: consolidate with the ones below
-				c->X25LastConnId[cci] = p->connid;
-				c->X25LastTail[cci] = p->tail;
-
-				IProtoSEND(c, 0x40, NULL);
-				Write(c, prompt, strlen(prompt));
-				IProtoSEND(c, 0x41, "p");
-
-				c->X25Prompt[cci] = 'p';
-			} else if (strlen(prompt)) {
-				// this is a command from EWSD
-				c->X25LastConnId[cci] = p->connid;
-				c->X25LastTail[cci] = p->tail;
-
-				IProtoSEND(c, 0x40, NULL);
-				Write(c, prompt, strlen(prompt));
-				IProtoSEND(c, 0x41, "I");
-
-				c->X25Prompt[cci] = 'I';
-			} else {
-				c->X25Prompt[cci] = 0;
+			// Login success to terms (only when logged to all exchanges)
+			for (j = 0; j < c->X25ConnCount; j++) {
+				if (c->X25LoggedIn[j] != 1) break;
 			}
-		} else if (p->dir == 3 && p->pltype == 1) {
-			// "Command accepted" confirmation
-			// TODO: send job start to ewterms?
-			char tmp[256];
-			sprintf(tmp, "%d\n\n", jobnr);
-			Write(c, tmp, strlen(tmp));
-		} else if (p->dir == 0x0c && p->pltype == 1) {
-			if (strlen(unkx3_3)) {
-				c->X25LoggedIn[cci] = 1;
 
-				char msg[256] = "";
-				sprintf(msg, "\n\n:::LOGIN SUCCESS ON %s\n\n", X25Conns[c->X25Conns[cci]].name);
-				Write(c, msg, strlen(msg));
+			// all exchanges have us logged in
+			if (j == c->X25ConnCount) {
+				IProtoSEND(c, 0x43, NULL);
 
-				// Login success to terms (only when logged to all exchanges)
-				for (j = 0; j < c->X25ConnCount; j++) {
-					if (c->X25LoggedIn[j] != 1) break;
-				}
-
-				// all exchanges have us logged in
-				if (j == c->X25ConnCount) {
-					IProtoSEND(c, 0x43, NULL);
-
-					// TODO: is this really correct?
-					// send input prompt (some command may be waiting in ewterm)
-					IProtoSEND(c, 0x40, NULL);
-					Write(c, "<", 1);
-					IProtoSEND(c, 0x41, "<");
-				}
-			} else if (seq == 0x0303) {
-				// INVALID PASSWORD
-				IProtoSEND(c, 0x42, NULL);
-
-				// logout from other exchanges, too...
-				LogoutRequest(c, NULL);
-			} else if (seq == 0x0307) {
-				// SESSION IN USE
-				char msg[256] = "";
-				sprintf(msg, "\n\n:::SESSION ON %s IN USE, FORCE LOGIN? (+/-)\n\n", X25Conns[c->X25Conns[cci]].name);
-
+				// TODO: is this really correct?
+				// send input prompt (some command may be waiting in ewterm)
 				IProtoSEND(c, 0x40, NULL);
-				Write(c, msg, strlen(msg));
-				IProtoSEND(c, 0x41, "I");
-
-				c->X25Prompt[cci] = 'R';
-			} else {
-				// other errors
-				IProtoSEND(c, 0x42, NULL);
-
-				// logout from other exchanges, too...
-				LogoutRequest(c, NULL);
+				Write(c, "<", 1);
+				IProtoSEND(c, 0x41, "<");
 			}
-		} else if (p->dir == 0x0e && p->pltype == 0) {
-			// Session timeout (or maybe something else, too...)
-			IProtoSEND(c, 0x44, NULL);
-			c->X25LoggedIn[cci] = 0;
+		} else if (seq == 0x0303) {
+			// INVALID PASSWORD
+			IProtoSEND(c, 0x42, NULL);
+
+			// logout from other exchanges, too...
+			LogoutRequest(c, NULL);
+		} else if (seq == 0x0307) {
+			// SESSION IN USE
+			char msg[256] = "";
+			sprintf(msg, "\n\n:::SESSION ON %s IN USE, FORCE LOGIN? (+/-)\n\n", X25Conns[c->X25Conns[cci]].name);
+
+			IProtoSEND(c, 0x40, NULL);
+			Write(c, msg, strlen(msg));
+			IProtoSEND(c, 0x41, "I");
+
+			c->X25Prompt[cci] = 'R';
+		} else {
+			// other errors
+			IProtoSEND(c, 0x42, NULL);
 
 			// logout from other exchanges, too...
 			LogoutRequest(c, NULL);
 		}
+	} else if (p->dir == 0x0e && p->pltype == 0) {
+		// Session timeout (or maybe something else, too...)
+		IProtoSEND(c, 0x44, NULL);
+		c->X25LoggedIn[cci] = 0;
 
-		char jobnr_s[10] = "";
-		sprintf(jobnr_s, "%04d", jobnr);
+		// logout from other exchanges, too...
+		LogoutRequest(c, NULL);
+	}
 
-		// TODO: are these all cases?
-		if (unkx5_4 == 2
-		|| unkx5__0 == 2) {
-			char tmp[256] = "";
-			sprintf(tmp, "\nEND JOB %04d\n\n", jobnr);
-			Write(c, tmp, strlen(tmp));
+	char jobnr_s[10] = "";
+	sprintf(jobnr_s, "%04d", jobnr);
 
-			IProtoSEND(c, 0x45, jobnr_s);
-		} else if (unkx5__0 == 1) {
-			char tmp[256] = "";
-			sprintf(tmp, "\nEND TEXT JOB %04d\n\n", jobnr);
-			Write(c, tmp, strlen(tmp));
-		} else if (unkx5__0 == 0) {
-			char tmp[256] = "";
-			sprintf(tmp, "\nINTERRUPTION TEXT JOB %04d\n\n", jobnr);
-			Write(c, tmp, strlen(tmp));
-		}
+	// TODO: are these all cases?
+	if (unkx5_4 == 2
+	|| unkx5__0 == 2) {
+		char tmp[256] = "";
+		sprintf(tmp, "\nEND JOB %04d\n\n", jobnr);
+		Write(c, tmp, strlen(tmp));
+
+		IProtoSEND(c, 0x45, jobnr_s);
+	} else if (unkx5__0 == 1) {
+		char tmp[256] = "";
+		sprintf(tmp, "\nEND TEXT JOB %04d\n\n", jobnr);
+		Write(c, tmp, strlen(tmp));
+	} else if (unkx5__0 == 0) {
+		char tmp[256] = "";
+		sprintf(tmp, "\nINTERRUPTION TEXT JOB %04d\n\n", jobnr);
+		Write(c, tmp, strlen(tmp));
 	}
 }
 
@@ -976,6 +969,7 @@ void DestroyConnection(struct connection *conn) {
 	AnnounceUser(conn, 0x06);
 
 	close(conn->Fd);
+	free(conn->X25WriteBuf);
 
 	// find the index and move the connection from end there
 	int i = 0;
@@ -1375,7 +1369,6 @@ struct connection *TryAccept(int Fd) {
 			endhostent();
 		}
 
-		/// TODO: make this static or free it!
 		conn->X25WriteBuf = malloc(WRITEBUF_MAX);
 		conn->X25WriteBufLen = 0;
 
@@ -1911,27 +1904,7 @@ printf("FROM TERMINAL\n");
 
 				log_msg("FROM X.25\n");
 
-				// find owner
-				struct connection *c = NULL;
-				int cci = -1;
-
-				int j = 0;
-				for (j = 0; j < ConnCount; j++) {
-					int k = 0;
-					for (k = 0; k < Conns[j]->X25ConnCount; k++) {
-						if (X25Conns[Conns[j]->X25Conns[k]].fd == fd) {
-							c = Conns[j];
-							cci = k;
-							break;
-						}
-					}
-
-					// found
-					if (c) break;
-				}
-
 				unsigned char buf[32000];
-
 				int r = read(fd, buf, 32000);
 
 				if (r <= 0 && errno != EINTR) {
@@ -1944,14 +1917,16 @@ printf("FROM TERMINAL\n");
 					X25Conns[i].fd = fd = -1;
 					X25Conns[i].conn = 0;
 				} else {
-					// TODO: why else?
-					///if (CommandMode == CM_READY) CommandMode = CM_BUSY;
-
 					struct packet *p = packet_deserialize(buf, r);
+
+					// we've received something broken, move on to next exchange
+					if (!p) continue;
+
+					packet_print(p);
 
 					// send confirmation
 					// TODO: create something like packet_copy()
-					if (p && p->dir == 2 && p->pltype != 0) {
+					if (p->dir == 2 && p->pltype != 0) {
 						struct packet *confirm = malloc(sizeof(struct packet));
 						memcpy(confirm, p, sizeof(struct packet));
 						confirm->data = NULL;
@@ -1965,40 +1940,55 @@ printf("FROM TERMINAL\n");
 						packet_delete(confirm);
 					}
 
-					if (p && p->rawdata && p->data == NULL) {
-						// the block deserialize failed
-						if (c->X25BufLen[cci] == 0) {
-							// first truncated packet (copy with header)
-							memcpy(c->X25Buf[cci], buf, r);
-							c->X25BufLen[cci] = r;
-							packet_delete(p); p = NULL;
-						} else {
-							// continuation (copy without header)
-							memcpy(c->X25Buf[cci]+c->X25BufLen[cci], p->rawdata, p->rawdatalen);
-							c->X25BufLen[cci] += p->rawdatalen;
-							packet_delete(p); p = NULL;
-						}
-					}
+					// now try all connections whether this packet is theirs
 
-					// test whether the packet is now complete
-					if (!p && c->X25BufLen[cci] > 0) {
-						p = packet_deserialize(c->X25Buf[cci], c->X25BufLen[cci]);
-						if (!p || (p->rawdata && !p->data)) {
-							// not complete yet
-							packet_delete(p); p = NULL;
+					int cci = -1;
+
+					int j = 0;
+					for (j = 0; j < ConnCount; j++) {
+						struct connection *c = Conns[j];
+
+						int k = 0;
+						for (k = 0; k < c->X25ConnCount; k++) {
+							if (X25Conns[c->X25Conns[k]].fd == fd) {
+								cci = k;
+								break;
+							}
+						}
+
+						// it's from an exchange we're not connected to
+						if (cci != -1) continue;
+
+						// not for us and we don't want alarms either
+						if (p->sessid != c->id && !(p->sessid == 0 && c->alarms)) continue;
+
+						if (p->rawdata && !p->data) {
+							// the packet is a fragment
+							if (c->X25BufLen[cci] == 0) {
+								// first truncated packet (copy with header)
+								memcpy(c->X25Buf[cci], buf, r);
+								c->X25BufLen[cci] = r;
+							} else {
+								// continuation (copy without header)
+								memcpy(c->X25Buf[cci]+c->X25BufLen[cci], p->rawdata, p->rawdatalen);
+								c->X25BufLen[cci] += p->rawdatalen;
+
+								// test whether the packet is now complete
+								struct packet *np = packet_deserialize(c->X25Buf[cci], c->X25BufLen[cci]);
+								if (np && np->data && !np->rawdata) {
+									// complete
+									ProcessExchangePacket(c, fd, np);
+									c->X25BufLen[cci] = 0;
+								}
+								packet_delete(np); np = NULL;
+							}
 						} else {
-							// complete
-							c->X25BufLen[cci] = 0;
+							// the packet is not fragmented
+							ProcessExchangePacket(c, fd, p);
 						}
 					}
 				
-					if (p) {
-						packet_print(p);
-
-						ProcessExchangePacket(fd, p);
-
-						packet_delete(p);
-					}
+					packet_delete(p);
 				}
 
 				log_msg("END FROM X.25\n");
