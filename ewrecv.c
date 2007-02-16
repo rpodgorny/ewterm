@@ -1396,6 +1396,9 @@ struct connection *TryAccept(int Fd) {
 
 	conn->id = LastId++;
 
+	// just in case of overflow (zero is fobidden)
+	if (LastId == 0) LastId++;
+
 	return conn;
 }
 
