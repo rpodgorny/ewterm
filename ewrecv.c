@@ -803,19 +803,17 @@ printf("SEQ: %d\n", seq);
 
 	// ...and now, send the parsed data to clients
 
-	int gci = -1; // index of X.25 connection (global)
 	int cci = -1; // index of X.25 connection (connection)
 
-	int j = 0;
-	for (j = 0; j < c->X25ConnCount; j++) {
-		if (X25Conns[c->X25Conns[j]].fd == fd) {
-			cci = j;
-			gci = c->X25Conns[j];
+	int i = 0;
+	for (i = 0; i < c->X25ConnCount; i++) {
+		if (X25Conns[c->X25Conns[i]].fd == fd) {
+			cci = i;
 			break;
 		}
 	}
 
-	if (gci == -1 || cci == -1) {
+	if (cci == -1) {
 		fprintf(stderr, "Something is broken!!!\n");
 		return;
 	}
@@ -895,12 +893,12 @@ printf("MASK: %d\n", mask);
 			Write(c, msg, strlen(msg));
 
 			// Login success to terms (only when logged to all exchanges)
-			for (j = 0; j < c->X25ConnCount; j++) {
-				if (c->X25LoggedIn[j] != 1) break;
+			for (i = 0; i < c->X25ConnCount; i++) {
+				if (c->X25LoggedIn[i] != 1) break;
 			}
 
 			// all exchanges have us logged in
-			if (j == c->X25ConnCount) {
+			if (i == c->X25ConnCount) {
 				IProtoSEND(c, 0x43, NULL);
 
 				// TODO: is this really correct?
@@ -1945,11 +1943,11 @@ printf("FROM TERMINAL\n");
 
 					// now try all connections whether this packet is theirs
 
-					int cci = -1;
-
 					int j = 0;
 					for (j = 0; j < ConnCount; j++) {
 						struct connection *c = Conns[j];
+
+						int cci = -1;
 
 						int k = 0;
 						for (k = 0; k < c->X25ConnCount; k++) {
@@ -1960,7 +1958,7 @@ printf("FROM TERMINAL\n");
 						}
 
 						// it's from an exchange we're not connected to
-						if (cci != -1) continue;
+						if (cci == -1) continue;
 
 						// not for us and we don't want alarms either
 						if (p->sessid != c->id && !(p->sessid == 0 && c->alarms)) continue;
