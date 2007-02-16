@@ -99,8 +99,7 @@ struct connection {
 	char X25User[256];
 	char X25Passwd[256];
 
-	int X25ConnCount;
-	int X25Conns[32];
+	int X25Connected[32]; // are we using the connection?
 	int X25LoggedIn[32];
 	char X25Prompt[32];
 	unsigned short X25LastConnId[32];
