@@ -803,11 +803,11 @@ printf("SEQ: %d\n", seq);
 
 	// ...and now, send the parsed data to clients
 
-	int cci = -1; // index of X.25 connection (connection)
+	int cci = -1; // index of X.25 connection
 
 	int i = 0;
-	for (i = 0; i < c->X25ConnCount; i++) {
-		if (X25Conns[c->X25Conns[i]].fd == fd) {
+	for (i = 0; i < X25ConnCount; i++) {
+		if (X25Conns[i].fd == fd) {
 			cci = i;
 			break;
 		}
@@ -889,16 +889,17 @@ printf("MASK: %d\n", mask);
 			c->X25LoggedIn[cci] = 1;
 
 			char msg[256] = "";
-			sprintf(msg, "\n\n:::LOGIN SUCCESS ON %s\n\n", X25Conns[c->X25Conns[cci]].name);
+			sprintf(msg, "\n\n:::LOGIN SUCCESS ON %s\n\n", X25Conns[cci].name);
 			Write(c, msg, strlen(msg));
 
 			// Login success to terms (only when logged to all exchanges)
-			for (i = 0; i < c->X25ConnCount; i++) {
-				if (c->X25LoggedIn[i] != 1) break;
+			int loggedin = 1;
+			for (i = 0; i < X25ConnCount; i++) {
+				if (c->X25Connected[i] && c->X25LoggedIn[i] != 1) loggedin = 0;
 			}
 
 			// all exchanges have us logged in
-			if (i == c->X25ConnCount) {
+			if (loggedin) {
 				IProtoSEND(c, 0x43, NULL);
 
 				// TODO: is this really correct?
@@ -916,7 +917,7 @@ printf("MASK: %d\n", mask);
 		} else if (seq == 0x0307) {
 			// SESSION IN USE
 			char msg[256] = "";
-			sprintf(msg, "\n\n:::SESSION ON %s IN USE, FORCE LOGIN? (+/-)\n\n", X25Conns[c->X25Conns[cci]].name);
+			sprintf(msg, "\n\n:::SESSION ON %s IN USE, FORCE LOGIN? (+/-)\n\n", X25Conns[cci].name);
 
 			IProtoSEND(c, 0x40, NULL);
 			Write(c, msg, strlen(msg));
@@ -1115,7 +1116,7 @@ void CancelPromptRequest(struct connection *conn, char *d) {
 	log_msg("CancelPromptRequest()\n");
 
 	int i = 0;
-	for (i = 0; i < conn->X25ConnCount; i++) {
+	for (i = 0; i < X25ConnCount; i++) {
 		conn->X25Prompt[i] = 0;
 	}
 
@@ -1137,19 +1138,20 @@ void LoginPromptRequest(struct connection *conn, char *exch, char *d) {
 	// logout first when needed
 	LogoutRequest(conn, NULL);
 
-	conn->X25ConnCount = 0;
+	int i = 0;
+	for (i = 0; i < X25ConnCount; i++) {
+		conn->X25Connected[i] = 0;
+	}
 
 	char *p;
 	p = strtok(exch,",");
 	while (p != NULL) {
 		int found = 0;
 
-		int i = 0;
 		for (i = 0; i < X25ConnCount; i++) {
 			if (strcasecmp(X25Conns[i].name, p) != 0) continue;
 			
-			conn->X25Conns[conn->X25ConnCount] = i;
-			conn->X25ConnCount++;
+			conn->X25Connected[i] = 1;
 
 			found = 1;
 		}
@@ -1171,8 +1173,7 @@ void LoginPromptRequest(struct connection *conn, char *exch, char *d) {
 
 	IProtoSEND(conn, 0x41, "U");
 
-	int i = 0;
-	for (i = 0; i < conn->X25ConnCount; i++) {
+	for (i = 0; i < X25ConnCount; i++) {
 		conn->X25Prompt[i] = 'U';
 	}
 }
@@ -1187,11 +1188,9 @@ void PromptRequest(struct connection *conn, char *d) {
 		WantPrompt = 1;
 */
 
-	if (conn->X25ConnCount == 0) return;
-
 	int i = 0;
-	for (i = 0; i < conn->X25ConnCount; i++) {
-		if (conn->X25LoggedIn[i] == 0) return;
+	for (i = 0; i < X25ConnCount; i++) {
+		if (conn->X25Connected[i] && conn->X25LoggedIn[i] == 0) return;
 	}
 
 	IProtoSEND(conn, 0x40, NULL);
@@ -1244,14 +1243,14 @@ void LogoutRequest(struct connection *c, char *d) {
 	if (!c->authenticated) return;
 
 	int i = 0;
-	for (i = 0; i < c->X25ConnCount; i++) {
-		if (c->X25LoggedIn[i] == 0) continue;
+	for (i = 0; i < X25ConnCount; i++) {
+		if (c->X25Connected && c->X25LoggedIn[i] == 0) continue;
 
 		c->X25LoggedIn[i] = 0;
 		c->X25Prompt[i] = 'X';
 
 		char msg[256] = "";
-		sprintf(msg, "\n\n:::LOGOUT FROM %s\n\n", X25Conns[c->X25Conns[i]].name);
+		sprintf(msg, "\n\n:::LOGOUT FROM %s\n\n", X25Conns[i].name);
 		Write(c, msg, strlen(msg));
 
 		IProtoSEND(c, 0x44, NULL);
@@ -1810,8 +1809,8 @@ printf("*%s ", X25Conns[i].address);
 					if (Conns[j]->X25WriteBufLen > 0) add = 1;
 
 					int k = 0;
-					for (k = 0; k < Conns[j]->X25ConnCount; k++) {
-						if (Conns[j]->X25Prompt[k] == 'X') add = 1;
+					for (k = 0; k < X25ConnCount; k++) {
+						if (Conns[j]->X25Connected[k] && Conns[j]->X25Prompt[k] == 'X') add = 1;
 					}
 				}
 
@@ -1947,39 +1946,32 @@ printf("FROM TERMINAL\n");
 					for (j = 0; j < ConnCount; j++) {
 						struct connection *c = Conns[j];
 
-						int cci = -1;
-
-						int k = 0;
-						for (k = 0; k < c->X25ConnCount; k++) {
-							if (X25Conns[c->X25Conns[k]].fd == fd) {
-								cci = k;
-								break;
-							}
-						}
-
-						// it's from an exchange we're not connected to
-						if (cci == -1) continue;
-
-						// not for us and we don't want alarms either
-						if (p->sessid != c->id && !(p->sessid == 0 && c->alarms)) continue;
+						if (p->sessid == c->id) {
+							// it's for us
+						} else if (p->sessid == 0 && c->alarms) {
+							// it's for everyone and we want alarms
+						} else {
+							// we're not interested
+							continue;
+						};
 
 						if (p->rawdata && !p->data) {
 							// the packet is a fragment
-							if (c->X25BufLen[cci] == 0) {
+							if (c->X25BufLen[i] == 0) {
 								// first truncated packet (copy with header)
-								memcpy(c->X25Buf[cci], buf, r);
-								c->X25BufLen[cci] = r;
+								memcpy(c->X25Buf[i], buf, r);
+								c->X25BufLen[i] = r;
 							} else {
 								// continuation (copy without header)
-								memcpy(c->X25Buf[cci]+c->X25BufLen[cci], p->rawdata, p->rawdatalen);
-								c->X25BufLen[cci] += p->rawdatalen;
+								memcpy(c->X25Buf[i]+c->X25BufLen[i], p->rawdata, p->rawdatalen);
+								c->X25BufLen[i] += p->rawdatalen;
 
 								// test whether the packet is now complete
-								struct packet *np = packet_deserialize(c->X25Buf[cci], c->X25BufLen[cci]);
+								struct packet *np = packet_deserialize(c->X25Buf[i], c->X25BufLen[i]);
 								if (np && np->data && !np->rawdata) {
 									// complete
 									ProcessExchangePacket(c, fd, np);
-									c->X25BufLen[cci] = 0;
+									c->X25BufLen[i] = 0;
 								}
 								packet_delete(np); np = NULL;
 							}
@@ -2035,41 +2027,43 @@ perror("CONN");
 				int sent = 0;
 
 				int j = 0;
-				for (j = 0; j < c->X25ConnCount; j++) {
-					int fd = X25Conns[c->X25Conns[j]].fd;
-					int cci = j;
+				for (j = 0; j < X25ConnCount; j++) {
+					int fd = X25Conns[j].fd;
 
 					if (fd < 0 || !FD_ISSET(fd, &WriteQ)) continue;
 
-					if (c->X25WriteBufLen == 0 && c->X25Prompt[cci] != 'X') continue;
+					// we're not interested in talking to this exchange
+					if (!c->X25Connected[j]) continue;
+
+					if (c->X25WriteBufLen == 0 && c->X25Prompt[j] != 'X') continue;
 
 					log_msg("TO X.25\n");
 					sent = 1;
 
 					struct packet *p = NULL;
-					if (c->X25Prompt[cci] == 0) {
+					if (c->X25Prompt[j] == 0) {
 						// TODO: create function for this test
 						// are all exchanges ready?
 						int alllogged = 1;
 
 						int k = 0;
-						for (k = 0; k < c->X25ConnCount; k++) {
-							if (c->X25LoggedIn[k] != 1) alllogged = 0;
+						for (k = 0; k < X25ConnCount; k++) {
+							if (c->X25Connected[k] && c->X25LoggedIn[k] != 1) alllogged = 0;
 						}
 
 						if (alllogged) {
 							p = command_packet(c->id, c->X25WriteBuf, c->X25WriteBufLen);
 						}
-					} else if (c->X25Prompt[cci] == 'I' || c->X25Prompt[cci] == 'p') {
-						p = command_confirmation_packet(c->X25LastConnId[cci], c->id, c->X25LastTail[cci], c->X25WriteBuf, c->X25WriteBufLen);
-						c->X25Prompt[cci] = 0;
-					} else if (c->X25Prompt[cci] == 'U') {
+					} else if (c->X25Prompt[j] == 'I' || c->X25Prompt[j] == 'p') {
+						p = command_confirmation_packet(c->X25LastConnId[j], c->id, c->X25LastTail[j], c->X25WriteBuf, c->X25WriteBufLen);
+						c->X25Prompt[j] = 0;
+					} else if (c->X25Prompt[j] == 'U') {
 						strncpy(c->X25User, c->X25WriteBuf, c->X25WriteBufLen);
 						c->X25User[c->X25WriteBufLen] = 0;
 
 						IProtoSEND(c, 0x41, "P");
-						c->X25Prompt[cci] = 'P';
-					} else if (c->X25Prompt[cci] == 'P') {
+						c->X25Prompt[j] = 'P';
+					} else if (c->X25Prompt[j] == 'P') {
 						strncpy(c->X25Passwd, c->X25WriteBuf, c->X25WriteBufLen);
 						c->X25Passwd[c->X25WriteBufLen] = 0;
 
@@ -2080,11 +2074,11 @@ perror("CONN");
 						if (idx) *idx = 0;
 
 						p = login_packet(c->id, c->X25User, c->X25Passwd, 0);
-						c->X25Prompt[cci] = 0;
-					} else if (c->X25Prompt[cci] == 'X') {
+						c->X25Prompt[j] = 0;
+					} else if (c->X25Prompt[j] == 'X') {
 						p = logout_packet(c->id);
-						c->X25Prompt[cci] = 0;
-					} else if (c->X25Prompt[cci] == 'R') {
+						c->X25Prompt[j] = 0;
+					} else if (c->X25Prompt[j] == 'R') {
 						if (c->X25WriteBufLen == 1 && c->X25WriteBuf[0] == '+') {
 							p = login_packet(c->id, c->X25User, c->X25Passwd, 1);
 						} else {
@@ -2095,7 +2089,7 @@ perror("CONN");
 							LogoutRequest(c, NULL);
 						}
 
-						c->X25Prompt[cci] = 0;
+						c->X25Prompt[j] = 0;
 					}
 
 					unsigned char buf[32000];
