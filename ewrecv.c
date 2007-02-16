@@ -109,7 +109,7 @@ enum {
 } CommandMode = 0;
 
 /// TODO: get rid of this shit
-int LastId = 1;
+unsigned short LastId = 1;
 
 #define WRITEBUF_MAX 16329
 
