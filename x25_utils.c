@@ -45,6 +45,19 @@ int to_bcd(unsigned char *buf, char *str) {
 }
 
 struct packet *login_packet(unsigned short sessid, char *username, char *password, char *newpassword, unsigned char reopen) {
+	char pwd[256] = "";
+	char npwd[256] = "";
+
+	strcpy(pwd, password);
+	if (newpassword) strcpy(npwd, newpassword);
+
+	char *idx = index(pwd, ' ');
+	if (idx) {
+		// the user wants to change the password (separated by space)
+		*idx = 0;
+		strcpy(npwd, idx+1);
+	}
+
 	struct packet *ret = packet_alloc();
 	ret->family = 0xf1;
 	ret->unk1 = 0xe0;
@@ -85,9 +98,9 @@ struct packet *login_packet(unsigned short sessid, char *username, char *passwor
 
 	block_addchild(ret->data, "4-3-2-2", (unsigned char *)username, strlen(username));
 
-	block_addchild(ret->data, "4-3-2-3", (unsigned char *)password, strlen(password));
-	if (newpassword) {
-		block_addchild(ret->data, "4-3-2-4", (unsigned char *)newpassword, strlen(newpassword));
+	block_addchild(ret->data, "4-3-2-3", (unsigned char *)pwd, strlen(pwd));
+	if (strlen(npwd)) {
+		block_addchild(ret->data, "4-3-2-4", (unsigned char *)npwd, strlen(npwd));
 	}
 
 	xxx[0] = reopen;
