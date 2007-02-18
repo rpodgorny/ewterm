@@ -914,6 +914,16 @@ printf("MASK: %d\n", mask);
 
 			// logout from other exchanges, too...
 			LogoutRequest(c, NULL);
+		} else if (seq == 0x0304) {
+			// PASSWORD EXPIRED
+			char msg[256] = "";
+			sprintf(msg, "\n\n:::PLEASE ENTER NEW PASSWORD\n\n");
+
+			IProtoSEND(c, 0x40, NULL);
+			Write(c, msg, strlen(msg));
+			IProtoSEND(c, 0x41, "p");
+
+			c->X25Prompt[cci] = 'N';
 		} else if (seq == 0x0307) {
 			// SESSION IN USE
 			char msg[256] = "";
@@ -1170,6 +1180,7 @@ void LoginPromptRequest(struct connection *conn, char *exch, char *d) {
 
 	conn->X25User[0] = 0;
 	conn->X25Passwd[0] = 0;
+	conn->X25NewPasswd[0] = 0;
 
 	IProtoSEND(conn, 0x41, "U");
 
@@ -2073,14 +2084,28 @@ perror("CONN");
 						idx = index(c->X25Passwd, 10);
 						if (idx) *idx = 0;
 
-						p = login_packet(c->id, c->X25User, c->X25Passwd, 0);
+						p = login_packet(c->id, c->X25User, c->X25Passwd, NULL, 0);
+						c->X25Prompt[j] = 0;
+					} else if (c->X25Prompt[j] == 'N') {
+						strncpy(c->X25NewPasswd, c->X25WriteBuf, c->X25WriteBufLen);
+						c->X25NewPasswd[c->X25WriteBufLen] = 0;
+
+						// Username and password are messed with newlines, fix it
+						char *idx = index(c->X25User, 10);
+						if (idx) *idx = 0;
+						idx = index(c->X25Passwd, 10);
+						if (idx) *idx = 0;
+						idx = index(c->X25NewPasswd, 10);
+						if (idx) *idx = 0;
+
+						p = login_packet(c->id, c->X25User, c->X25Passwd, c->X25NewPasswd, 0);
 						c->X25Prompt[j] = 0;
 					} else if (c->X25Prompt[j] == 'X') {
 						p = logout_packet(c->id);
 						c->X25Prompt[j] = 0;
 					} else if (c->X25Prompt[j] == 'R') {
 						if (c->X25WriteBufLen == 1 && c->X25WriteBuf[0] == '+') {
-							p = login_packet(c->id, c->X25User, c->X25Passwd, 1);
+							p = login_packet(c->id, c->X25User, c->X25Passwd, NULL, 1);
 						} else {
 							char msg[256] = "";
 							sprintf(msg, "\n\n:::WRONG ANSWER!!!\n\n");
