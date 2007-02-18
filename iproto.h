@@ -98,6 +98,7 @@ struct connection {
 	// These are the context extensions used by ewrecv on X.25
 	char X25User[256];
 	char X25Passwd[256];
+	char X25NewPasswd[256];
 
 	int X25Connected[32]; // are we using the connection?
 	int X25LoggedIn[32];
