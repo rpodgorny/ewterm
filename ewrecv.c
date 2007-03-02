@@ -1964,7 +1964,7 @@ printf("FROM TERMINAL\n");
 						} else {
 							// we're not interested
 							continue;
-						};
+						}
 
 						if (p->rawdata && !p->data) {
 							// the packet is a fragment
@@ -1991,7 +1991,7 @@ printf("FROM TERMINAL\n");
 							ProcessExchangePacket(c, fd, p);
 						}
 					}
-				
+
 					packet_delete(p);
 				}
 
