@@ -834,7 +834,6 @@ printf("SEQ: %d\n", seq);
 	if (jobnr) {
 		char header[200] = "";
 		sprintf(header, "%d,%s,%s,%s", jobnr, omt, user, exch);
-printf("HEADER: %s\n", header);
 		IProtoSEND(c, 0x47, header);
 	}
 
@@ -843,7 +842,6 @@ printf("HEADER: %s\n", header);
 		char mask_s[20] = "";
 		sprintf(mask_s, "%d", mask);
 		IProtoSEND(c, 0x46, mask_s);
-printf("MASK: %d\n", mask);
 	}
 
 	if (strlen(err)) {
