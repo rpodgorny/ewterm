@@ -816,14 +816,14 @@ void ProcessExchangePacket(struct connection *c, int idx, struct packet *p) {
 	if (strlen(header)) Write(c, header, strlen(header));
 
 	// TODO: better condition
-	if (jobnr) {
+	if (c && jobnr) {
 		char header[200] = "";
 		sprintf(header, "%d,%s,%s,%s", jobnr, omt, user, exch);
 		IProtoSEND(c, 0x47, header);
 	}
 
 	// TODO: better condition
-	if (mask) {
+	if (c && mask) {
 		char mask_s[20] = "";
 		sprintf(mask_s, "%d", mask);
 		IProtoSEND(c, 0x46, mask_s);
@@ -836,7 +836,7 @@ void ProcessExchangePacket(struct connection *c, int idx, struct packet *p) {
 		Write(c, answer, strlen(answer));
 	}
 
-	if (p->dir == 2) {
+	if (c && p->dir == 2) {
 		/// TODO: make this condition more generic
 		if (seq == 0x0701) {
 			/// TODO: consolidate with the ones below
@@ -865,9 +865,9 @@ void ProcessExchangePacket(struct connection *c, int idx, struct packet *p) {
 		// "Command accepted" confirmation
 		// TODO: send job start to ewterms?
 		char tmp[256];
-		sprintf(tmp, "%d\n\n", jobnr);
+		sprintf(tmp, ":::CONFIRMED JOB %d\n\n", jobnr);
 		Write(c, tmp, strlen(tmp));
-	} else if (p->dir == 0x0c && p->pltype == 1) {
+	} else if (c && p->dir == 0x0c && p->pltype == 1) {
 		if (strlen(unkx3_3)) {
 			c->X25LoggedIn[idx] = 1;
 
@@ -926,7 +926,7 @@ void ProcessExchangePacket(struct connection *c, int idx, struct packet *p) {
 			// logout from other exchanges, too...
 			LogoutRequest(c, NULL);
 		}
-	} else if (p->dir == 0x0e && p->pltype == 0) {
+	} else if (c && p->dir == 0x0e && p->pltype == 0) {
 		// Session timeout (or maybe something else, too...)
 		IProtoSEND(c, 0x44, NULL);
 		c->X25LoggedIn[idx] = 0;
@@ -945,7 +945,7 @@ void ProcessExchangePacket(struct connection *c, int idx, struct packet *p) {
 		sprintf(tmp, "\nEND JOB %04d\n\n", jobnr);
 		Write(c, tmp, strlen(tmp));
 
-		IProtoSEND(c, 0x45, jobnr_s);
+		if (c) IProtoSEND(c, 0x45, jobnr_s);
 	} else if (unkx5__0 == 1) {
 		char tmp[256] = "";
 		sprintf(tmp, "\nEND TEXT JOB %04d\n\n", jobnr);
