@@ -709,7 +709,8 @@ void GenHeader(char *exch, char *apsver, char *patchver, char *date, char *time,
 }
 
 /* for X.25 communication */
-void ProcessExchangePacket(struct connection *c, int fd, struct packet *p) {
+// "idx" is the index in connection's array of X.25 connections
+void ProcessExchangePacket(struct connection *c, int idx, struct packet *p) {
 	pdebug("ProcessExchangePacket()\n");
 
 	// TODO: a quick hack to filter empty packets. remove!
@@ -803,21 +804,6 @@ printf("SEQ: %d\n", seq);
 
 	// ...and now, send the parsed data to clients
 
-	int cci = -1; // index of X.25 connection
-
-	int i = 0;
-	for (i = 0; i < X25ConnCount; i++) {
-		if (X25Conns[i].fd == fd) {
-			cci = i;
-			break;
-		}
-	}
-
-	if (cci == -1) {
-		fprintf(stderr, "Something is broken!!!\n");
-		return;
-	}
-
 	Write(c, "\n\n", 2);
 
 	if (seq > 1) {
@@ -855,26 +841,26 @@ printf("SEQ: %d\n", seq);
 		/// TODO: make this condition more generic
 		if (seq == 0x0701) {
 			/// TODO: consolidate with the ones below
-			c->X25LastConnId[cci] = p->connid;
-			c->X25LastTail[cci] = p->tail;
+			c->X25LastConnId[idx] = p->connid;
+			c->X25LastTail[idx] = p->tail;
 
 			IProtoSEND(c, 0x40, NULL);
 			Write(c, prompt, strlen(prompt));
 			IProtoSEND(c, 0x41, "p");
 
-			c->X25Prompt[cci] = 'p';
+			c->X25Prompt[idx] = 'p';
 		} else if (strlen(prompt)) {
 			// this is a command from EWSD
-			c->X25LastConnId[cci] = p->connid;
-			c->X25LastTail[cci] = p->tail;
+			c->X25LastConnId[idx] = p->connid;
+			c->X25LastTail[idx] = p->tail;
 
 			IProtoSEND(c, 0x40, NULL);
 			Write(c, prompt, strlen(prompt));
 			IProtoSEND(c, 0x41, "I");
 
-			c->X25Prompt[cci] = 'I';
+			c->X25Prompt[idx] = 'I';
 		} else {
-			c->X25Prompt[cci] = 0;
+			c->X25Prompt[idx] = 0;
 		}
 	} else if (p->dir == 3 && p->pltype == 1) {
 		// "Command accepted" confirmation
@@ -884,14 +870,16 @@ printf("SEQ: %d\n", seq);
 		Write(c, tmp, strlen(tmp));
 	} else if (p->dir == 0x0c && p->pltype == 1) {
 		if (strlen(unkx3_3)) {
-			c->X25LoggedIn[cci] = 1;
+			c->X25LoggedIn[idx] = 1;
 
 			char msg[256] = "";
-			sprintf(msg, "\n\n:::LOGIN SUCCESS ON %s\n\n", X25Conns[cci].name);
+			sprintf(msg, "\n\n:::LOGIN SUCCESS ON %s\n\n", X25Conns[idx].name);
 			Write(c, msg, strlen(msg));
 
 			// Login success to terms (only when logged to all exchanges)
 			int loggedin = 1;
+
+			int i = 0;
 			for (i = 0; i < X25ConnCount; i++) {
 				if (c->X25Connected[i] && c->X25LoggedIn[i] != 1) loggedin = 0;
 			}
@@ -921,17 +909,17 @@ printf("SEQ: %d\n", seq);
 			Write(c, msg, strlen(msg));
 			IProtoSEND(c, 0x41, "p");
 
-			c->X25Prompt[cci] = 'N';
+			c->X25Prompt[idx] = 'N';
 		} else if (seq == 0x0307) {
 			// SESSION IN USE
 			char msg[256] = "";
-			sprintf(msg, "\n\n:::SESSION ON %s IN USE, FORCE LOGIN? (+/-)\n\n", X25Conns[cci].name);
+			sprintf(msg, "\n\n:::SESSION ON %s IN USE, FORCE LOGIN? (+/-)\n\n", X25Conns[idx].name);
 
 			IProtoSEND(c, 0x40, NULL);
 			Write(c, msg, strlen(msg));
 			IProtoSEND(c, 0x41, "I");
 
-			c->X25Prompt[cci] = 'R';
+			c->X25Prompt[idx] = 'R';
 		} else {
 			// other errors
 			IProtoSEND(c, 0x42, NULL);
@@ -942,7 +930,7 @@ printf("SEQ: %d\n", seq);
 	} else if (p->dir == 0x0e && p->pltype == 0) {
 		// Session timeout (or maybe something else, too...)
 		IProtoSEND(c, 0x44, NULL);
-		c->X25LoggedIn[cci] = 0;
+		c->X25LoggedIn[idx] = 0;
 
 		// logout from other exchanges, too...
 		LogoutRequest(c, NULL);
@@ -1979,14 +1967,14 @@ printf("FROM TERMINAL\n");
 								struct packet *np = packet_deserialize(c->X25Buf[i], c->X25BufLen[i]);
 								if (np && np->data && !np->rawdata) {
 									// complete
-									ProcessExchangePacket(c, fd, np);
+									ProcessExchangePacket(c, i, np);
 									c->X25BufLen[i] = 0;
 								}
 								packet_delete(np); np = NULL;
 							}
 						} else {
 							// the packet is not fragmented
-							ProcessExchangePacket(c, fd, p);
+							ProcessExchangePacket(c, i, p);
 						}
 					}
 
