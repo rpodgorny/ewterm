@@ -710,6 +710,7 @@ void GenHeader(char *exch, char *apsver, char *patchver, char *date, char *time,
 
 /* for X.25 communication */
 // "idx" is the index in connection's array of X.25 connections
+// if "c" is NULL, we want to write to log only
 void ProcessExchangePacket(struct connection *c, int idx, struct packet *p) {
 	pdebug("ProcessExchangePacket()\n");
 
@@ -740,7 +741,6 @@ void ProcessExchangePacket(struct connection *c, int idx, struct packet *p) {
 	b = block_getchild(p->data, "2");
 	if (b && b->data) {
 		seq = ntohs(*(unsigned short *)b->data);
-printf("SEQ: %d\n", seq);
 		jobnr = ntohs(*(unsigned short *)(b->data+2));
 	}
 
@@ -800,7 +800,6 @@ printf("SEQ: %d\n", seq);
 
 	b = block_getchild(p->data, "7");
 	if (b && b->data) strncpy(answer, (char *)b->data, b->len);
-
 
 	// ...and now, send the parsed data to clients
 
@@ -1943,8 +1942,11 @@ printf("FROM TERMINAL\n");
 					for (j = 0; j < ConnCount; j++) {
 						struct connection *c = Conns[j];
 
+						int log_it = 0;
+
 						if (p->sessid == c->id) {
 							// it's for us
+							log_it = 1;
 						} else if (p->sessid == 0 && c->alarms) {
 							// it's for everyone and we want alarms
 						} else {
@@ -1969,12 +1971,16 @@ printf("FROM TERMINAL\n");
 									// complete
 									ProcessExchangePacket(c, i, np);
 									c->X25BufLen[i] = 0;
+
+									if (log_it) ProcessExchangePacket(NULL, 0, np);
 								}
 								packet_delete(np); np = NULL;
 							}
 						} else {
 							// the packet is not fragmented
 							ProcessExchangePacket(c, i, p);
+
+							if (log_it) ProcessExchangePacket(NULL, 0, p);
 						}
 					}
 
