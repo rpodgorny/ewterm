@@ -803,17 +803,23 @@ void ProcessExchangePacket(struct connection *c, int idx, struct packet *p) {
 
 	// ...and now, send the parsed data to clients
 
-	Write(c, "\n\n", 2);
+	if (c) Write(c, "\n\n", 2);
+	else LogStr("\n\n", 2);
 
 	if (seq > 1) {
 		char tmp[128] = "";
 		sprintf(tmp, "CONTINUATION TEXT %04d\n\n", seq-1);
-		Write(c, tmp, strlen(tmp));
+		if (c) Write(c, tmp, strlen(tmp));
+		else LogStr(tmp, strlen(tmp));
 	}
 
 	char header[256] = "";
 	GenHeader(exch, apsver, patchver, date, time, jobnr, omt, user, msggrp, mask, hint, header);
-	if (strlen(header)) Write(c, header, strlen(header));
+
+	if (strlen(header)) {
+		if (c) Write(c, header, strlen(header));
+		else LogStr(header, strlen(header));
+	}
 
 	// TODO: better condition
 	if (c && jobnr) {
@@ -830,10 +836,12 @@ void ProcessExchangePacket(struct connection *c, int idx, struct packet *p) {
 	}
 
 	if (strlen(err)) {
-		Write(c, err, strlen(err));
+		if (c) Write(c, err, strlen(err));
+		else LogStr(err, strlen(err));
 	}
 	if (strlen(answer)) {
-		Write(c, answer, strlen(answer));
+		if (c) Write(c, answer, strlen(answer));
+		else LogStr(answer, strlen(answer));
 	}
 
 	if (c && p->dir == 2) {
@@ -866,59 +874,76 @@ void ProcessExchangePacket(struct connection *c, int idx, struct packet *p) {
 		// TODO: send job start to ewterms?
 		char tmp[256];
 		sprintf(tmp, ":::CONFIRMED JOB %d\n\n", jobnr);
-		Write(c, tmp, strlen(tmp));
+
+		if (c) Write(c, tmp, strlen(tmp));
+		else LogStr(tmp, strlen(tmp));
 	} else if (c && p->dir == 0x0c && p->pltype == 1) {
 		if (strlen(unkx3_3)) {
-			c->X25LoggedIn[idx] = 1;
-
 			char msg[256] = "";
 			sprintf(msg, "\n\n:::LOGIN SUCCESS ON %s\n\n", X25Conns[idx].name);
-			Write(c, msg, strlen(msg));
 
-			// Login success to terms (only when logged to all exchanges)
-			int loggedin = 1;
+			if (c) {
+				c->X25LoggedIn[idx] = 1;
 
-			int i = 0;
-			for (i = 0; i < X25ConnCount; i++) {
-				if (c->X25Connected[i] && c->X25LoggedIn[i] != 1) loggedin = 0;
-			}
+				Write(c, msg, strlen(msg));
 
-			// all exchanges have us logged in
-			if (loggedin) {
-				IProtoSEND(c, 0x43, NULL);
+				// Login success to terms (only when logged to all exchanges)
+				int loggedin = 1;
 
-				// TODO: is this really correct?
-				// send input prompt (some command may be waiting in ewterm)
-				IProtoSEND(c, 0x40, NULL);
-				Write(c, "<", 1);
-				IProtoSEND(c, 0x41, "<");
+				int i = 0;
+				for (i = 0; i < X25ConnCount; i++) {
+					if (c->X25Connected[i] && c->X25LoggedIn[i] != 1) loggedin = 0;
+				}
+
+				// all exchanges have us logged in
+				if (loggedin) {
+					IProtoSEND(c, 0x43, NULL);
+
+					// TODO: is this really correct?
+					// send input prompt (some command may be waiting in ewterm)
+					IProtoSEND(c, 0x40, NULL);
+					Write(c, "<", 1);
+					IProtoSEND(c, 0x41, "<");
+				}
+			} else {
+				LogStr(msg, strlen(msg));
 			}
 		} else if (seq == 0x0303) {
 			// INVALID PASSWORD
-			IProtoSEND(c, 0x42, NULL);
+			if (c) {
+				IProtoSEND(c, 0x42, NULL);
 
-			// logout from other exchanges, too...
-			LogoutRequest(c, NULL);
+				// logout from other exchanges, too...
+				LogoutRequest(c, NULL);
+			}
 		} else if (seq == 0x0304) {
 			// PASSWORD EXPIRED
 			char msg[256] = "";
 			sprintf(msg, "\n\n:::PLEASE ENTER NEW PASSWORD\n\n");
 
-			IProtoSEND(c, 0x40, NULL);
-			Write(c, msg, strlen(msg));
-			IProtoSEND(c, 0x41, "p");
+			if (c) {
+				IProtoSEND(c, 0x40, NULL);
+				Write(c, msg, strlen(msg));
+				IProtoSEND(c, 0x41, "p");
 
-			c->X25Prompt[idx] = 'N';
+				c->X25Prompt[idx] = 'N';
+			} else {
+				LogStr(msg, strlen(msg));
+			}
 		} else if (seq == 0x0307) {
 			// SESSION IN USE
 			char msg[256] = "";
 			sprintf(msg, "\n\n:::SESSION ON %s IN USE, FORCE LOGIN? (+/-)\n\n", X25Conns[idx].name);
 
-			IProtoSEND(c, 0x40, NULL);
-			Write(c, msg, strlen(msg));
-			IProtoSEND(c, 0x41, "I");
+			if (c) {
+				IProtoSEND(c, 0x40, NULL);
+				Write(c, msg, strlen(msg));
+				IProtoSEND(c, 0x41, "I");
 
-			c->X25Prompt[idx] = 'R';
+				c->X25Prompt[idx] = 'R';
+			} else {
+				LogStr(msg, strlen(msg));
+			}
 		} else {
 			// other errors
 			IProtoSEND(c, 0x42, NULL);
@@ -943,17 +968,25 @@ void ProcessExchangePacket(struct connection *c, int idx, struct packet *p) {
 	|| unkx5__0 == 2) {
 		char tmp[256] = "";
 		sprintf(tmp, "\nEND JOB %04d\n\n", jobnr);
-		Write(c, tmp, strlen(tmp));
 
-		if (c) IProtoSEND(c, 0x45, jobnr_s);
+		if (c) {
+			Write(c, tmp, strlen(tmp));
+			IProtoSEND(c, 0x45, jobnr_s);
+		} else {
+			LogStr(tmp, strlen(tmp));
+		}
 	} else if (unkx5__0 == 1) {
 		char tmp[256] = "";
 		sprintf(tmp, "\nEND TEXT JOB %04d\n\n", jobnr);
-		Write(c, tmp, strlen(tmp));
+
+		if (c) Write(c, tmp, strlen(tmp));
+		else LogStr(tmp, strlen(tmp));
 	} else if (unkx5__0 == 0) {
 		char tmp[256] = "";
 		sprintf(tmp, "\nINTERRUPTION TEXT JOB %04d\n\n", jobnr);
-		Write(c, tmp, strlen(tmp));
+
+		if (c) Write(c, tmp, strlen(tmp));
+		else LogStr(tmp, strlen(tmp));
 	}
 }
 

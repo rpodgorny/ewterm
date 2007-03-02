@@ -81,12 +81,10 @@ int DoRead(struct connection *conn) {
 }
 
 void Write(struct connection *conn, void *data, int dlen) {
-	int len;
-
 	if (!dlen) return;
 
 	conn->WriteBuffer = ShrinkBuffer(conn->WriteBuffer, conn->WriteBufferLen);
-	len = BUF_GRAIN - (conn->WriteBufferLen % BUF_GRAIN);
+	int len = BUF_GRAIN - (conn->WriteBufferLen % BUF_GRAIN);
 	if (len > dlen) len = dlen;
 
 	memcpy(conn->WriteBuffer + conn->WriteBufferLen, data, len);
