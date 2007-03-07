@@ -653,7 +653,7 @@ void ReopenLogTODO() {
 
 	// it could be a fifo with no listener - we can't afford to block
 	//LogTODO = open(LogTODOFName, O_CREAT | O_WRONLY | O_APPEND | O_NONBLOCK, 0666);
-	LogTODO = fopen(LogTODOFName, "a");
+	LogTODO = fopen(LogTODOFName, "a+");
 	if (!LogTODO) perror("LogTODO");
 }
 
