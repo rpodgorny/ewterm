@@ -649,7 +649,7 @@ void LogStr(char *s, int len) {
 			}
 
 			// it could be a fifo with no listener - we can't afford to block
-			int fd = open(LogTODOFName, O_WRONLY | O_APPEND | O_NONBLOCK);
+			int fd = open(LogTODOFName, O_CREAT | O_WRONLY | O_APPEND | O_NONBLOCK, 0666);
 			if (fd < 0) {
 				perror("LogTODO open");
 			} else {
