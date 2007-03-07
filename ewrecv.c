@@ -144,7 +144,7 @@ int DailyLog = 0;
 
 int Silent = 0, Verbose = 0;
 
-void ReopenLogFile(), UpdateDailyLogFName(struct tm *tm), CheckDailyLog();
+void ReopenLogFile(), UpdateDailyLogFName(struct tm *tm), CheckDailyLog(), ReopenLogTODO();
 
 #define	log_msg(fmt...) {\
 	if (DailyLog) CheckDailyLog(); \
@@ -283,6 +283,7 @@ void SigHupCaught() {
 	}
 
 	ReopenLogFile();
+	ReopenLogTODO();
 
 	if (LogRaw) {
 		fclose(LogRaw);
@@ -333,6 +334,7 @@ void CheckDailyLog() {
 	lday = tm->tm_mday;
 	UpdateDailyLogFName(tm);
 	ReopenLogFile();
+	ReopenLogTODO();
 }
 
 void Lock(FILE *Fl) {
@@ -634,8 +636,8 @@ void LogCh(char Chr) {
 	}
 }
 
-void LogTODOOpen() {
-	if (LogTODO) return;
+void ReopenLogTODO() {
+	if (LogTODO) fclose(LogTODO);
 
 	if (LogTODOFName[0] == 0) return;
 
@@ -652,12 +654,11 @@ void LogTODOOpen() {
 	// it could be a fifo with no listener - we can't afford to block
 	//LogTODO = open(LogTODOFName, O_CREAT | O_WRONLY | O_APPEND | O_NONBLOCK, 0666);
 	LogTODO = fopen(LogTODOFName, "a");
+	if (!LogTODO) perror("LogTODO");
 }
 
 // TODO: clean this (len is not needed)
 void LogStr(char *s, int len) {
-	LogTODOOpen();
-
 	if (!LogTODO) return;
 
 	///fwrite(LogTODO, s, len);
@@ -1528,6 +1529,8 @@ void StartLog2(int PrintLog) {
 		LogFl1 = popen("/usr/bin/lpr", "w");
 		if (!LogFl1) fprintf(stderr, "Warning! Cannot popen lpr!\r\n");
 	}
+
+	ReopenLogTODO();
 }
 
 int main(int argc, char *argv[]) {
