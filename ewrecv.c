@@ -634,37 +634,34 @@ void LogCh(char Chr) {
 	}
 }
 
-//TODO: this is slow and nasty
-void LogStr(char *s, int len) {
-	if (!LogTODO) {
-		if (LogTODOFName[0]) {
-			if (LogTODOFName[0] != '/') {
-				char LogTODOFName2[256];
+void LogTODOOpen() {
+	if (LogTODO) return;
 
-				/* make the path absolute, we will be chdir()ing later */
-				strcpy(LogTODOFName2, LogTODOFName);
-				if (!getcwd(LogTODOFName, 256)) fprintf(stderr, "Warning! Cannot get cwd - logging may not work properly.\r\n");
-				strcat(LogTODOFName, "/");
-				strcat(LogTODOFName, LogTODOFName2);
-			}
+	if (LogTODOFName[0] == 0) return;
 
-			// it could be a fifo with no listener - we can't afford to block
-			int fd = open(LogTODOFName, O_CREAT | O_WRONLY | O_APPEND | O_NONBLOCK, 0666);
-			if (fd < 0) {
-				perror("LogTODO open");
-			} else {
-				LogTODO = fdopen(fd, "a");
-				if (!LogTODO) fprintf(stderr, "Warning! Cannot fopen %s!\r\n", LogTODOFName);
-			}
-		}
+	if (LogTODOFName[0] != '/') {
+		char LogTODOFName2[256];
+
+		// make the path absolute, we will be chdir()ing later
+		strcpy(LogTODOFName2, LogTODOFName);
+		if (!getcwd(LogTODOFName, 256)) fprintf(stderr, "Warning! Cannot get cwd - logging may not work properly.\r\n");
+		strcat(LogTODOFName, "/");
+		strcat(LogTODOFName, LogTODOFName2);
 	}
+
+	// it could be a fifo with no listener - we can't afford to block
+	//LogTODO = open(LogTODOFName, O_CREAT | O_WRONLY | O_APPEND | O_NONBLOCK, 0666);
+	LogTODO = fopen(LogTODOFName, "a");
+}
+
+// TODO: clean this (len is not needed)
+void LogStr(char *s, int len) {
+	LogTODOOpen();
 
 	if (!LogTODO) return;
 
-	// TODO: this is ugly and slow, fix it
-	int i = 0;
-	for (i = 0; i < len; i++) fputc(s[i], LogTODO);
-
+	///fwrite(LogTODO, s, len);
+	fprintf(LogTODO, "%s", s);
 	fflush(LogTODO);
 }
 
