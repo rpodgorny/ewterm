@@ -138,6 +138,7 @@ DC3:
 == 6.1 ==
 
 	0x50	Request list of exchanges.
+	0x51	Cancel current job.
 
 DC4:
  	Like DC1, but we don't forward the stuff to other ewterms. Nice for passwords stuff.
