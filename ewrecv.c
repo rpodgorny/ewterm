@@ -869,12 +869,17 @@ void ProcessExchangePacket(struct connection *c, int idx, struct packet *p) {
 		}
 	} else if (p->dir == 3 && p->pltype == 1) {
 		// "Command accepted" confirmation
-		// TODO: send job start to ewterms?
 		char tmp[256];
 		sprintf(tmp, ":::CONFIRMED JOB %d\n\n", jobnr);
 
-		if (c) Write(c, tmp, strlen(tmp));
-		else LogStr(tmp, strlen(tmp));
+		if (c) {
+			// save the job number for possible cancellation
+			c->X25LastJob[idx] = jobnr;
+
+			Write(c, tmp, strlen(tmp));
+		} else {
+			LogStr(tmp, strlen(tmp));
+		}
 	} else if (c && p->dir == 0x0c && p->pltype == 1) {
 		if (strlen(unkx3_3)) {
 			char msg[256] = "";
@@ -1395,6 +1400,8 @@ struct connection *TryAccept(int Fd) {
 
 		conn->X25WriteBuf = malloc(WRITEBUF_MAX);
 		conn->X25WriteBufLen = 0;
+
+		conn->X25LastCommand[0] = 0;
 
 		Conns[ConnCount] = conn;
 		ConnCount++;
@@ -2081,6 +2088,9 @@ perror("CONN");
 
 						if (alllogged) {
 							p = command_packet(c->id, c->X25WriteBuf, c->X25WriteBufLen);
+
+							// save the command for possible cancellation
+							strncpy(c->X25LastCommand, c->X25WriteBuf, c->X25WriteBufLen);
 						}
 					} else if (c->X25Prompt[j] == 'I' || c->X25Prompt[j] == 'p') {
 						p = command_confirmation_packet(c->X25LastConnId[j], c->id, c->X25LastTail[j], c->X25WriteBuf, c->X25WriteBufLen);
