@@ -108,6 +108,9 @@ struct connection {
 	unsigned char X25Buf[32][320000]; // persistent buffer for data coming from X.25
 	int X25BufLen[32];
 
+	char X25LastCommand[256];
+	unsigned short X25LastJob[32]; // current job number
+
 	char *X25WriteBuf;
 	int X25WriteBufLen;
 	int alarms; // do we want to receive alarms?
