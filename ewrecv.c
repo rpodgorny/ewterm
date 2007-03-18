@@ -1809,8 +1809,6 @@ int main(int argc, char *argv[]) {
 		// check connection and reconnect when something is broken
 		ReOpenX25();
 
-printf("ADDING ");
-
 		for (i = 0; i < X25ConnCount; i++) {
 			int fd = X25Conns[i].fd;
 
@@ -1818,7 +1816,6 @@ printf("ADDING ");
 
 			// read queue
 			if (X25Conns[i].conn == 1) {
-printf("%s ", X25Conns[i].address);
 				FD_SET(fd, &ReadQ);
 				if (fd > MaxFd) MaxFd = fd;
 			}
@@ -1828,7 +1825,6 @@ printf("%s ", X25Conns[i].address);
 				// wait for connect() result
 				FD_SET(fd, &WriteQ);
 				if (fd > MaxFd) MaxFd = fd;
-printf("*%s ", X25Conns[i].address);
 			} else {
 				// connected, add only if we have something to say
 				int add = 0;
@@ -1844,13 +1840,11 @@ printf("*%s ", X25Conns[i].address);
 				}
 
 				if (add) {
-printf("**%s ", X25Conns[i].address);
 					FD_SET(fd, &WriteQ);
 					if (fd > MaxFd) MaxFd = fd;
 				}
 			}
 		}
-printf("\n");
 
 		// timeout variables
 		struct timeval tv;
@@ -1862,14 +1856,12 @@ printf("\n");
 			perror("--- ewrecv: Select failed");
 			Done(4);
 		} else {
-printf("SELECT\n");
 			/* something from terminal */
 			int i = 0;
 			for (i = 0; i < ConnCount; i++) {
 				struct connection *c = Conns[i];
 
 				if (!FD_ISSET(c->Fd, &ReadQ)) continue;
-printf("FROM TERMINAL\n");
 
 				errno = 0;
 				if (DoRead(c) <= 0 && errno != EINTR) {
