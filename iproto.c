@@ -491,6 +491,13 @@ ProcessIProtoChar(struct connection *conn, unsigned char Chr) {
         break;
       }
       IProtoSEND(conn, 0x80, "");
+	case 0x51: /* cancel job request */
+	  if (conn->handlers->ASKCancelJob) {
+        conn->handlers->ASKCancelJob(conn, conn->IProtoPacket);
+        break;
+      }
+      IProtoSEND(conn, 0x80, "");
+
 	default:
 	  IProtoSEND(conn, 0x80, "");
 	  break;

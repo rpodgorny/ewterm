@@ -1303,6 +1303,18 @@ void ExchangeListRequest(struct connection *c, char *d) {
 	IProtoSEND(c, 0x50, list);
 }
 
+void CancelJobRequest(struct connection *c, char *d) {
+	log_msg("CancelJobRequest()\n");
+
+	if (!c->authenticated) return;
+
+	int i = 0;
+	for (i = 0; i < X25ConnCount; i++) {
+		if (c->X25Connected && c->X25LoggedIn[i] == 0) continue;
+
+		c->X25Prompt[i] = 'c';
+	}
+}
 
 struct connection *TryAccept(int Fd) {
 	printf("TryAccept()\n");
@@ -1378,6 +1390,7 @@ struct connection *TryAccept(int Fd) {
 
 			/* 6.1 */
 			ExchangeListRequest,
+			CancelJobRequest,
 
 			/* 0.5pre3 */
 			SendIntro /* AuthSuccess */,
@@ -1842,7 +1855,11 @@ int main(int argc, char *argv[]) {
 
 					int k = 0;
 					for (k = 0; k < X25ConnCount; k++) {
-						if (Conns[j]->X25Connected[k] && Conns[j]->X25Prompt[k] == 'X') add = 1;
+						if (Conns[j]->X25Connected[k]
+						&& (Conns[j]->X25Prompt[k] == 'X'
+						|| Conns[j]->X25Prompt[k] == 'c')) {
+							add = 1;
+						}
 					}
 				}
 
@@ -2070,7 +2087,11 @@ perror("CONN");
 					// we're not interested in talking to this exchange
 					if (!c->X25Connected[j]) continue;
 
-					if (c->X25WriteBufLen == 0 && c->X25Prompt[j] != 'X') continue;
+					if (c->X25WriteBufLen == 0
+					&& c->X25Prompt[j] != 'X'
+					&& c->X25Prompt[j] != 'c') {
+						continue;
+					}
 
 					log_msg("TO X.25\n");
 					sent = 1;
@@ -2139,6 +2160,29 @@ perror("CONN");
 							Write(c, msg, strlen(msg));
 
 							LogoutRequest(c, NULL);
+						}
+
+						c->X25Prompt[j] = 0;
+					} else if (c->X25Prompt[j] == 'c') {
+						char cmd[256] = "";
+
+						if (!strncasecmp(c->X25LastCommand, "DISP", 4)
+						|| !strncasecmp(c->X25LastCommand, "STAT", 4)) {
+							sprintf(cmd, "STOPDISP:JN=%d;\n", c->X25LastJob[j]);
+						} else if (!strncasecmp(c->X25LastCommand, "EXECCMDFILE", 11)) {
+							sprintf(cmd, "STOPJOB:JN=%d;\n", c->X25LastJob[j]);
+						} else {
+							char msg[256] = "";
+							sprintf(msg, "\n\n:::NO CANCEL COMMAND!!!\n\n");
+							Write(c, msg, strlen(msg));
+						}
+
+						if (strlen(cmd)) {
+							p = command_packet(c->id, cmd, strlen(cmd));
+							
+							char msg[256] = "";
+							sprintf(msg, "\n\n:::CANCELLING JOB %d ON %s\n\n", c->X25LastJob[j], X25Conns[j].name);
+							Write(c, msg, strlen(msg));
 						}
 
 						c->X25Prompt[j] = 0;

@@ -66,6 +66,7 @@ struct conn_handlers {
 	void (*ASKLogout)(struct connection *, char *);
 
 	void (*ASKExchangeList)(struct connection *, char *);
+	void (*ASKCancelJob)(struct connection *, char *);
 
 	void (*AuthSuccess)(struct connection *);
 	void (*AuthFailed)(struct connection *);
