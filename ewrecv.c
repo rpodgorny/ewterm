@@ -975,6 +975,8 @@ void ProcessExchangePacket(struct connection *c, int idx, struct packet *p) {
 		if (c) {
 			Write(c, tmp, strlen(tmp));
 			IProtoSEND(c, 0x45, jobnr_s);
+
+			c->X25LastJob[idx] = 0;
 		} else {
 			LogStr(tmp, strlen(tmp));
 		}
@@ -2166,7 +2168,11 @@ perror("CONN");
 					} else if (c->X25Prompt[j] == 'c') {
 						char cmd[256] = "";
 
-						if (!strncasecmp(c->X25LastCommand, "DISP", 4)
+						if (c->X25LastJob[j] == 0) {
+							char msg[256] = "";
+							sprintf(msg, "\n\n:::NOTHING TO CANCEL ON %s!!!\n\n", X25Conns[j].name);
+							Write(c, msg, strlen(msg));
+						} else if (!strncasecmp(c->X25LastCommand, "DISP", 4)
 						|| !strncasecmp(c->X25LastCommand, "STAT", 4)) {
 							sprintf(cmd, "STOPDISP:JN=%d;\n", c->X25LastJob[j]);
 						} else if (!strncasecmp(c->X25LastCommand, "EXECCMDFILE", 11)) {
@@ -2184,6 +2190,8 @@ perror("CONN");
 							sprintf(msg, "\n\n:::CANCELLING JOB %d ON %s\n\n", c->X25LastJob[j], X25Conns[j].name);
 							Write(c, msg, strlen(msg));
 						}
+
+						c->X25LastJob[j] = 0;
 
 						c->X25Prompt[j] = 0;
 					}
