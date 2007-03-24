@@ -137,21 +137,15 @@ char X25Local[256] = "";
 
 /* Log files */
 
-FILE *LogFl1 = NULL, *LogFl2 = NULL, *LogRaw = NULL, *LogTODO = NULL;
-char LogFName[256] = "", LogRawName[256] = "", DailyLogFNameTemplate[256] = "", LogTODOFName[256] = "";
-
-int DailyLog = 0;
+FILE *ALog = NULL, *MLog = NULL;
+char ALogFName[256] = "", MLogFName[256] = "";
 
 int Silent = 0, Verbose = 0;
 
-void ReopenLogFile(), UpdateDailyLogFName(struct tm *tm), CheckDailyLog(), ReopenLogTODO();
+void ReopenALog(), ReopenMLog();
 
 #define	log_msg(fmt...) {\
-	if (DailyLog) CheckDailyLog(); \
-	if (LogFl1) { fprintf(LogFl1, fmt); fflush(LogFl1); }\
-	if (LogFl2) { fprintf(LogFl2, fmt); fflush(LogFl2); }\
-	if (LogRaw) { fprintf(LogRaw, fmt); fflush(LogRaw); }\
-	if (!Silent && stderr != LogFl2) { fprintf(stderr, fmt); fflush(stderr); }\
+	if (!Silent) { fprintf(stderr, fmt); fflush(stderr); }\
 }
 
 
@@ -239,10 +233,6 @@ void Done(int Err) {
 		log_msg("--- ewrecv: end session (%d) at %s\n", Err, time_s);
 	}
 
-	if (LogFl1) fclose(LogFl1);
-	if (LogFl2) fclose(LogFl2);
-	if (LogRaw) fclose(LogRaw);
-
 	exit(Err);
 }
 
@@ -266,7 +256,8 @@ void SigHupCaught() {
 
 	OldSilent = Silent;
 	Silent = 0;
-  
+ 
+ 	// TODO: why this? ...and twice?
 	{
 		char *time_s;
 		time_t tv;
@@ -275,22 +266,8 @@ void SigHupCaught() {
 		log_msg("--- ewrecv: caught ->HUP at %s\n", time_s);
 	}
   
-	if (LogFl1) {
-		if (pclose(LogFl1) < 0) log_msg("--- ewrecv: Hey! Cannot pclose lpr!\n");
-
-		LogFl1 = popen("/usr/bin/lpr", "w");
-		if (!LogFl1) log_msg("--- ewrecv: Hey! Cannot popen lpr!\n");
-	}
-
-	ReopenLogFile();
-	ReopenLogTODO();
-
-	if (LogRaw) {
-		fclose(LogRaw);
-
-		LogRaw = fopen(LogRawName, "a");
-		if (!LogRaw) log_msg("--- ewrecv: Hey! Cannot fopen %s!\n", LogRawName);
-	}
+	ReopenALog();
+	ReopenMLog();
 
 	{
 		char *time_s;
@@ -305,37 +282,7 @@ void SigHupCaught() {
 	signal(SIGHUP, SigHupCaught);
 }
 
-void ReopenLogFile() {
-	pdebug("ReopenLogFile()\n");
-
-	if (!LogFl2) return;
-
-	fclose(LogFl2);
-
-	LogFl2 = fopen(LogFName, "a");
-	if (!LogFl2) log_msg("--- ewrecv: Hey! Cannot fopen %s!\n", LogFName);
-}
-
-void UpdateDailyLogFName(struct tm *tm) {
-	if (!DailyLog) return;
-
-	snprintf(LogFName, 256, "%s/%04d-%02d-%02d", DailyLogFNameTemplate, tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
-}
-
-static int lday;
-
-void CheckDailyLog() {
-	time_t t = time(NULL);
-	struct tm *tm = localtime(&t);
-
-	if (!DailyLog) return;
-
-	if (tm->tm_mday == lday) return;
-	lday = tm->tm_mday;
-	UpdateDailyLogFName(tm);
-	ReopenLogFile();
-	ReopenLogTODO();
-}
+///static int lday;
 
 void Lock(FILE *Fl) {
 	/* Create our lock */
@@ -612,10 +559,7 @@ void LogCh(char Chr) {
 	///pdebug("LogCh() %c/x%x\n", Chr, Chr);
 
 	if (Chr >= 32 || Chr == 10) {
-		if (DailyLog) CheckDailyLog();
-		if (LogFl1) fputc(Chr, LogFl1);
-		if (LogFl2) fputc(Chr, LogFl2);
-		if (Verbose && stderr && stderr != LogFl2) fputc(Chr, stderr);
+		if (Verbose && stderr) fputc(Chr, stderr);
 	}
 
 	if (LineLen < 255) {
@@ -624,9 +568,7 @@ void LogCh(char Chr) {
 	}
 
 	if (Chr == 10) {
-		if (LogFl1) fflush(LogFl1);
-		if (LogFl2) fflush(LogFl2);
-		if (Verbose && stderr && stderr != LogFl2) fflush(stderr);
+		if (Verbose && stderr) fflush(stderr);
 
 		/* next line in history */
 		LastLine++;
@@ -636,34 +578,56 @@ void LogCh(char Chr) {
 	}
 }
 
-void ReopenLogTODO() {
-	if (LogTODO) fclose(LogTODO);
+void ReopenALog() {
+	if (ALog) fclose(ALog);
 
-	if (LogTODOFName[0] == 0) return;
+	if (ALogFName[0] == 0) return;
 
-	if (LogTODOFName[0] != '/') {
-		char LogTODOFName2[256];
+	if (ALogFName[0] != '/') {
+		char ALogFName2[256];
 
 		// make the path absolute, we will be chdir()ing later
-		strcpy(LogTODOFName2, LogTODOFName);
-		if (!getcwd(LogTODOFName, 256)) fprintf(stderr, "Warning! Cannot get cwd - logging may not work properly.\r\n");
-		strcat(LogTODOFName, "/");
-		strcat(LogTODOFName, LogTODOFName2);
+		strcpy(ALogFName2, ALogFName);
+		if (!getcwd(ALogFName, 256)) fprintf(stderr, "Warning! Cannot get cwd - logging may not work properly.\r\n");
+		strcat(ALogFName, "/");
+		strcat(ALogFName, ALogFName2);
 	}
 
 	// it could be a fifo with no listener - we can't afford to block
-	//LogTODO = open(LogTODOFName, O_CREAT | O_WRONLY | O_APPEND | O_NONBLOCK, 0666);
-	LogTODO = fopen(LogTODOFName, "a+");
-	if (!LogTODO) perror("LogTODO");
+	//ALog = open(ALogFName, O_CREAT | O_WRONLY | O_APPEND | O_NONBLOCK, 0666);
+	ALog = fopen(ALogFName, "a+");
+	if (!ALog) perror("ALog");
+}
+
+
+void ReopenMLog() {
+	if (MLog) fclose(MLog);
+
+	if (MLogFName[0] == 0) return;
+
+	if (MLogFName[0] != '/') {
+		char MLogFName2[256];
+
+		// make the path absolute, we will be chdir()ing later
+		strcpy(MLogFName2, MLogFName);
+		if (!getcwd(MLogFName, 256)) fprintf(stderr, "Warning! Cannot get cwd - logging may not work properly.\r\n");
+		strcat(MLogFName, "/");
+		strcat(MLogFName, MLogFName2);
+	}
+
+	// it could be a fifo with no listener - we can't afford to block
+	//MLog = open(MLogFName, O_CREAT | O_WRONLY | O_APPEND | O_NONBLOCK, 0666);
+	MLog = fopen(MLogFName, "a+");
+	if (!MLog) perror("MLog");
 }
 
 // TODO: clean this (len is not needed)
-void LogStr(char *s, int len) {
-	if (!LogTODO) return;
+void MLogStr(char *s, int len) {
+	if (!MLog) return;
 
-	///fwrite(LogTODO, s, len);
-	fprintf(LogTODO, "%s", s);
-	fflush(LogTODO);
+	///fwrite(MLog, s, len);
+	fprintf(MLog, "%s", s);
+	fflush(MLog);
 }
 
 int SendChar(struct connection *c, char Chr) {
@@ -802,13 +766,13 @@ void ProcessExchangePacket(struct connection *c, int idx, struct packet *p) {
 	// ...and now, send the parsed data to clients
 
 	if (c) Write(c, "\n\n", 2);
-	else LogStr("\n\n", 2);
+	else MLogStr("\n\n", 2);
 
 	if (seq > 1) {
 		char tmp[128] = "";
 		sprintf(tmp, "CONTINUATION TEXT %04d\n\n", seq-1);
 		if (c) Write(c, tmp, strlen(tmp));
-		else LogStr(tmp, strlen(tmp));
+		else MLogStr(tmp, strlen(tmp));
 	}
 
 	char header[256] = "";
@@ -816,7 +780,7 @@ void ProcessExchangePacket(struct connection *c, int idx, struct packet *p) {
 
 	if (strlen(header)) {
 		if (c) Write(c, header, strlen(header));
-		else LogStr(header, strlen(header));
+		else MLogStr(header, strlen(header));
 	}
 
 	// TODO: better condition
@@ -835,11 +799,11 @@ void ProcessExchangePacket(struct connection *c, int idx, struct packet *p) {
 
 	if (strlen(err)) {
 		if (c) Write(c, err, strlen(err));
-		else LogStr(err, strlen(err));
+		else MLogStr(err, strlen(err));
 	}
 	if (strlen(answer)) {
 		if (c) Write(c, answer, strlen(answer));
-		else LogStr(answer, strlen(answer));
+		else MLogStr(answer, strlen(answer));
 	}
 
 	if (c && p->dir == 2) {
@@ -878,7 +842,7 @@ void ProcessExchangePacket(struct connection *c, int idx, struct packet *p) {
 
 			Write(c, tmp, strlen(tmp));
 		} else {
-			LogStr(tmp, strlen(tmp));
+			MLogStr(tmp, strlen(tmp));
 		}
 	} else if (c && p->dir == 0x0c && p->pltype == 1) {
 		if (strlen(unkx3_3)) {
@@ -909,7 +873,7 @@ void ProcessExchangePacket(struct connection *c, int idx, struct packet *p) {
 					IProtoSEND(c, 0x41, "<");
 				}
 			} else {
-				LogStr(msg, strlen(msg));
+				MLogStr(msg, strlen(msg));
 			}
 		} else if (seq == 0x0303) {
 			// INVALID PASSWORD
@@ -931,7 +895,7 @@ void ProcessExchangePacket(struct connection *c, int idx, struct packet *p) {
 
 				c->X25Prompt[idx] = 'N';
 			} else {
-				LogStr(msg, strlen(msg));
+				MLogStr(msg, strlen(msg));
 			}
 		} else if (seq == 0x0307) {
 			// SESSION IN USE
@@ -945,7 +909,7 @@ void ProcessExchangePacket(struct connection *c, int idx, struct packet *p) {
 
 				c->X25Prompt[idx] = 'R';
 			} else {
-				LogStr(msg, strlen(msg));
+				MLogStr(msg, strlen(msg));
 			}
 		} else {
 			// other errors
@@ -978,20 +942,20 @@ void ProcessExchangePacket(struct connection *c, int idx, struct packet *p) {
 
 			c->X25LastJob[idx] = 0;
 		} else {
-			LogStr(tmp, strlen(tmp));
+			MLogStr(tmp, strlen(tmp));
 		}
 	} else if (unkx5__0 == 1) {
 		char tmp[256] = "";
 		sprintf(tmp, "\nEND TEXT JOB %04d\n\n", jobnr);
 
 		if (c) Write(c, tmp, strlen(tmp));
-		else LogStr(tmp, strlen(tmp));
+		else MLogStr(tmp, strlen(tmp));
 	} else if (unkx5__0 == 0) {
 		char tmp[256] = "";
 		sprintf(tmp, "\nINTERRUPTION TEXT JOB %04d\n\n", jobnr);
 
 		if (c) Write(c, tmp, strlen(tmp));
-		else LogStr(tmp, strlen(tmp));
+		else MLogStr(tmp, strlen(tmp));
 	}
 }
 
@@ -1509,50 +1473,8 @@ void InstallSignals() {
 }
 
 void StartLog2(int PrintLog) {
-	if (LogFName[0]) {
-		if (LogFName[0] != '/') {
-			char LogFName2[256];
-
-			/* make the path absolute, we will be chdir()ing later */
-			strcpy(LogFName2, LogFName);
-			if (!getcwd(LogFName, 256)) fprintf(stderr, "Warning! Cannot get cwd - logging may not work properly.\r\n");
-			strcat(LogFName, "/");
-			strcat(LogFName, LogFName2);
-		}
-
-		if (DailyLog) {
-			time_t t = time(NULL);
-			struct tm *tm = localtime(&t);
-
-			strcpy(DailyLogFNameTemplate, LogFName);
-			UpdateDailyLogFName(tm);
-			lday = tm->tm_mday;
-		}
-		LogFl2 = fopen(LogFName, "a");
-		if (!LogFl2) fprintf(stderr, "Warning! Cannot fopen %s!\r\n", LogFName);
-	}
-
-	if (LogRawName[0]) {
-		if (LogRawName[0] != '/') {
-			char LogRawName2[256];
-
-			/* make the path absolute, we will be chdir()ing later */
-			strcpy(LogRawName2, LogRawName);
-			if (!getcwd(LogRawName, 256)) fprintf(stderr, "Warning! Cannot get cwd - logging may not work properly.\r\n");
-			strcat(LogRawName, "/");
-			strcat(LogRawName, LogRawName2);
-		}
-
-		LogRaw = fopen(LogRawName, "a");
-		if (!LogRaw) fprintf(stderr, "Warning! Cannot fopen %s!\r\n", LogRawName);
-	}
-
-	if (PrintLog) {
-		LogFl1 = popen("/usr/bin/lpr", "w");
-		if (!LogFl1) fprintf(stderr, "Warning! Cannot popen lpr!\r\n");
-	}
-
-	ReopenLogTODO();
+	ReopenALog();
+	ReopenMLog();
 }
 
 int main(int argc, char *argv[]) {
@@ -1563,7 +1485,6 @@ int main(int argc, char *argv[]) {
 
 	for (ac = 1; ac < argc; ac++) {
 		switch (swp) {
-			case 3: strncpy(LogFName, argv[ac], 256); break;
 			case 4:
 				strncpy(SockName, argv[ac], 256);
 				if (strchr(SockName, ':')) {
@@ -1573,8 +1494,8 @@ int main(int argc, char *argv[]) {
 					break;
 				}
 				break;
+			case 5: strncpy(ALogFName, argv[ac], 256); break;
 			case 6: SockPort = atoi(argv[ac]); break;
-			case 5: strncpy(LogRawName, argv[ac], 256); break;
 			case 7:
 				strncpy(ConnPassword, argv[ac], 128);
 				{
@@ -1611,7 +1532,7 @@ int main(int argc, char *argv[]) {
 					}
 				}
 				break;
-			case 11: strncpy(LogTODOFName, argv[ac], 256); break;
+			case 11: strncpy(MLogFName, argv[ac], 256); break;
 		}
 
 		if (swp) {
@@ -1622,7 +1543,7 @@ int main(int argc, char *argv[]) {
 		if (!strcmp(argv[ac], "-h") || !strcmp(argv[ac], "--help")) {
 			printf("\nUsage:\t%s ", argv[0]);
 			printf("[-h|--help] [-c|--cuadev <cuadev>] [-s|--speed <speed>]\n");
-			printf("\t[-f|--logfile <file>] [-L|--daylog] [-p|--printlog] [-r|--rawfile <file>] [--todolog <file>]\n");
+			printf("\t[--alog <file>] [--mlog <file>]\n");
 			printf("\t[-H|--host <host>[:<port>]] [-P|--port <port>] [-w|--password <pwd>]\n");
 			printf("\t[-W|--ropassword <pwd>] [-g|--fg] [-S|--silent] [-v|--verbose]\n\n");
 			printf("-h\tDisplay this help\n");
@@ -1644,26 +1565,6 @@ int main(int argc, char *argv[]) {
 			printf("-v\tLog even normal traffic to stderr (is meaningful only with -g)\n\n");
 			printf("Please report bugs to <pasky@ji.cz>.\n");
 			exit(1);
-		}
-
-		if (!strcmp(argv[ac], "-f") || !strcmp(argv[ac], "--logfile")) {
-			swp = 3;
-			continue;
-		}
-
-		if (!strcmp(argv[ac], "-L") || !strcmp(argv[ac], "--daylog")) {
-			DailyLog = 1;
-			continue;
-		}
-
-		if (!strcmp(argv[ac], "-p") || !strcmp(argv[ac], "--printlog")) {
-			PrintLog = 1;
-			continue;
-		}
-
-		if (!strcmp(argv[ac], "-r") || !strcmp(argv[ac], "--rawfile")) {
-			swp = 5;
-			continue;
 		}
 
 		if (!strcmp(argv[ac], "-H") || !strcmp(argv[ac], "--host")) {
@@ -1696,7 +1597,12 @@ int main(int argc, char *argv[]) {
 			continue;
 		}
 
-		if (!strcmp(argv[ac], "--todolog")) {
+		if (!strcmp(argv[ac], "--alog")) {
+			swp = 5;
+			continue;
+		}
+
+		if (!strcmp(argv[ac], "--mlog")) {
 			swp = 11;
 			continue;
 		}
@@ -1748,7 +1654,6 @@ int main(int argc, char *argv[]) {
 		setsid();
 		if (fork()) exit(0);
     
-		stderr = LogFl2; /* redirect stderr to log */
 		if (!stderr) stderr = fopen("/dev/null", "a"); /* or to /dev/null */
 	}
 
