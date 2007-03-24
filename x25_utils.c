@@ -63,7 +63,7 @@ struct packet *login_packet(unsigned short sessid, char *username, char *passwor
 	ret->unk1 = 0xe0;
 	ret->dir = 0x04;
 	ret->pltype = 0x00;
-	ret->connid = 0x9ec6;
+	ret->connid = 0;
 	ret->subseq = 0;
 	ret->unk2 = 0;
 	ret->sessid = sessid;
@@ -72,6 +72,7 @@ struct packet *login_packet(unsigned short sessid, char *username, char *passwor
 	ret->data = block_alloc();
 	ret->data->id = 1;
 	ret->data->data = NULL;
+	ret->data->nchildren = 0;
 
 	unsigned char xxx[1024];
 
@@ -81,9 +82,8 @@ struct packet *login_packet(unsigned short sessid, char *username, char *passwor
 	*(unsigned short *)(xxx) = htons(0);
 	*(unsigned short *)(xxx+2) = htons(0); // job nr.
 	*(unsigned short *)(xxx+4) = htons(sessid);
-	*(unsigned short *)(xxx+6) = htons(0x4501);
-	xxx[8] = 0x20;//
-	xxx[9] = 0x0c;//
+	*(unsigned short *)(xxx+6) = htons(0);
+	*(unsigned short *)(xxx+8) = htons(0);
 	block_addchild(ret->data, "2", xxx, 0x0a);
 
 	char hostname[256];
@@ -115,7 +115,7 @@ struct packet *logout_packet(unsigned short sessid) {
 	ret->unk1 = 0xe0;
 	ret->dir = 0x0e;
 	ret->pltype = 0x00;
-	ret->connid = 0x1509;
+	ret->connid = 0;
 	ret->subseq = 0;
 	ret->unk2 = 0;
 	ret->sessid = sessid;
@@ -124,6 +124,7 @@ struct packet *logout_packet(unsigned short sessid) {
 	ret->data = block_alloc();
 	ret->data->id = 0x0b;
 	ret->data->data = NULL;
+	ret->data->nchildren = 0;
 
 	unsigned char xxx[1024];
 
@@ -132,11 +133,9 @@ struct packet *logout_packet(unsigned short sessid) {
 
 	*(unsigned short *)(xxx) = htons(0);
 	*(unsigned short *)(xxx+2) = htons(0); // job nr.
-	//*(unsigned short *)(xxx+4) = htons(0xbd6c);
 	*(unsigned short *)(xxx+4) = htons(sessid);
-	*(unsigned short *)(xxx+6) = htons(0x0001);
-	xxx[8] = 0x20;//
-	xxx[9] = 0x0b;//
+	*(unsigned short *)(xxx+6) = htons(0);
+	*(unsigned short *)(xxx+8) = htons(0);
 	block_addchild(ret->data, "2", xxx, 0x0a);
 
 	return ret;
@@ -149,7 +148,7 @@ struct packet *command_packet(unsigned short sessid, char *c, int len) {
 	ret->unk1 = 0xe0;
 	ret->dir = 0x02;
 	ret->pltype = 0x00;
-	ret->connid = 0x9ecb;
+	ret->connid = 0;
 	ret->subseq = 0;
 	ret->unk2 = 0;
 	ret->sessid = sessid;
@@ -169,7 +168,7 @@ struct packet *command_packet(unsigned short sessid, char *c, int len) {
 	*(unsigned short *)(xxx+2) = htons(0); // job nr.
 	*(unsigned short *)(xxx+4) = htons(0);
 	*(unsigned short *)(xxx+6) = htons(0);
-	xxx[8] = 0; // 0x20
+	xxx[8] = 0;
 	block_addchild(ret->data, "2", xxx, 0x09);
 
 	block_addchild(ret->data, "6-1", (unsigned char *)c, len);
@@ -203,8 +202,7 @@ struct packet *command_confirmation_packet(unsigned short connid, unsigned short
 	*(unsigned short *)(xxx+2) = htons(0);
 	*(unsigned short *)(xxx+4) = htons(0);
 	*(unsigned short *)(xxx+6) = htons(0);
-	xxx[8] = 0;//0x20;
-	xxx[9] = 0;//0x02;
+	*(unsigned short *)(xxx+8) = htons(0);
 	block_addchild(ret->data, "2", xxx, 0x0a);
 
 	block_addchild(ret->data, "6-1", (unsigned char *)c, len);
