@@ -1903,6 +1903,8 @@ int main(int argc, char *argv[]) {
 							log_it = 1;
 						} else if (p->sessid == 0 && c->alarms) {
 							// it's for everyone and we want alarms
+							// TODO: what if the packet is fragmented?
+							ProcessExchangePacket(p, NULL, 0, ALog);
 						} else {
 							// we're not interested
 							continue;
@@ -1923,8 +1925,7 @@ int main(int argc, char *argv[]) {
 								struct packet *np = packet_deserialize(c->X25Buf[i], c->X25BufLen[i]);
 								if (np && np->data && !np->rawdata) {
 									// complete
-									ProcessExchangePacket(np, c, i, NULL);
-									if (log_it) ProcessExchangePacket(np, NULL, 0, MLog);
+									ProcessExchangePacket(np, c, i, log_it? MLog : NULL);
 
 									c->X25BufLen[i] = 0;
 								}
@@ -1932,8 +1933,7 @@ int main(int argc, char *argv[]) {
 							}
 						} else {
 							// the packet is not fragmented
-							ProcessExchangePacket(p, c, i, NULL);
-							if (log_it) ProcessExchangePacket(p, NULL, 0, MLog);
+							ProcessExchangePacket(p, c, i, log_it? MLog : NULL);
 						}
 					}
 
