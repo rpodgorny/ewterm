@@ -673,7 +673,7 @@ void GenHeader(char *exch, char *apsver, char *patchver, char *date, char *time,
 /* for X.25 communication */
 // "idx" is the index in connection's array of X.25 connections
 // if "c" is NULL, we want to write to log only
-void ProcessExchangePacket(struct connection *c, int idx, struct packet *p) {
+void ProcessExchangePacket(struct packet *p, struct connection *c, int idx) {
 	pdebug("ProcessExchangePacket()\n");
 
 	// TODO: a quick hack to filter empty packets. remove!
@@ -1925,18 +1925,17 @@ int main(int argc, char *argv[]) {
 								struct packet *np = packet_deserialize(c->X25Buf[i], c->X25BufLen[i]);
 								if (np && np->data && !np->rawdata) {
 									// complete
-									ProcessExchangePacket(c, i, np);
-									c->X25BufLen[i] = 0;
+									ProcessExchangePacket(np, c, i);
+									if (log_it) ProcessExchangePacket(np, NULL, 0);
 
-									if (log_it) ProcessExchangePacket(NULL, 0, np);
+									c->X25BufLen[i] = 0;
 								}
 								packet_delete(np); np = NULL;
 							}
 						} else {
 							// the packet is not fragmented
-							ProcessExchangePacket(c, i, p);
-
-							if (log_it) ProcessExchangePacket(NULL, 0, p);
+							ProcessExchangePacket(p, c, i);
+							if (log_it) ProcessExchangePacket(p, NULL, 0);
 						}
 					}
 
