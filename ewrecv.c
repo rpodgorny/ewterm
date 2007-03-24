@@ -599,7 +599,6 @@ void ReopenALog() {
 	if (!ALog) perror("ALog");
 }
 
-
 void ReopenMLog() {
 	if (MLog) fclose(MLog);
 
@@ -622,12 +621,12 @@ void ReopenMLog() {
 }
 
 // TODO: clean this (len is not needed)
-void MLogStr(char *s, int len) {
-	if (!MLog) return;
+void LogStr(FILE *log, char *s, int len) {
+	if (!log) return;
 
-	///fwrite(MLog, s, len);
-	fprintf(MLog, "%s", s);
-	fflush(MLog);
+	///fwrite(log, s, len);
+	fprintf(log, "%s", s);
+	fflush(log);
 }
 
 int SendChar(struct connection *c, char Chr) {
@@ -672,8 +671,7 @@ void GenHeader(char *exch, char *apsver, char *patchver, char *date, char *time,
 
 /* for X.25 communication */
 // "idx" is the index in connection's array of X.25 connections
-// if "c" is NULL, we want to write to log only
-void ProcessExchangePacket(struct packet *p, struct connection *c, int idx) {
+void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE *log) {
 	pdebug("ProcessExchangePacket()\n");
 
 	// TODO: a quick hack to filter empty packets. remove!
@@ -766,13 +764,13 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx) {
 	// ...and now, send the parsed data to clients
 
 	if (c) Write(c, "\n\n", 2);
-	else MLogStr("\n\n", 2);
+	LogStr(log, "\n\n", 2);
 
 	if (seq > 1) {
 		char tmp[128] = "";
 		sprintf(tmp, "CONTINUATION TEXT %04d\n\n", seq-1);
 		if (c) Write(c, tmp, strlen(tmp));
-		else MLogStr(tmp, strlen(tmp));
+		LogStr(log, tmp, strlen(tmp));
 	}
 
 	char header[256] = "";
@@ -780,7 +778,7 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx) {
 
 	if (strlen(header)) {
 		if (c) Write(c, header, strlen(header));
-		else MLogStr(header, strlen(header));
+		LogStr(log, header, strlen(header));
 	}
 
 	// TODO: better condition
@@ -799,11 +797,11 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx) {
 
 	if (strlen(err)) {
 		if (c) Write(c, err, strlen(err));
-		else MLogStr(err, strlen(err));
+		LogStr(log, err, strlen(err));
 	}
 	if (strlen(answer)) {
 		if (c) Write(c, answer, strlen(answer));
-		else MLogStr(answer, strlen(answer));
+		LogStr(log, answer, strlen(answer));
 	}
 
 	if (c && p->dir == 2) {
@@ -841,9 +839,9 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx) {
 			c->X25LastJob[idx] = jobnr;
 
 			Write(c, tmp, strlen(tmp));
-		} else {
-			MLogStr(tmp, strlen(tmp));
 		}
+
+		LogStr(log, tmp, strlen(tmp));
 	} else if (c && p->dir == 0x0c && p->pltype == 1) {
 		if (strlen(unkx3_3)) {
 			char msg[256] = "";
@@ -872,9 +870,9 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx) {
 					Write(c, "<", 1);
 					IProtoSEND(c, 0x41, "<");
 				}
-			} else {
-				MLogStr(msg, strlen(msg));
 			}
+
+			LogStr(log, msg, strlen(msg));
 		} else if (seq == 0x0303) {
 			// INVALID PASSWORD
 			if (c) {
@@ -894,9 +892,9 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx) {
 				IProtoSEND(c, 0x41, "p");
 
 				c->X25Prompt[idx] = 'N';
-			} else {
-				MLogStr(msg, strlen(msg));
 			}
+
+			LogStr(log, msg, strlen(msg));
 		} else if (seq == 0x0307) {
 			// SESSION IN USE
 			char msg[256] = "";
@@ -908,9 +906,9 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx) {
 				IProtoSEND(c, 0x41, "I");
 
 				c->X25Prompt[idx] = 'R';
-			} else {
-				MLogStr(msg, strlen(msg));
 			}
+
+			LogStr(log, msg, strlen(msg));
 		} else {
 			// other errors
 			IProtoSEND(c, 0x42, NULL);
@@ -941,21 +939,21 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx) {
 			IProtoSEND(c, 0x45, jobnr_s);
 
 			c->X25LastJob[idx] = 0;
-		} else {
-			MLogStr(tmp, strlen(tmp));
 		}
+
+		LogStr(log, tmp, strlen(tmp));
 	} else if (unkx5__0 == 1) {
 		char tmp[256] = "";
 		sprintf(tmp, "\nEND TEXT JOB %04d\n\n", jobnr);
 
 		if (c) Write(c, tmp, strlen(tmp));
-		else MLogStr(tmp, strlen(tmp));
+		LogStr(log, tmp, strlen(tmp));
 	} else if (unkx5__0 == 0) {
 		char tmp[256] = "";
 		sprintf(tmp, "\nINTERRUPTION TEXT JOB %04d\n\n", jobnr);
 
 		if (c) Write(c, tmp, strlen(tmp));
-		else MLogStr(tmp, strlen(tmp));
+		LogStr(log, tmp, strlen(tmp));
 	}
 }
 
@@ -1925,8 +1923,8 @@ int main(int argc, char *argv[]) {
 								struct packet *np = packet_deserialize(c->X25Buf[i], c->X25BufLen[i]);
 								if (np && np->data && !np->rawdata) {
 									// complete
-									ProcessExchangePacket(np, c, i);
-									if (log_it) ProcessExchangePacket(np, NULL, 0);
+									ProcessExchangePacket(np, c, i, NULL);
+									if (log_it) ProcessExchangePacket(np, NULL, 0, MLog);
 
 									c->X25BufLen[i] = 0;
 								}
@@ -1934,8 +1932,8 @@ int main(int argc, char *argv[]) {
 							}
 						} else {
 							// the packet is not fragmented
-							ProcessExchangePacket(p, c, i);
-							if (log_it) ProcessExchangePacket(p, NULL, 0);
+							ProcessExchangePacket(p, c, i, NULL);
+							if (log_it) ProcessExchangePacket(p, NULL, 0, MLog);
 						}
 					}
 
