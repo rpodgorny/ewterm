@@ -1,0 +1,2273 @@
+Sat Jun 19 10:30:15 2004  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Comment describing another header possibility.  
+
+Fri Nov 14 14:42:05 2003  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	When the line starts w/ '/', ignore it.. if it starts w/ '//', show
+	the complete line to the output. This is first little step in cmf
+	support.  
+
+Thu Nov 13 21:28:27 2003  Petr Baudis <pasky@ji.cz>:
+
+	* iproto.c, version.h:
+
+	5.0 
+
+Thu Aug 14 10:35:47 2003  Petr Baudis <pasky@ji.cz>:
+
+	* version.h:
+
+	5.0rc6 
+
+Thu Aug 14 10:32:50 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Buffered write() to the CuaFd, fixes USB serial trouble.  
+
+Wed Aug 13 14:46:56 2003  Petr Baudis <pasky@ji.cz>:
+
+	* version.h:
+
+	5.0rc5 
+
+Wed Aug 13 14:46:43 2003  Petr Baudis <pasky@ji.cz>:
+
+	* gstr.c:
+
+	Set OTHERWINDOW for gstr window.  
+
+Wed Aug 13 12:32:33 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.h, forms.c, options.c:
+
+	EWSD help directory is now configurable.  
+
+Wed Aug 13 12:27:40 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Compilation fix.  
+
+Wed Aug 13 12:15:34 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c:
+
+	Fix infinite loop if server died.  
+
+Wed Aug 13 12:10:19 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	More paranoid authchecks.  
+
+Wed Aug 13 12:00:32 2003  Petr Baudis <pasky@ji.cz>:
+
+	* version.h:
+
+	0.5rc4 
+
+Wed Aug 13 10:51:17 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Support for daily-separated mlogs.  
+
+Wed Aug 13 09:22:15 2003  Petr Baudis <pasky@ji.cz>:
+
+	* version.h:
+
+	5.0rc3 
+
+Wed Aug 13 09:16:49 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c, iproto.c, iproto.h:
+
+	Support for R/O passwords.  
+
+Tue Aug 12 14:12:51 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Print _last_ n lines in burst.  
+
+Tue Aug 12 13:56:28 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c, ewterm.c, ewterm.h, exch.c, iproto.c, iproto.h,
+	options.c, version.h:
+
+	5.0rc2. Support for configurable burst size. Old ewterms will
+	receive no burst from new ewrecv now.  
+
+Tue Aug 12 13:18:00 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.h:
+
+	Turn off DEBUG ;-).  
+
+Tue Aug 12 13:17:28 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c, ewterm.h, exch.c:
+
+	Added support for correct coloring of filtered stuff and correctly
+	fitting of the user input there.  
+
+Tue Aug 12 11:56:17 2003  Petr Baudis <pasky@ji.cz>:
+
+	* version.h:
+
+	5.0rc1 
+
+Tue Aug 12 11:51:43 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	If no password is set, don't ask for any and send burst right away.  
+
+Tue Aug 12 11:36:15 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c:
+
+	DoneFilter() after checking logoff state.  
+
+Tue Aug 12 11:33:04 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Prevent some other commands if not authenticated.  
+
+Tue Aug 12 11:28:01 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Don't send self-like disconnects, which are illegal anyway. Just
+	ordinary one.  
+
+Tue Aug 12 11:24:03 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Disconnect-self packet is sent to the user upon authfail.  
+
+Tue Aug 12 10:41:25 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	@c can be NULL in SendChar().  
+
+Tue Aug 12 10:34:37 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	RecvGuard's message fixed.  
+
+Tue Aug 12 10:22:40 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Don't accept exch input from unauthenticated client.  
+
+Tue Aug 12 10:17:09 2003  Petr Baudis <pasky@ji.cz>:
+
+	* version.h:
+
+	5.0pre7 
+
+Tue Aug 12 10:16:42 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Reverted remote resolving removal.  
+
+Tue Aug 12 10:03:52 2003  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Unremember password when auth failed.  
+
+Tue Aug 12 10:03:10 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c:
+
+	Zero Reconnect when reconnected.  
+
+Tue Aug 12 10:01:33 2003  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	NULLify authstr when free()ing it.  
+
+Tue Aug 12 09:54:03 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c, ewterm.h, exch.c:
+
+	Delay reconnection.  
+
+Tue Aug 12 09:42:42 2003  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Always remember ConnPassword.  
+
+Tue Aug 12 09:35:27 2003  Petr Baudis <pasky@ji.cz>:
+
+	* options.c:
+
+	Fixed ChangeConnPassword().  
+
+Tue Aug 12 09:32:44 2003  Petr Baudis <pasky@ji.cz>:
+
+	* iproto.c:
+
+	Use calloc() to automagically preinitialize everything to zero.  
+
+Tue Aug 12 09:27:00 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c, ewterm.c, ewterm.h, exch.c, iproto.c:
+
+	When auth failed, hint client about it. Client will then
+	automagically reconnect and try again.  
+
+Tue Aug 12 09:20:28 2003  Petr Baudis <pasky@ji.cz>:
+
+	* version.h:
+
+	5.0pre6 
+
+Tue Aug 12 08:59:23 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	NULL to_destroy after destruction.  
+
+Tue Aug 12 08:55:48 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Delay destruction of authfailed connectino.  
+
+Tue Aug 12 08:40:50 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Fail if read() returned zero.  
+
+Tue Aug 12 08:36:24 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Hopefully fixed remote resolving.  
+
+Tue Aug 12 08:28:03 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Fixed invalid continue/break usages from inside of foreach loops.  
+
+Tue Aug 12 08:21:47 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Oops. select() for the errors ;-).  
+
+Tue Aug 12 08:18:59 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Compilation fix.  
+
+Tue Aug 12 08:18:21 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Tidyup.  
+
+Tue Aug 12 08:13:50 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Check for errors on fds as well.  
+
+Tue Aug 12 08:04:05 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Force reselect everytime we are removing a connection.  
+
+Mon Aug 11 15:22:17 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Removed code duplication regarding destroying the connection.  
+
+Mon Aug 11 14:18:11 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	setsockopt(SO_REUSEADDR) 
+
+Mon Aug 11 14:13:55 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Removed the no-but test.  
+
+Mon Aug 11 14:11:36 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Compilation fix.  
+
+Mon Aug 11 14:09:04 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Fixed foreach_conn() so that continue actually works inside.  
+
+Mon Aug 11 14:02:17 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Move the Reselect test into the foreach loop.  
+
+Mon Aug 11 13:56:51 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Compilation fix.  
+
+Mon Aug 11 13:54:55 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Fixed foreach_conn() which fails utterly if conncetion == but.  
+
+Mon Aug 11 13:43:25 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Reintroduced the immediate connection shutdown, added Reselect
+	gadget which will force reselecting, thus making this operation
+	hopefully relatively harmless.  
+
+Mon Aug 11 13:40:24 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Removed that cruft again.  
+
+Mon Aug 11 13:32:17 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Fixed unauthorized clients disconnection.  
+
+Mon Aug 11 12:55:57 2003  Petr Baudis <pasky@ji.cz>:
+
+	* version.h:
+
+	0.5pre5 
+
+Mon Aug 11 12:51:49 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Fixed censoring the password.  
+
+Mon Aug 11 12:39:39 2003  Petr Baudis <pasky@ji.cz>:
+
+	* iproto.c:
+
+	Fit three chars into the MD5 buffer.  
+
+Mon Aug 11 12:14:53 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c:
+
+	Swapped FilterFdIn and FilterFdOut.  
+
+Mon Aug 11 11:32:16 2003  Petr Baudis <pasky@ji.cz>:
+
+	* filter.c:
+
+	Close the other ends of pipe.  
+
+Mon Aug 11 11:29:45 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c:
+
+	Done() calls doupdate() first to make the AddEStr()'d messages show
+	up.  
+
+Mon Aug 11 10:59:13 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c:
+
+	Upon @Err, let Done() return it as process exit code and don't call
+	refresh() so that the screen is not cleared.  
+
+Mon Aug 11 10:50:42 2003  Petr Baudis <pasky@ji.cz>:
+
+	* filter.c:
+
+	Report dup2() errors by perror().  
+
+Mon Aug 11 10:39:02 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c:
+
+	Introduced smarter SIGCHLD handler.  
+
+Mon Aug 11 10:38:51 2003  Petr Baudis <pasky@ji.cz>:
+
+	* filter.c:
+
+	Fixed dup2() test.  
+
+Mon Aug 11 09:45:32 2003  Petr Baudis <pasky@ji.cz>:
+
+	* filter.c:
+
+	Exit with same return code as returned by system().  
+
+Mon Aug 11 08:45:06 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c:
+
+	FilterFdOut test ni select loop was invalid.  
+
+Mon Aug 11 08:35:32 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c:
+
+	Fixed unable to create connection error w/ ewterm -l.  
+
+Mon Aug 11 08:17:11 2003  Petr Baudis <pasky@ji.cz>:
+
+	* md5.c:
+
+	Fixed warning.  
+
+Thu Jul 10 13:00:27 2003  Petr Baudis <pasky@ji.cz>:
+
+	* filter.c:
+
+	Some filtering support.  
+
+Thu Jul 10 12:52:55 2003  Petr Baudis <pasky@ji.cz>:
+
+	* options.c:
+
+	Make the filter configurable.  
+
+Thu Jul 10 12:41:15 2003  Petr Baudis <pasky@ji.cz>:
+
+	* Makefile, ewterm.c, ewterm.h, exch.c:
+
+	Some filtering support.  
+
+Thu Jul 10 11:47:56 2003  Petr Baudis <pasky@ji.cz>:
+
+	* version.h:
+
+	5.0pre4 
+
+Thu Jul 10 09:20:02 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c, exch.c, iproto.c, iproto.h:
+
+	Ask user about receiver password if it is not known.  
+
+Wed Jul  9 17:50:35 2003  Petr Baudis <pasky@ji.cz>:
+
+	* iproto.c:
+
+	Corrected iproto desc.  
+
+Wed Jul  9 17:37:51 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Don't kill the unauth client in GotUser(), we can give it a little
+	bit more time.  
+
+Wed Jul  9 17:34:20 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Don't send stuff to unauthenticated people.  
+
+Wed Jul  9 15:16:57 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c, ewterm.c, iproto.c, iproto.h, options.c, version.h:
+
+	0.5pre3. Support for CRAM authentication.  
+
+Wed Jul  9 10:35:16 2003  Petr Baudis <pasky@ji.cz>:
+
+	* Makefile, md5.c, md5.h:
+
+	Added MD5 implementation.  
+
+Wed Jul  9 08:53:37 2003  Petr Baudis <pasky@ji.cz>:
+
+	* version.h:
+
+	pre2, remove date from it 
+
+Wed Jul  9 08:45:04 2003  Petr Baudis <pasky@ji.cz>:
+
+	* Makefile, ewkeygen.c, ewrecv.c, ewterm.c, exch.c, iproto.c,
+	iproto.h, keys.c, keys.h:
+
+	Removed SSL support. We'll do just cram.  
+
+Tue Jul  8 16:59:51 2003  Petr Baudis <pasky@ji.cz>:
+
+	* version.h:
+
+	0.4 -> 0.5pre 
+
+Tue Jul  8 16:57:35 2003  Petr Baudis <pasky@ji.cz>:
+
+	* bfu.c, edit.c, forms.c, version.h:
+
+	Fixed some warnings.  
+
+Tue Jul  8 16:51:17 2003  Petr Baudis <pasky@ji.cz>:
+
+	* InstallScript, TODO, bfu.c, buffer.c, ewrecv.c, ewterm.c,
+	ewterm.h, exch.c, forms.c, formshlp.c, help.c, history.c, menu.c,
+	mml.c, options.c, version.h:
+
+	Huge merge with REL_0_4.  
+
+Tue Jul  8 14:41:45 2003  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.options:
+
+	Merge with REL_0_4.  
+
+Wed Oct  2 06:07:08 2002  Pavel Troller <patrol@sinus.cz>:
+
+	* ewterm.options:
+
+	file ewterm.options was initially added on branch REL_4_0.  
+
+Fri Aug  2 13:07:44 2002  Petr Baudis <pasky@ji.cz>:
+
+	* Makefile, ewrecv.c, ewterm.c, exch.c, iproto.c, iproto.h, keys.c:
+
+	Some OpenSSL support.  
+
+Fri Aug  2 10:57:27 2002  Petr Baudis <pasky@ji.cz>:
+
+	* perl/EWTerm.pm:
+
+	PromptStart 
+
+Fri Aug  2 10:40:15 2002  Petr Baudis <pasky@ji.cz>:
+
+	* keys.c, keys.h:
+
+	Added keys.*.  
+
+Fri Aug  2 10:39:48 2002  Petr Baudis <pasky@ji.cz>:
+
+	* Makefile, ewkeygen.c:
+
+	Added ewkeygen.  
+
+Fri Aug  2 10:38:21 2002  Petr Baudis <pasky@ji.cz>:
+
+	* perl/EWTerm.pm:
+
+	don't bootstrap 
+
+Fri Aug  2 10:32:08 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Parameters error in gotuserdisconnect.  
+
+Fri Aug  2 10:30:28 2002  Petr Baudis <pasky@ji.cz>:
+
+	* perl/Makefile.PL:
+
+	usrbinperl ;) 
+
+Fri Aug  2 10:28:56 2002  Petr Baudis <pasky@ji.cz>:
+
+	* version.h:
+
+	ewterm-4.0 
+
+Fri Aug  2 10:27:45 2002  Petr Baudis <pasky@ji.cz>:
+
+	* iproto.c:
+
+	Version opcode change to 0xff.  
+
+Fri Aug  2 10:21:10 2002  Petr Baudis <pasky@ji.cz>:
+
+	* perl/: EWTerm.pm, Makefile.PL, example.pl, test.pl:
+
+	Added perl module for talking with ewrecv.  
+
+Fri Aug  2 07:10:38 2002  Petr Baudis <pasky@ji.cz>:
+
+	* iproto.c:
+
+	Version is 0xff.  
+
+Thu Aug  1 18:11:57 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Make exchange happy upon startup.  
+
+Thu Aug  1 17:59:57 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Make exchange happy upon startup.  
+
+Thu Aug  1 12:21:30 2002  Petr Baudis <pasky@ji.cz>:
+
+	* iproto.c:
+
+	Burst described.  
+
+Thu Aug  1 11:45:52 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c, exch.c, iproto.c, iproto.h:
+
+	Hostmask is now sent for users.  
+
+Thu Aug  1 09:26:23 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c, ewterm.c, ewterm.h, exch.c, menu.c, options.c:
+
+	Use TCP sockets instead of UNIX sockets.  
+
+Thu Aug  1 08:11:24 2002  Petr Baudis <pasky@ji.cz>:
+
+	* version.h:
+
+	ewterm-3.1 
+
+Thu Aug  1 06:53:28 2002  Petr Baudis <pasky@ji.cz>:
+
+	* edit.c, exch.c, history.c, menu.c:
+
+	History search.  
+
+Wed Jul 31 21:19:46 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Send logout for natural logouts.  
+
+Wed Jul 31 20:23:38 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	ENTEROMTMSG->ENTROMTMSG 
+
+Wed Jul 31 13:08:46 2002  Petr Baudis <pasky@ji.cz>:
+
+	* sendfile.c:
+
+	Prefill SaveFileDestFName.  
+
+Wed Jul 31 13:01:08 2002  Petr Baudis <pasky@ji.cz>:
+
+	* sendfile.c:
+
+	Support for sending files thru edts8.  
+
+Wed Jul 31 12:55:56 2002  Petr Baudis <pasky@ji.cz>:
+
+	* Makefile, ewterm.c, ewterm.h, exch.c, menu.c, options.c:
+
+	Support for sending files thru edts8.  
+
+Wed Jul 31 11:26:45 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c, ewterm.h, options.c:
+
+	Support for options profiles.  
+
+Wed Jul 31 10:43:23 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Fixed not clearing of ActUsrname when logged off manually.  
+
+Wed Jul 31 10:27:17 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Support for mask 12055.  
+
+Wed Jul 31 09:59:34 2002  Petr Baudis <pasky@ji.cz>:
+
+	* version.h:
+
+	ewterm-3.0 
+
+Wed Jul 31 09:56:23 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Assign lowest available id to connected ewterm.  
+
+Wed Jul 31 09:49:07 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Don't touch ActUsrname when observer.  
+
+Wed Jul 31 09:40:30 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Clear input request when something will come from exchange.  
+
+Wed Jul 31 09:36:34 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c, exch.c, iproto.c:
+
+	Talk support.  
+
+Wed Jul 31 08:43:23 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	DISPOMTUSER output is now nicely formatted.  
+
+Wed Jul 31 08:09:23 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Fixed bug in linked lists.  
+
+Wed Jul 31 07:47:53 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Fixed SetMaster() list handling.  
+
+Wed Jul 31 07:17:31 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	10397 mask support 
+
+Tue Jul 30 21:49:28 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c, exch.c, iproto.c, iproto.h:
+
+	PrivMsg packet.  
+
+Tue Jul 30 21:24:23 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Removed debug.  
+
+Tue Jul 30 18:09:31 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c, exch.c, mml.c:
+
+	MML parser bugfixes, random RO sending fixed, support for
+	DISPOMTUSER.  
+
+Tue Jul 30 14:01:41 2002  Petr Baudis <pasky@ji.cz>:
+
+	* version.h:
+
+	ewterm-2.2 
+
+Tue Jul 30 14:01:13 2002  Petr Baudis <pasky@ji.cz>:
+
+	* Makefile, forms.c, mml.c, mml.h:
+
+	Moved MML parser to mml.c 
+
+Tue Jul 30 13:14:13 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c, exch.c, iproto.c, iproto.h:
+
+	Added possibility to logoff someone else.  
+
+Tue Jul 30 11:25:09 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Switching of master client by logging on of specific one.  
+
+Tue Jul 30 10:43:36 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c, exch.c:
+
+	Fixed job number exchange.  
+
+Tue Jul 30 10:24:36 2002  Petr Baudis <pasky@ji.cz>:
+
+	* Makefile, buffer.c, colors.c, ewterm.c, ewterm.h, exch.c,
+	forms.c, formshlp.c, frq.c, gstr.c, help.c, history.c, lists.c,
+	menu.c, options.c:
+
+	Now we refresh screen only in the main loop, optimalizing the stuff
+	much more etc.. now we don't flicker ;).  
+
+Tue Jul 30 09:44:41 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	When header belongs to actual job, take username from it.  
+
+Tue Jul 30 09:42:41 2002  Petr Baudis <pasky@ji.cz>:
+
+	* Makefile, ewrecv.c:
+
+	We ask for prompt even when have prompt or prompt is coming.  
+
+Tue Jul 30 09:30:22 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c, ewterm.h, exch.c, iproto.c, options.c:
+
+	Special file password handling.  
+
+Tue Jul 30 09:17:47 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c, exch.c, iproto.c, iproto.h:
+
+	Don't pop up uname/passwd dialogs when observer, dc4 is silent
+	forward, fixed cancel in popup dialogs, fixed ^F^E.  
+
+Tue Jul 30 07:33:53 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Fixed taking last mask from MASKNO:.  
+
+Mon Jul 29 18:58:28 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c:
+
+	Quit always when observer.  
+
+Mon Jul 29 18:53:26 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c, forms.c:
+
+	Random fixes.  
+
+Mon Jul 29 18:33:48 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c, exch.c, iproto.c:
+
+	Random fixes.  
+
+Mon Jul 29 18:04:47 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c, menu.c:
+
+	ActJob is now zero when none.  
+
+Mon Jul 29 18:03:34 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c, exch.c:
+
+	Fixed header detection, lastmask cleaning undefined debug, fixed
+	GotHeader() parameters.  
+
+Mon Jul 29 17:54:42 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c, exch.c:
+
+	Debug, fix of 'stop'.  
+
+Mon Jul 29 17:49:54 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Set PBUSY.  
+
+Mon Jul 29 17:33:47 2002  Petr Baudis <pasky@ji.cz>:
+
+	* buffer.c, ewrecv.c, ewterm.c, ewterm.h, exch.c, iproto.c,
+	iproto.h, menu.c:
+
+	Moved EWSD protocol handling from ewterm to ewrecv.  
+
+Mon Jul 29 13:25:02 2002  Petr Baudis <pasky@ji.cz>:
+
+	* iproto.c, version.h:
+
+	ewterm-2.1 
+
+Mon Jul 29 13:21:15 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c, exch.c:
+
+	Compilation fix, fix of not requesting a prompt when received iproto
+	packet.  
+
+Mon Jul 29 13:17:17 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Typo fix.  
+
+Mon Jul 29 13:15:57 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Don't remember ActCommonPassword, added handler for NEW PASSWORD
+	INVALID.  
+
+Mon Jul 29 13:02:58 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	SIGINT handled by SigTermCaught.  
+
+Mon Jul 29 13:00:27 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Send RO/RW inside burst.  
+
+Mon Jul 29 12:59:46 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c, exch.c, iproto.c, iproto.h:
+
+	Sending user connect/disconnect packets.  
+
+Mon Jul 29 11:38:30 2002  Petr Baudis <pasky@ji.cz>:
+
+	* buffer.c, ewterm.h, exch.c, iproto.c:
+
+	Don't process prompt when we're in observer mode, don't beep in
+	burst.  
+
+Mon Jul 29 10:43:23 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Don't display ^G.  
+
+Mon Jul 29 10:33:59 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Broadcast sent chars back to ewterms only if they were sent by some
+	other ewterm.  
+
+Mon Jul 29 10:27:15 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Fixed one boolean.  
+
+Mon Jul 29 10:10:52 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Debug.  
+
+Mon Jul 29 09:27:41 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Typo fix.  
+
+Mon Jul 29 09:22:58 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c, ewterm.c, ewterm.h, exch.c, iproto.c, iproto.h, menu.c:
+
+	Support multiple connections to ewrecv, some masters and some
+	obervers.  
+
+Sun Jul 28 14:19:57 2002  Petr Baudis <pasky@ji.cz>:
+
+	* Makefile, forms.c, forms.h, formshlp.c, help.c, mkforms.c,
+	parseforms.y, scanforms.l:
+
+	Bugfixes in forms displaying, displaying of long options.  
+
+Sat Jul 27 12:39:13 2002  Petr Baudis <pasky@ji.cz>:
+
+	* mkforms.c:
+
+	Concept of subgroups introduced, bugfixes.  
+
+Fri Jul 26 17:08:58 2002  Petr Baudis <pasky@ji.cz>:
+
+	* mkforms.c:
+
+	Renamed some structs to more clear names, added support for 'long
+	help' - enum values lists for certain opptions with their
+	explanations.  
+
+Thu Jul 25 19:27:34 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Fixed writing to dead connection.  
+
+Thu Jul 25 13:49:18 2002  Petr Baudis <pasky@ji.cz>:
+
+	* iproto.c, iproto.h:
+
+	Added rest of 2.1b handlers and calling of them.  
+
+Thu Jul 25 13:33:39 2002  Petr Baudis <pasky@ji.cz>:
+
+	* iproto.c, iproto.h:
+
+	Compilation fixes.  
+
+Thu Jul 25 13:31:37 2002  Petr Baudis <pasky@ji.cz>:
+
+	* iproto.h:
+
+	Added SEND handlers from 2.1b to structure.  
+
+Thu Jul 25 13:29:22 2002  Petr Baudis <pasky@ji.cz>:
+
+	* iproto.c:
+
+	Call user handlers if they exist.  
+
+Thu Jul 25 13:26:05 2002  Petr Baudis <pasky@ji.cz>:
+
+	* iproto.c:
+
+	Rewritten Write, we now grain correctly there. Removed debug. Fixed
+	2.1b specification, added terminating of IProtoPacket with zero for
+	user handlers.  
+
+Thu Jul 25 13:14:40 2002  Petr Baudis <pasky@ji.cz>:
+
+	* iproto.c:
+
+	Yet another debug.  
+
+Thu Jul 25 13:12:20 2002  Petr Baudis <pasky@ji.cz>:
+
+	* iproto.c:
+
+	One debug and one fix.  
+
+Thu Jul 25 13:07:09 2002  Petr Baudis <pasky@ji.cz>:
+
+	* iproto.c, iproto.c:
+
+	Fix in graining in DoRead().  
+
+Thu Jul 25 12:55:25 2002  Petr Baudis <pasky@ji.cz>:
+
+	* iproto.c:
+
+	Reenabled the optimization, fixed graining bug in write().  
+
+Thu Jul 25 12:51:37 2002  Petr Baudis <pasky@ji.cz>:
+
+	* iproto.c:
+
+	Disable graining for debug purposes.  
+
+Thu Jul 25 12:41:18 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Make conneciton NULL when freeing it.  
+
+Thu Jul 25 12:38:43 2002  Petr Baudis <pasky@ji.cz>:
+
+	* iproto.c:
+
+	Silly bug in write.  
+
+Thu Jul 25 12:32:36 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c, ewterm.c, exch.c, iproto.c, iproto.h:
+
+	Moved iproto doc from exch.c to iproto.c, added handlers structure,
+	fixed invalid format string in negative fd warning.  
+
+Thu Jul 25 12:16:27 2002  Petr Baudis <pasky@ji.cz>:
+
+	* iproto.c:
+
+	Detect bad Fd passed to MakeConnection.  
+
+Thu Jul 25 12:14:20 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	connection->Fd won't be ever -1 
+
+Thu Jul 25 12:05:56 2002  Petr Baudis <pasky@ji.cz>:
+
+	* buffer.c, ewrecv.c, ewterm.c, ewterm.h, exch.c, iproto.c,
+	iproto.h:
+
+	ewterm<->ewrecv I/O is now buffered. Maybe.  
+
+Thu Jul 25 11:56:13 2002  Petr Baudis <pasky@ji.cz>:
+
+	* edit.c:
+
+	Improved ^L.  
+
+Thu Jul 25 11:07:04 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Fixed buffer overflow in username handling.  
+
+Thu Jul 25 10:19:46 2002  Petr Baudis <pasky@ji.cz>:
+
+	* .deps, Makefile, .cvsignore:
+
+	Improved generating of dependencies.  
+
+Thu Jul 25 09:29:52 2002  Petr Baudis <pasky@ji.cz>:
+
+	* .deps, ewrecv.c, ewterm.c, ewterm.h, exch.c, iproto.c, iproto.h:
+
+	Created struct connection saving internal protocol states etc.  
+
+Thu Jul 25 09:10:46 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Documentation for not yet implemented 2.1b.  
+
+Thu Jul 25 08:21:31 2002  Petr Baudis <pasky@ji.cz>:
+
+	* Makefile:
+
+	Don't destroy .deps upon make clean.  
+
+Thu Jul 25 07:46:43 2002  Petr Baudis <pasky@ji.cz>:
+
+	* edit.c, ewterm.c:
+
+	^L support, fixed race when redrawing clock and scrolling.  
+
+Thu Jul 25 07:09:24 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c:
+
+	Set up iproto from ewterm side.  
+
+Thu Jul 25 07:04:50 2002  Petr Baudis <pasky@ji.cz>:
+
+	* .deps, Makefile, iproto.c:
+
+	LOCKDEF uncommented again, fixed warnings in iproto.c.  
+
+Thu Jul 25 07:01:27 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ascii.h, iproto.c, iproto.h:
+
+	Internal ewterm<->ewrecv protocol support.  
+
+Thu Jul 25 06:03:03 2002  Petr Baudis <pasky@ji.cz>:
+
+	* .deps, Makefile, ewrecv.c, ewterm.c, exch.c:
+
+	Internal ewterm<->ewrecv protocol support.  
+
+Wed Jul 24 21:32:17 2002  Petr Baudis <pasky@ji.cz>:
+
+	* version.h:
+
+	2.1pre 
+
+Wed Jul 24 20:22:10 2002  Petr Baudis <pasky@ji.cz>:
+
+	* CHANGES, ewrecv.c, ewterm.c:
+
+	Updated about notice.  
+
+Wed Jul 24 20:19:33 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c, version.h:
+
+	EWTerm-2.0 
+
+Wed Jul 24 18:48:41 2002  Petr Baudis <pasky@ji.cz>:
+
+	* .deps, Makefile, menu.c:
+
+	Dependencies only to local includes.  
+
+Wed Jul 24 18:46:36 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c, menu.c:
+
+	Show clock in the status line.  
+
+Wed Jul 24 17:42:55 2002  Petr Baudis <pasky@ji.cz>:
+
+	* menu.c:
+
+	Fixed writing of commandmode states. Again. SILLY me.  
+
+Wed Jul 24 17:41:20 2002  Petr Baudis <pasky@ji.cz>:
+
+	* .deps, Makefile:
+
+	depend is not done automagically anymore. Finally. Now.  
+
+Wed Jul 24 16:55:25 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c, formshlp.c, help.c:
+
+	Help has variable size as well.  
+
+Wed Jul 24 16:09:30 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	param content is dynalloc now, params cleared.  
+
+Wed Jul 24 15:34:18 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.h, forms.c, help.c:
+
+	Forms height is now variable.  
+
+Wed Jul 24 14:28:15 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c, exch.c, help.c:
+
+	Error strings were made more professional.  
+
+Wed Jul 24 13:59:08 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Comparasions in CancelCommand are case-insensitive now.  
+
+Wed Jul 24 13:55:12 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Debug.  
+
+Wed Jul 24 13:52:31 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Send STOPDISP also to STAT commands, send STOPJOB to EXECCMDFILE
+	command., 
+
+Wed Jul 24 13:48:03 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Clear GotPrompt in user/password sending routines.  
+
+Wed Jul 24 13:42:23 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Cancel command with STOPDISP only if it begins with DISP.  
+
+Wed Jul 24 13:31:44 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Clear GotPrompt when cancelling INPREQUEST.  
+
+Wed Jul 24 13:28:48 2002  Petr Baudis <pasky@ji.cz>:
+
+	* Makefile:
+
+	Don't do make depend automagically.  
+
+Wed Jul 24 13:26:52 2002  Petr Baudis <pasky@ji.cz>:
+
+	* .deps, exch.c, .deps, ewrecv.c:
+
+	Typo fix.  
+
+Wed Jul 24 13:26:19 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c:
+
+	include version.h 
+
+Wed Jul 24 13:25:46 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Maybe this will help with the Cancel-inside-INPREQUEST problem.  
+
+Wed Jul 24 13:25:29 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Terminate evferything logged with \r\n instead of just \n.  
+
+Wed Jul 24 13:07:44 2002  Petr Baudis <pasky@ji.cz>:
+
+	* CHANGES, ewrecv.c, ewterm.c, version.h:
+
+	Bumped version to 2.0pre.  
+
+Wed Jul 24 13:04:15 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.h, exch.c, menu.c:
+
+	Merged Stop and Cancel.  
+
+Wed Jul 24 12:51:04 2002  Petr Baudis <pasky@ji.cz>:
+
+	* .deps, forms.c, menu.c:
+
+	Share ins/ovr in commandline and forms.  
+
+Wed Jul 24 12:43:05 2002  Petr Baudis <pasky@ji.cz>:
+
+	* menu.c:
+
+	OVR and INS are starting on same column now.  
+
+Wed Jul 24 12:38:17 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	Problem with type=3 forms solved.  
+
+Wed Jul 24 12:32:40 2002  Petr Baudis <pasky@ji.cz>:
+
+	* .cvsignore:
+
+	Ignore some generated files.  
+
+Wed Jul 24 12:31:52 2002  Petr Baudis <pasky@ji.cz>:
+
+	* colors.c, options.c:
+
+	Updated UpdateOptions() to write all colors.  
+
+Wed Jul 24 12:26:19 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.h, exch.c, menu.c, options.c:
+
+	AutoLogOn is now saved.  
+
+Wed Jul 24 12:05:58 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	Don't generate spaces between parameters.  
+
+Wed Jul 24 12:03:40 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	Fix of previous fix.  
+
+Wed Jul 24 11:57:11 2002  Petr Baudis <pasky@ji.cz>:
+
+	* TODO, forms.c:
+
+	Fix in previous fix.  
+
+Wed Jul 24 11:44:10 2002  Petr Baudis <pasky@ji.cz>:
+
+	* colors.c, forms.c:
+
+	Fixed COMMAND; parser error in MML parser.  
+
+Wed Jul 24 11:35:50 2002  Petr Baudis <pasky@ji.cz>:
+
+	* menu.c:
+
+	Moved commandmode flags indicators all around.  
+
+Wed Jul 24 11:32:08 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	FIRSTCOMMAND CommandMode flag cleared when we send pending command.  
+
+Wed Jul 24 10:39:16 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	Fixed forms colors.  
+
+Wed Jul 24 10:31:34 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Fixed detection of ^<ETX.  
+
+Wed Jul 24 10:27:21 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Even more debug.  
+
+Wed Jul 24 10:22:05 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c:
+
+	Possible precedence error in Done fixed.  
+
+Wed Jul 24 10:15:01 2002  Petr Baudis <pasky@ji.cz>:
+
+	* menu.c:
+
+	Compilation fix.  
+
+Wed Jul 24 10:14:23 2002  Petr Baudis <pasky@ji.cz>:
+
+	* menu.c:
+
+	Cleaned status commandmode displaying.  
+
+Wed Jul 24 10:07:18 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Set INPREQUEST more carefully. Fix of possible problem of usages
+	AddCommandToQueue(,2,).  
+
+Wed Jul 24 10:02:06 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c:
+
+	RedrawStatus in Done, for testing purposes.  
+
+Wed Jul 24 09:56:14 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Don't set INPREQUEST if SkipPrompt.  
+
+Wed Jul 24 09:50:50 2002  Petr Baudis <pasky@ji.cz>:
+
+	* buffer.c, colors.c, ewterm.h, exch.c, options.c:
+
+	Prompt string is now highlighted.  
+
+Wed Jul 24 09:50:36 2002  Petr Baudis <pasky@ji.cz>:
+
+	* menu.c:
+
+	Warning fix.  
+
+Wed Jul 24 09:42:21 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Call RefreshLogTxt().  
+
+Wed Jul 24 09:40:44 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c:
+
+	More debug.  
+
+Wed Jul 24 09:36:03 2002  Petr Baudis <pasky@ji.cz>:
+
+	* menu.c:
+
+	Reserve spot for each commandmode indicator.  
+
+Wed Jul 24 09:23:25 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.h:
+
+	Again, DEBUG not enabled by default.  
+
+Wed Jul 24 09:23:10 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Debug output fix.  
+
+Wed Jul 24 09:22:41 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Only < at line start is command prompt.  
+
+Wed Jul 24 09:12:38 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Debug output for STATSSP sending.  
+
+Wed Jul 24 09:10:22 2002  Petr Baudis <pasky@ji.cz>:
+
+	* .deps, Makefile:
+
+	Added deps.  
+
+Wed Jul 24 09:02:23 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	We send prompt request (ACK) by ourselves if there's no exchange
+	output around.  
+
+Wed Jul 24 08:49:15 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Clear INPREQUEST when processed. SendACK if you want to send
+	command, don't send ack when we get prompt chunk.  
+
+Wed Jul 24 08:42:24 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Test against <, not > ;).  
+
+Wed Jul 24 08:39:06 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.h:
+
+	Ok, don't initialize debugf (comp fix).  
+
+Wed Jul 24 08:37:27 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.h:
+
+	DEBUG on for now, maybe fixed segfault upon startup.  
+
+Wed Jul 24 08:35:23 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	More Debug.  
+
+Tue Jul 23 21:19:19 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Removed all prompt detection except not sending ACK to = prompt and
+	setting INPREQUEST to each prompt except the one ending with '>'. I
+	really wonder how this won't work (it needs extensive debugging).
+	Feel free to revert all changes inside exch.c to Jan 23 18:00 now,
+	if you're going to seriously _use_ ewterm from this cvs now.  
+
+Tue Jul 23 20:50:17 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c:
+
+	Never fork ewrecv automagically if -l.  
+
+Tue Jul 23 20:44:34 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Protocol documentation, removed PromptComing hack, will be fixed by
+	awaiting ^F.  
+
+Tue Jul 23 19:37:49 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c, exch.c:
+
+	Updated protocol documentation, removed stale disabled stuff.  
+
+Tue Jul 23 19:33:49 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c, help.c:
+
+	Care more about goto_node() return value. We shouldn't segfault when
+	we don't find forms file anymore.  
+
+Tue Jul 23 15:03:46 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	After sending first command, turn off FIRSTCOMMAND mode.  
+
+Tue Jul 23 13:39:29 2002  Petr Baudis <pasky@ji.cz>:
+
+	* parseforms.y:
+
+	Compilation fix.  
+
+Tue Jul 23 13:34:20 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	Fixed loading option values from MML parser to multiline input
+	fields.  
+
+Tue Jul 23 13:25:34 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.h, exch.c:
+
+	Maybe this will help detecting sessions already logged in. Or it
+	will mess up things.  
+
+Tue Jul 23 12:43:58 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Attempt to fix relogging in.  
+
+Tue Jul 23 12:40:42 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c, help.c, menu.c:
+
+	Now we update status bar according to ins/ovr status in forms.  
+
+Tue Jul 23 12:30:57 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	Fixed bugs in overwrite mode.  
+
+Tue Jul 23 12:19:33 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.h, exch.c:
+
+	Attempt to another fix of sending of STATSSP upon startup.  
+
+Tue Jul 23 12:00:57 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	Removed some stale debugging stuff.  
+
+Tue Jul 23 12:00:24 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Removed stale stuff from ProcessPrompt not sued anymore. We sned
+	newline at the end of STATSSP now.  
+
+Tue Jul 23 11:54:57 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c, forms.h:
+
+	Reorganized MML parsing a bit (it's moved to later phase, stuff is
+	done more elegantly now). Now we save commandline to be applied
+	later if we will appear inside menu instead of end-command.  
+
+Tue Jul 23 11:05:02 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	Another similiar rendering fix.  
+
+Tue Jul 23 10:45:59 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	Fixed crash when slash appeared in command accidentally.  
+
+Tue Jul 23 10:40:01 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	STATSSP:OST=UNA; is executed after logon automagically.  
+
+Tue Jul 23 10:39:44 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	Removed unused variable.  
+
+Tue Jul 23 10:38:14 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	Strip spaces even from commands, strip spaces from option names in a
+	better way, fixed rendering bug when parameters were specified near
+	non-target command.  
+
+Tue Jul 23 10:08:02 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Fix of *very* silly buf.  
+
+Tue Jul 23 09:57:00 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	Fixes in MML parser and quotes support.  
+
+Tue Jul 23 09:41:03 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	Don't count with quotes for now.  
+
+Tue Jul 23 09:38:32 2002  Petr Baudis <pasky@ji.cz>:
+
+	* help.c:
+
+	Don't strip everything after ':' anymore. We will parse it in
+	forms.c.  
+
+Tue Jul 23 09:37:52 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Compilation fix :/.  
+
+Tue Jul 23 09:37:39 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Added -r/--rawlog to ewrecv.  
+
+Tue Jul 23 07:59:37 2002  Petr Baudis <pasky@ji.cz>:
+
+	* clup:
+
+	For generating ChangeLog.  
+
+Tue Jul 23 07:39:40 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c, parseforms.y:
+
+	Some support for decoding of MML commands to forms.  
+
+Tue Jul 23 07:38:39 2002  Petr Baudis <pasky@ji.cz>:
+
+	* help.c:
+
+	Fixed bug when switching between forms and buffer too aggressively
+	;).  
+
+Tue Jul 23 07:38:13 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c, exch.c:
+
+	Added -l/--alone option.  
+
+Thu Jul  4 13:33:04 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.h, exch.c, options.c:
+
+	Emergency logoff introduced.  
+
+Thu Jul  4 13:12:51 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Now we detect that we're logged by comparing our username and
+	username returned in header of exchange message.  
+
+Thu Jul  4 13:04:06 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	INVALID PASSWORD now clears usrname as well.  
+
+Thu Jul  4 12:53:31 2002  Petr Baudis <pasky@ji.cz>:
+
+	* help.c:
+
+	If : is on input line, take as command only input line fragment to
+	it.  
+
+Thu Jul  4 12:51:33 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Unleash DO YOU WANT ? + - heuristically ;).  
+
+Thu Jul  4 12:27:11 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Introduced PromptComing, set it when DO YOU WANT THIS COMMAND TO BE
+	EXECUTED? (YES:+/NO:-).  
+
+Sat Jun 29 11:24:35 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Added ':' prompt, behaves same as '*' prompt.  
+
+Sat Jun 29 11:07:48 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Clear password upon PLEASE ENTER NEW PASSWORD AGAIN.  
+
+Sat Jun 29 10:38:43 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Added hook for CURRENT PASSWORD EXPIRED, patch by patrol.  
+
+Thu Jun 13 18:54:58 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Keep ActOMT up even when logged off.  
+
+Wed Jun 12 10:55:05 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Oops, for session timeout mask is 10119.  
+
+Wed Jun 12 10:17:17 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Strip also newline from ActUsrname.  
+
+Wed Jun 12 09:42:14 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Update ActOMT and ActUsrname only when logged off yet.  
+
+Wed Jun 12 09:40:08 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Fix displaying headers in scrollback.  
+
+Tue Jun 11 20:06:01 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Added support for password entering when using CRUSERID.  
+
+Tue Jun 11 15:04:17 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Strip spaces from username when reading headers.  
+
+Tue Jun 11 15:03:11 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Don't take CONTINUATION TEXT as a header altough it may appear to be
+	it.  
+
+Tue Jun 11 14:54:12 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Fix in getting OMT and user; fix in getting mask.  
+
+Tue Jun 11 14:43:39 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Clear LastMode only when needed.  
+
+Tue Jun 11 14:36:07 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Even more than 4 lines triggers hedaer reader.  
+
+Tue Jun 11 14:29:24 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Redraw status properly.  
+
+Tue Jun 11 14:24:59 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Fix in loading uname from header.  
+
+Tue Jun 11 14:22:37 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Fixed computing of NewLines.  
+
+Tue Jun 11 14:20:09 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.h, exch.c:
+
+	Eat login data from headers; detect logout by catching ENDSESSION
+	EXEC'D.  Detect login by offering prompt in LOGGEDOFF state and with
+	no mask info in header.  
+
+Tue Jun 11 13:33:29 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Reset LastMask when processing line not containing it.  
+
+Tue Jun 11 13:28:09 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.h, exch.c, menu.c:
+
+	Show LastMask in status line.  
+
+Tue Jun 11 13:15:24 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Use MASKNO:num instead of scanning for particular strings when
+	determining exchange state.  
+
+Mon May 20 17:37:34 2002  Petr Baudis <pasky@ji.cz>:
+
+	* help.c:
+
+	When both help and buffer are active, there are still help function
+	keys.  
+
+Mon May 20 16:50:53 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	Fixed one evil realloc() error - we didn't update pointers to part
+	of the original memory area :(.  
+
+Mon May 20 16:36:15 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	Arrow is in first column, not in fourth.  
+
+Mon May 20 16:35:18 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c, forms.c, help.c:
+
+	Support for simulatnous display of cua window and forms.  
+
+Mon May 20 15:43:44 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	Variable names for required fields are highlighted now.  
+
+Mon May 20 15:02:38 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	Preload common data for forms always when goto_node(), not only when
+	raise_link().  
+
+Mon May 20 14:27:59 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Try to refresh job number more frequently..  
+
+Mon May 20 14:23:44 2002  Petr Baudis <pasky@ji.cz>:
+
+	* help.c:
+
+	Enabled backspace.  
+
+Mon May 20 14:21:40 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c:
+
+	Cursor while in forms is displayed correctly.  
+
+Mon May 20 13:56:35 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c, formshlp.c:
+
+	Fixed help displaying.  
+
+Mon May 20 13:54:15 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c, ewterm.h, forms.c:
+
+	Fixed background redrawing when forms/help is open.  
+
+Mon May 20 11:42:45 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c, help.c:
+
+	Consistent background.  
+
+Mon May 20 10:59:34 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	Margin around forms/help window.  
+
+Mon May 20 10:42:42 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c, formshlp.c:
+
+	Changed size and position of forms/help window.  
+
+Mon May 20 10:37:12 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c, help.c, mkforms.c:
+
+	Take content of line buffer as forms location.  
+
+Mon May 20 10:22:25 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewterm.c:
+
+	Fixed CAPS-on-startup second time ;).  
+
+Fri May 17 15:16:13 2002  Petr Baudis <pasky@ji.cz>:
+
+	* buffer.c, edit.c, forms.c, help.c:
+
+	Sending of command.  
+
+Fri May 17 15:00:23 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c, formshlp.c, help.c:
+
+	Help works now. Many other bug fixes.  
+
+Thu May 16 17:21:14 2002  Petr Baudis <pasky@ji.cz>:
+
+	* Makefile, forms.c, help.c, options.c:
+
+	Hacked ewterm and forms together; help and colors still don't work
+	properly.  
+
+Tue May  7 13:38:24 2002  Petr Baudis <pasky@ji.cz>:
+
+	* ewrecv.c:
+
+	Log only LFs and characters with ASCII code >= 32.  
+
+Tue Apr 23 14:30:52 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	Send command only when all required fields are filled 
+
+Tue Apr 23 14:19:43 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	Different color for required fields.  
+
+Tue Apr 23 14:17:55 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.h, parseforms.y, scanforms.l:
+
+	Added support for flags field in field definition; only 'required'
+	flag supported so far.  
+
+Tue Apr 23 14:07:12 2002  Petr Baudis <pasky@ji.cz>:
+
+	* mkrc:
+
+	It works only when it doesn't make sense, it looks.  
+
+Tue Apr 23 14:06:26 2002  Petr Baudis <pasky@ji.cz>:
+
+	* mkrc:
+
+	Add mkdir ../rc.  
+
+Tue Apr 23 14:06:04 2002  Petr Baudis <pasky@ji.cz>:
+
+	* mkrc:
+
+	It makes sense now :).  
+
+Tue Apr 23 14:00:52 2002  Petr Baudis <pasky@ji.cz>:
+
+	* mkforms.c:
+
+	Added support for required fields to mkforms.  
+
+Tue Apr 23 13:18:21 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	Upcase parameter values when sending them.  
+
+Tue Apr 23 13:16:04 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	Remove colon if there're no parameters sent.  
+
+Tue Apr 23 13:14:29 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	Place commas between parameters.  
+
+Tue Apr 23 13:11:59 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	Use rather node name than title when composing command; strip only
+	main part.  
+
+Tue Apr 23 12:56:50 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	Beautified code around input box edit handler..  
+
+Tue Apr 23 12:44:55 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	rc files are now by default searched in EWDIR/rc (/opt/ewterm/rc by
+	default).  
+
+Tue Apr 23 12:41:07 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	ConvertMode defaults to CV2CAPS now.  
+
+Mon Apr 22 13:11:38 2002  Petr Baudis <pasky@ji.cz>:
+
+	* formshlp.c:
+
+	--count -> count-- ;) 
+
+Mon Apr 22 11:49:18 2002  Petr Baudis <pasky@ji.cz>:
+
+	* formshlp.c:
+
+	Make show_help() reentrant, support for NULL name, F1 in help shows
+	generic help for the node (probably).  
+
+Mon Apr 22 11:28:54 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c, forms.h, formstk.c, scanforms.l:
+
+	Shrink hash sizes from 65536 to 256.  
+
+Mon Apr 22 11:17:03 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c, forms.h, formshlp.c, parseforms.y:
+
+	Hashes are now node-local; bugfixes in hashworks; separated
+	load_node() and goto_node(); preload FOO-/.FOO first. Minor fixes.  
+
+Mon Apr 22 09:58:08 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c, forms.h, formshlp.c:
+
+	Moved header part to separate pad; correct forms/help pad sizing +
+	scrolling.  
+
+Mon Apr 22 09:29:24 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	draw opta before active field..  
+
+Mon Apr 22 09:28:57 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c:
+
+	pre-clean space for option name 
+
+Mon Apr 22 09:16:51 2002  Petr Baudis <pasky@ji.cz>:
+
+	* TODO:
+
+	use subdir/.BLAH for common help entries 
+
+Mon Apr 22 09:13:50 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c, formshlp.c:
+
+	Some kind of displaying active option near active command name (not
+	fully working yet); show header even in help; delete helppad on exit
+	from help.  
+
+Mon Apr 22 08:45:49 2002  Petr Baudis <pasky@ji.cz>:
+
+	* formshlp.c:
+
+	F3 exits help dialog as well.  
+
+Mon Apr 22 08:45:02 2002  Petr Baudis <pasky@ji.cz>:
+
+	* formshlp.c, formstk.c:
+
+	Another count fixes; return NULL in get_hash() if hash pointer is
+	NULL.  
+
+Mon Apr 22 08:41:31 2002  Petr Baudis <pasky@ji.cz>:
+
+	* formshlp.c:
+
+	count counting fixes :) 
+
+Mon Apr 22 08:25:12 2002  Petr Baudis <pasky@ji.cz>:
+
+	* forms.c, forms.h, formshlp.c, parseforms.y:
+
+	Moved optname to different struct; now we work a bit more ;).  
+
+Thu Apr 18 20:38:12 2002  Petr Baudis <pasky@ji.cz>:
+
+	* Makefile, forms.c, forms.h, formshlp.c:
+
+	Some forms help support; it doesn't work, but whatever... :) 
+
+Sat Apr  6 15:46:51 2002  Petr Baudis <pasky@ji.cz>:
+
+	* COPYING, Makefile, forms.c, forms.h, formstk.c, parseforms.y,
+	scanforms.l:
+
+	Added (yet standalone) forms viewer.  
+
+Sat Apr  6 15:32:18 2002  Petr Baudis <pasky@ji.cz>:
+
+	* Makefile, mkforms.c, mkrc:
+
+	Add ./mkforms siemens->rc convertor.  
+
+Sat Apr  6 12:39:35 2002  Petr Baudis <pasky@ji.cz>:
+
+	* CHANGES, TODO:
+
+	Moved certain things outside TODO section 
+
+Sat Apr  6 12:32:57 2002  Petr Baudis <pasky@ji.cz>:
+
+	* exch.c:
+
+	Fix in SetInputRequest() (after-1.1 stuff) 
+
+Sat Apr  6 12:31:36 2002  Petr Baudis <pasky@ji.cz>:
+
+	* CHANGES, Makefile, agview.c, agview.h, bfu.c, buffer.c, colors.c,
+	edit.c, ewrecv.c, ewterm.c, ewterm.h, exch.c, frq.c, gstr.c,
+	help.c, history.c, lists.c, menu.c, options.c:
+
+	Preparation for ewterm-2.0 - import of my working dir.  
+
+Sat Apr  6 12:28:46 2002  Petr Baudis <pasky@ji.cz>:
+
+	* CHANGES, INSTALL, InstallScript, Makefile, TODO, agview.c,
+	agview.h, ewrecv.c, ewrecv.log, ewterm.c, logging.c, logging.h:
+
+	Initial revision 
+

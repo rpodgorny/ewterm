@@ -1,0 +1,37 @@
+#!/bin/bash
+
+INSTALLDIR=$1
+LOCKDIR=$2
+EWDIR=$INSTALLDIR/ewterm
+BINDIR=$EWDIR/bin
+LOGDIR=$EWDIR/mlog
+
+echo Installing the ewterm package.
+echo -n Checking for group \'ewterm\'...
+if [ "`grep ^ewterm: /etc/group`" != "" ] ; then
+  echo " OK."
+else
+  echo " Not found, creating."
+  groupadd ewterm
+fi
+
+mkdir -m 750 $EWDIR 2>/dev/null
+mkdir -m 750 $BINDIR 2>/dev/null
+mkdir -m 750 $LOGDIR 2>/dev/null
+chown root.ewterm $EWDIR $BINDIR $LOGDIR
+
+if [ "$LOCKDIR" != "" ]; then
+  echo
+  echo "Installing ewrecv setgid uucp to be able to manipulate locks."
+  install -s -o root -g uucp -m 755 ewrecv $BINDIR
+  chmod g+s $BINDIR/ewrecv
+else
+  install -s -o root -g root -m 755 ewrecv $BINDIR
+fi
+
+install -s -o root -g root -m 755 ewalarm $BINDIR
+install -s -o root -g root -m 755 ewterm $BINDIR
+install -o root -g root -m 755 ewterm.options $EWDIR
+
+#cp -r lib/* $EWDIR
+

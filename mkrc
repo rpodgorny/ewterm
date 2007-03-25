@@ -1,0 +1,3 @@
+mkdir ../rc
+for i in `find . -type d -print`; do echo $i; mkdir ../rc/$i; done
+for i in `find . -print`; do echo $i; ../ewterm/mkforms $i >../rc/$i; done
