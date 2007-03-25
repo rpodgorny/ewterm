@@ -832,7 +832,7 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 	} else if (p->dir == 3 && p->pltype == 1) {
 		// "Command accepted" confirmation
 		char tmp[256];
-		sprintf(tmp, ":::CONFIRMED JOB %d\n\n", jobnr);
+		sprintf(tmp, ":::%s CONFIRMED JOB %d\n\n", X25Conns[idx].name, jobnr);
 
 		if (c) {
 			// save the job number for possible cancellation
@@ -884,7 +884,7 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 		} else if (seq == 0x0304) {
 			// PASSWORD EXPIRED
 			char msg[256] = "";
-			sprintf(msg, "\n\n:::PLEASE ENTER NEW PASSWORD\n\n");
+			sprintf(msg, "\n\n:::(%s) PLEASE ENTER NEW PASSWORD\n\n", X25Conns[idx].name);
 
 			if (c) {
 				IProtoSEND(c, 0x40, NULL);
@@ -2012,14 +2012,24 @@ perror("CONN");
 						}
 
 						if (alllogged) {
+							c->X25WriteBuf[c->X25WriteBufLen] = 0;
 							p = command_packet(c->id, c->X25WriteBuf, c->X25WriteBufLen);
 
 							// save the command for possible cancellation
 							strncpy(c->X25LastCommand, c->X25WriteBuf, c->X25WriteBufLen);
+
+							char msg[256] = "";
+							sprintf(msg, ":::%s@%s COMMAND \"%s\"\n", c->user, c->host, c->X25WriteBuf);
+							LogStr(MLog, msg, strlen(msg));
 						}
 					} else if (c->X25Prompt[j] == 'I' || c->X25Prompt[j] == 'p') {
+						c->X25WriteBuf[c->X25WriteBufLen] = 0;
 						p = command_confirmation_packet(c->X25LastConnId[j], c->id, c->X25LastTail[j], c->X25WriteBuf, c->X25WriteBufLen);
 						c->X25Prompt[j] = 0;
+							
+						char msg[256] = "";
+						sprintf(msg, ":::%s@%s COMPLETION \"%s\"\n", c->user, c->host, c->X25WriteBuf);
+						LogStr(MLog, msg, strlen(msg));
 					} else if (c->X25Prompt[j] == 'U') {
 						strncpy(c->X25User, c->X25WriteBuf, c->X25WriteBufLen);
 						c->X25User[c->X25WriteBufLen] = 0;
@@ -2038,6 +2048,10 @@ perror("CONN");
 
 						p = login_packet(c->id, c->X25User, c->X25Passwd, NULL, 0);
 						c->X25Prompt[j] = 0;
+							
+						char msg[256] = "";
+						sprintf(msg, "\n\n:::%s@%s TRIED TO LOG IN AS %s\n", c->user, c->host, c->X25User);
+						LogStr(MLog, msg, strlen(msg));
 					} else if (c->X25Prompt[j] == 'N') {
 						strncpy(c->X25NewPasswd, c->X25WriteBuf, c->X25WriteBufLen);
 						c->X25NewPasswd[c->X25WriteBufLen] = 0;
@@ -2055,6 +2069,10 @@ perror("CONN");
 					} else if (c->X25Prompt[j] == 'X') {
 						p = logout_packet(c->id);
 						c->X25Prompt[j] = 0;
+						
+						char msg[256] = "";
+						sprintf(msg, "\n\n:::%s@%s TRIED TO LOG OUT AS %s\n", c->user, c->host, c->X25User);
+						LogStr(MLog, msg, strlen(msg));
 					} else if (c->X25Prompt[j] == 'R') {
 						if (c->X25WriteBufLen == 1 && c->X25WriteBuf[0] == '+') {
 							p = login_packet(c->id, c->X25User, c->X25Passwd, NULL, 1);
@@ -2091,6 +2109,9 @@ perror("CONN");
 							char msg[256] = "";
 							sprintf(msg, "\n\n:::CANCELLING JOB %d ON %s\n\n", c->X25LastJob[j], X25Conns[j].name);
 							Write(c, msg, strlen(msg));
+							
+							sprintf(msg, "\n\n:::%s@%s CANCELLING JOB %d ON %s\n\n", c->user, c->host, c->X25LastJob[j], X25Conns[j].name);
+							LogStr(MLog, msg, strlen(msg));
 						}
 
 						c->X25LastJob[j] = 0;
