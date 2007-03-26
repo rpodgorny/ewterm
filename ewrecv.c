@@ -693,8 +693,10 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 	unsigned short mask = 0;
 	char prompt[32000] = "";
 	char answer[32000] = "";
-	char date[256] = "";
-	char time[256] = "";
+	char sdate[256] = "";
+	char stime[256] = "";
+
+	time_t tv = time(NULL);
 
 	b = block_getchild(p->data, "2");
 	if (b && b->data) {
@@ -728,12 +730,12 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 
 	b = block_getchild(p->data, "4-6");
 	if (b && b->data) {
-		sprintf(date, "%02d-%02d-%02d", *b->data, *(b->data+1), *(b->data+2));
+		sprintf(sdate, "%02d-%02d-%02d", *b->data, *(b->data+1), *(b->data+2));
 	}
 
 	b = block_getchild(p->data, "4-7");
 	if (b && b->data) {
-		sprintf(time, "%02d:%02d:%02d", *b->data, *(b->data+1), *(b->data+2));
+		sprintf(stime, "%02d:%02d:%02d", *b->data, *(b->data+1), *(b->data+2));
 	}
 
 	b = block_getchild(p->data, "4-8");
@@ -772,7 +774,7 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 	}
 
 	char header[256] = "";
-	GenHeader(exch, apsver, patchver, date, time, jobnr, omt, user, msggrp, mask, hint, header);
+	GenHeader(exch, apsver, patchver, sdate, stime, jobnr, omt, user, msggrp, mask, hint, header);
 
 	if (strlen(header)) {
 		if (c) Write(c, header, strlen(header));
@@ -843,7 +845,7 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 	} else if (c && p->dir == 0x0c && p->pltype == 1) {
 		if (strlen(unkx3_3)) {
 			char msg[256] = "";
-			sprintf(msg, "\n\n:::LOGIN SUCCESS ON %s\n\n", X25Conns[idx].name);
+			sprintf(msg, "\n\n:::LOGIN SUCCESS ON %s AT %s\n\n", X25Conns[idx].name, ctime(&tv));
 
 			if (c) {
 				c->X25LoggedIn[idx] = 1;
@@ -2066,7 +2068,7 @@ perror("CONN");
 						c->X25Prompt[j] = 0;
 						
 						char msg[256] = "";
-						sprintf(msg, "\n\n:::%s@%s TRIED TO LOG OUT AS %s\n", c->user, c->host, c->X25User);
+						sprintf(msg, "\n\n:::%s@%s TRIED TO LOG OUT FROM %s AS %s\n", c->user, c->host, X25Conns[j].name, c->X25User);
 						LogStr(MLog, msg, strlen(msg));
 					} else if (c->X25Prompt[j] == 'R') {
 						if (c->X25WriteBufLen == 1 && c->X25WriteBuf[0] == '+') {
