@@ -282,8 +282,6 @@ void SigHupCaught() {
 	signal(SIGHUP, SigHupCaught);
 }
 
-///static int lday;
-
 void Lock(FILE *Fl) {
 	/* Create our lock */
 	Fl = fopen(LockName, "w");
