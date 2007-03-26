@@ -667,6 +667,14 @@ void GenHeader(char *exch, char *apsver, char *patchver, char *date, char *time,
 	sprintf(out, "%-53s %8s  %8s\n%04d %14s                %04d/%05d %26s\n\n", left_part, date, time, jobnr, omtuser, msggrp, mask, hint);
 }
 
+// a helper function to get rid of excess carriage-returns
+void FilterCR(char *s) {
+	if (!s) return;
+
+	char *p = s;
+	while ((p = index(p, 13)) != NULL) memmove(p, p+1, strlen(p));
+}
+
 /* for X.25 communication */
 // "idx" is the index in connection's array of X.25 connections
 void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE *log) {
@@ -711,22 +719,40 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 	}
 
 	b = block_getchild(p->data, "3-3");
-	if (b && b->data) strncpy(unkx3_3, (char *)b->data, b->len);
+	if (b && b->data) {
+		strncpy(unkx3_3, (char *)b->data, b->len);
+		FilterCR(unkx3_3);
+	}
 
 	b = block_getchild(p->data, "4-1");
-	if (b && b->data) strncpy(exch, (char *)b->data, b->len);
+	if (b && b->data) {
+		strncpy(exch, (char *)b->data, b->len);
+		FilterCR(exch);
+	}
 
 	b = block_getchild(p->data, "4-2");
-	if (b && b->data) strncpy(apsver, (char *)b->data, b->len);
+	if (b && b->data) {
+		strncpy(apsver, (char *)b->data, b->len);
+		FilterCR(apsver);
+	}
 
 	b = block_getchild(p->data, "4-3");
-	if (b && b->data) strncpy(patchver, (char *)b->data, b->len);
+	if (b && b->data) {
+		strncpy(patchver, (char *)b->data, b->len);
+		FilterCR(patchver);
+	}
 
 	b = block_getchild(p->data, "4-4");
-	if (b && b->data) strncpy(omt, (char *)b->data, b->len);
+	if (b && b->data) {
+		strncpy(omt, (char *)b->data, b->len);
+		FilterCR(omt);
+	}
 
 	b = block_getchild(p->data, "4-5");
-	if (b && b->data) strncpy(user, (char *)b->data, b->len);
+	if (b && b->data) {
+		strncpy(user, (char *)b->data, b->len);
+		FilterCR(user);
+	}
 
 	b = block_getchild(p->data, "4-6");
 	if (b && b->data) {
@@ -739,7 +765,10 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 	}
 
 	b = block_getchild(p->data, "4-8");
-	if (b && b->data) strncpy(hint, (char *)b->data, b->len);
+	if (b && b->data) {
+		strncpy(hint, (char *)b->data, b->len);
+		FilterCR(hint);
+	}
 
 	b = block_getchild(p->data, "5");
 	if (b && b->data) {
@@ -748,10 +777,16 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 	}
 
 	b = block_getchild(p->data, "5-2");
-	if (b && b->data) strncpy(err, (char *)b->data, b->len);
+	if (b && b->data) {
+		strncpy(err, (char *)b->data, b->len);
+		FilterCR(err);
+	}
 
 	b = block_getchild(p->data, "5-3");
-	if (b && b->data) strncpy(prompt, (char *)b->data, b->len);
+	if (b && b->data) {
+		strncpy(prompt, (char *)b->data, b->len);
+		FilterCR(prompt);
+	}
 
 	b = block_getchild(p->data, "5-4");
 	if (b && b->data) {
@@ -759,14 +794,18 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 	}
 
 	b = block_getchild(p->data, "7");
-	if (b && b->data) strncpy(answer, (char *)b->data, b->len);
+	if (b && b->data) {
+		strncpy(answer, (char *)b->data, b->len);
+		FilterCR(answer);
+	}
 
 	// ...and now, send the parsed data to clients
 
 	if (c) Write(c, "\n\n", 2);
 	LogStr(log, "\n\n", 2);
 
-	if (seq > 1) {
+	// TODO: the 100 is just a try, I don't know how to distinguish real sequence numbers from other junk
+	if (seq > 1 && seq < 100) {
 		char tmp[128] = "";
 		sprintf(tmp, "CONTINUATION TEXT %04d\n\n", seq-1);
 		if (c) Write(c, tmp, strlen(tmp));
