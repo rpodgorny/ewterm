@@ -1,0 +1,160 @@
+\documentclass[a4paper,12pt]{article}
+
+\usepackage[utf-8]{inputenc}
+\usepackage[czech]{babel}
+
+\author{Radek Podgorný}
+\title{Operační a dohledové centrum telefonní ústředny EWSD}
+\date{}
+
+\usepackage{setspace}
+
+\begin{document}
+
+\maketitle
+
+\section{Architektura}
+
+\subsection{Dekompozice programu}
+
+Operacni a dohledove centrum systemu Siemens EWSD tvori dvojice programu
+\emph{ewrecv} a \emph{ewterm}. Volitelne muze byt jeste pouzit program
+\emph{ewalarm} pro sber alarmu.
+
+Program \emph{ewrecv} zajistuje serverovou
+cast komunikace a bezi typicky v jedine instanci na centralnim pocitaci.
+Udrzuje nekolik X.25 spojeni (po jednom do kazde ustredny), pres nez uskutecnuje
+vlastni povelovani a sbirani odpovedi a alarmu. Tato spojeni se snazi
+neblokujicim zpusobem udrzovat stale otevrena. Na opacne strane udrzuje
+spojeni s nekolika instancemi programu \emph{ewterm}, pres ktera prijima povely
+a odesila odpovedi a alarmy.
+
+Program \emph{ewterm} je klientska cast celeho systemu a umoznuje uzivateli
+zadavat prikazy jednotlivym ustrednam a sledovat odpovedi. Volitelne je mozne
+zaregistrovat se k odebirani alarmu.
+
+Program \emph{ewalarm} je tou nejjednodussi moznou verzi klientske implementace
+a jeho jedinym ucelem je pripojeni na \emph{ewrecv} a nesledne odebirani alarmu.
+Tato poplachova hlaseni odesila na standardni vystup. Jak uz podstaty vyplyva,
+je tento program neinteraktivni.
+
+Komunikace mezi \emph{ewrecv} a \emph{ewterm} je zalozena na umele definovanem
+stavovem protokolu \emph{IProto}, ktery je velmi podrobne
+zdokumentovan v souboru \emph{iproto.txt}. Komunikace s ustrednou pak probiha
+pres proprietarni protokol \emph{DIALOG} (nazev prejat od firmy Siemens).
+
+\subsection{Realizace komunikace na vrstve X.25}
+
+Vzhledem k tomu, ze fyzicky neni spojeni s ustrednami realizovano pres X.25
+linku, je nutne obalovat pakety protokolu X.25 do protokolu XOT podle standardu
+firmy Cisco. Protokol XOT je specifikovan v RFC 1613. Vlastni program
+\emph{ewrecv} pouziva X.25 sockety (protokol X.25 je implementovan v linuxovem
+jadre), ale vzhledem k tomu, ze linuxove jadro neobsahuje podporu protokolu
+XOT, je nutne resit komunikacni retezec nasledujicim zpusobem. Jaderny modul
+\emph{x25tap} se dynamicky nacte do jadra a vytvori virtualni fyzicke X.25
+zarizeni, pres ktere probiha komunikace. Ve skutecnosti ale pakety predava
+do uzivatelskeho prostoru, kde je zpracuje demon \emph{xotd}. Ten se postara
+o samotne obaleni a pakety znovu posle, tentokrat vsak pres standardni TCP
+socket. Stejna vymena probiha samozrejme i v opacnem smeru.
+
+Z vyse popsaneho vyplyva, ze pro funkcnost komunikace je nutne mit nejprve
+zaveden modul \emph{x25tap} a spusteneho demona \emph{xotd}.
+
+\section{Popis jednotlivych programu}
+
+\subsection{ewrecv}
+
+Program \emph{ewrecv} je srdcem celeho systemu. Realizuje multiplexni pristup
+smerem k uzivatemum (nekolik soucasne pripojenych \emph{ewtermu}u) i smerem
+k ustrednam (soubezne pripojeni na vice ustreden). Diky tomuto obousmernemu
+multiplexingu je mozne, aby uzivatel poveloval vice ustreden soucasne i aby
+vice uzivatelu prijimalo alarmy od jedine ustredny (samozrejme lze realizovat
+kombinaci, kdy vsichni uzivatele prijimaji alarmy od vsech ustreden).
+
+Program \emph{ewrecv} je nutne spoustet s pravy roota, protoze pouziva zamky.
+
+Nasleduje prehled nejdulezitejsich argumentu, ktere je mozne (nekdy nutne)
+zadat pri spousteni na prikazove radce:
+
+\begin{itemize}
+\item \verb!-h! -- Zobrazi podrobnou napovedu k jednotlivym argumentum.
+\item \verb!--x25local! -- Pomoci tohoto argumentu specifikujeme X.25 adresu
+lokalniho uzlu. Tato musi samozrejme odpovidat nastaveni routingu v siti.
+\item \verb!--x25remote! -- Pomoci tohoto argumentu specifikujeme jmena a
+X.25 adresy jednotlivych ustreden, na ktere chceme navazat spojeni. Format je
+\verb!USTR1=ADR1:USTR2=ADR2:...!
+\item \verb!--mlog! -- Tento argument nam umoznuje zadat jmeno souboru, do
+ktereho chceme ukladat veskerou uzivatelskou komunikaci s ustrednami. Slouzi
+jako zdroj informaci pro eventualni dohledani historie.
+\item \verb!--alog! -- Podobny argument jako \verb!--mlog!, ale tentokrat
+specifikujeme jmeno souboru, kam se maji ukladat veskere prijate alarmy.
+Diky existenci programu \emph{ewalarm} je teoreticky tato volba zbytecna,
+ale je nutne si uvedomit, ze se jedna o mnohem jistejsi zpusob zaznamenavani
+alarmu, nebot v pripade padu/ukonceni programu \emph{ewalarm} by doslo
+ke ztratam. Volba \verb!--alog! nam poslytuje spolehlivy zpusob zaznamu, zavisly
+pouze na behu samotneho programu \emph{ewrecv}.
+\item \verb!-g! -- Velmi uzitecnou moznosti je zakaz volani \verb!fork()!
+a ponechani programu \emph{ewrecv} "na popredi". Takoveto chovani vyvola
+prave tento argument.
+\end{itemize}
+
+\subsection{ewterm}
+
+Program \emph{ewterm} je mozne (a z bezpecnostnich duvodu i zadouci) spoustet
+pod beznym uzivatelskym uctem. Nepouziva zamykani, ani neotevira naslouchajici
+sockety.
+
+Jeho prostredi je zalozeno na knihovne \emph{ncurses} a ovladani je
+diky tomu dostatecne intuitivni.
+
+Popis argumentu zde zamerne neuvadim, protoze v typicke konfiguraci neni
+nutne zadny pouzit.
+Seznam vsech moznych argumentu pro prikazovou radku i s napovedou ziskame
+spustenim programu s argumentem \verb!-h!.
+
+\subsection{ewalarm}
+
+Program \emph{ewalarm} slouzi pouze pro sbirani alarmu z ustreden. Spoustet by se
+mel, podobne jako \emph{ewterm}, pod normalnim uzivatelem.
+
+Ihned po pripojeni na instanci programu \emph{ewrecv} zacne program prijimat
+poplachova hlaseni (alarmy) a odesilat je v nezmenene forme na standardni vystup.
+Diky tomu je mozne pohodlne alarmy presmerovat do souboru nebo pomoci "pipe"
+do jineho programu pro dalsi automatizovani zpracovani.
+
+Argumenty opet zamerne neuvadim, protoze ve vetsine pripadu neni nutne je uvadet.
+Znamy argument \verb!-h! opet vypise nabidku moznosti s odpovidajicim popisem.
+
+\section{Popis realizace komunikace na vrstve X.25}
+
+\subsection{x25tap a xotd}
+
+O duvodech nutnosti pouziti modulu \emph{x25tap} a demona \emph{xotd} jsem
+se zminil jiz v uvodu. V teto casti si popiseme konkretni kroky, potrebne
+k uspesne realizaci napojeni na X.25 sit.
+
+Modul \emph{x25tap} se zavede pomoci standardnich mechanismu, napriklad utilitou
+\emph{insmod} nebo \emph{modprobe} a to samozrejme pod uzivatelem "root".
+
+Dalsim podstatnym krokem je nastaveni smerovacich tabulek. Vzhledem k tomu, ze
+nevyzadujeme slozitejsi nastaveni, postaci nastavit ve vrstve X.25 neco, co by
+se dalo v protokolu IP nazvat "default route".
+
+\makebox[\textwidth]{}
+\verb!ifconfig x25tap0 up! \linebreak
+\verb!route add --x25 0/0 x25tap0! \linebreak
+\makebox[\textwidth]{}
+
+Nasledne je nutne spustit demona \emph{xotd} pomoci
+
+\makebox[\textwidth]{}
+\verb!xotd -v x25tap0 <ip_addr>! \linebreak
+\makebox[\textwidth]{}
+
+kde \verb!<ip_addr>! je IP adresa routeru,
+ktery realizuje branu do X.25 site. Argument \verb!-v! spusti demona ve
+"verbose" rezimu, kdy vypisuje velice podrobne informace o pribihajicich
+spojenich a posilanych paketech. Tato volba je velmi uzitecna pri pocatecni
+instalaci, ale pro vysledny provoz je mozne ji po dostatecnem odladeni nepouzit.
+
+\end{document}
