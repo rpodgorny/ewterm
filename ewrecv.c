@@ -1546,11 +1546,8 @@ int main(int argc, char *argv[]) {
 			printf("--x25local\tLocal endpoint X.25 address\n");
 			printf("--x25remote\tRemote endpoints X.25 addresses\n");
 			printf("\t\t(PHA1=10000002-101:DAT1=10000003-101:...)\n");
-			printf("-f\tLog to file <file>\n");
-			printf("-L\tTake -f parameter as directory name and log each day to separate\n");
-			printf("\tfile, each one named <file>/YYYY-MM-DD\n");
-			printf("-p\tLog to printer through lpr\n");
-			printf("-r\tLog raw traffic to file <file> (useful only for debugging)\n");
+			printf("--alog\tWrite alarms to <file>\n");
+			printf("--mlog\tWrite communication logs (no alarms) to <file>\n");
 			printf("-H\tBind listening socket to addr <host> (defaults to %s)\n", SockName);
 			printf("-P\tBind listening socket to port <port> (defaults to %d)\n", SockPort);
 			printf("-w\tPassword required for the clients to authenticate\n");
