@@ -1929,6 +1929,12 @@ int main(int argc, char *argv[]) {
 						packet_delete(confirm);
 					}
 
+					if (p->sessid == 0) {
+						// it's an alarm
+						// TODO: what if the packet is fragmented?
+						ProcessExchangePacket(p, NULL, 0, ALog);
+					}
+
 					// now try all connections whether this packet is theirs
 
 					int j = 0;
@@ -1942,8 +1948,7 @@ int main(int argc, char *argv[]) {
 							log_it = 1;
 						} else if (p->sessid == 0 && c->alarms) {
 							// it's for everyone and we want alarms
-							// TODO: what if the packet is fragmented?
-							ProcessExchangePacket(p, NULL, 0, ALog);
+							// (but don't log it)
 						} else {
 							// we're not interested
 							continue;
