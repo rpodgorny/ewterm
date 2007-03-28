@@ -835,6 +835,9 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 	}
 
 	if (strlen(err)) {
+		// the error seem to miss newlines, fix it
+		strcat(err, "\n\n");
+
 		if (c) Write(c, err, strlen(err));
 		LogStr(log, err, strlen(err));
 	}
@@ -884,7 +887,7 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 	} else if (c && p->dir == 0x0c && p->pltype == 1) {
 		if (strlen(unkx3_3)) {
 			char msg[256] = "";
-			sprintf(msg, "\n\n:::LOGIN SUCCESS ON %s AT %s\n\n", X25Conns[idx].name, ctime(&tv));
+			sprintf(msg, "\n\n:::LOGIN SUCCESS FOR USER %s ON %s AT %s\n\n", c->X25User, X25Conns[idx].name, ctime(&tv));
 
 			if (c) {
 				c->X25LoggedIn[idx] = 1;
