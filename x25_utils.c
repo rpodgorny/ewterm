@@ -128,7 +128,7 @@ struct packet *logout_packet(unsigned short sessid) {
 
 	unsigned char xxx[1024];
 
-	xxx[0] = 0x05;
+	xxx[0] = 0x04;
 	block_addchild(ret->data, "1", xxx, 1);
 
 	*(unsigned short *)(xxx) = htons(0);
@@ -161,7 +161,7 @@ struct packet *command_packet(unsigned short sessid, char *c, int len) {
 
 	unsigned char xxx[1024];
 
-	xxx[0] = 0x05;
+	xxx[0] = 0x04;
 	block_addchild(ret->data, "1", xxx, 1);
 
 	*(unsigned short *)(xxx) = htons(0);
