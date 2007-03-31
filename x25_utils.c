@@ -195,7 +195,7 @@ struct packet *command_confirmation_packet(unsigned short connid, unsigned short
 
 	unsigned char xxx[1024];
 
-	xxx[0] = 0x05;
+	xxx[0] = 0x04;
 	block_addchild(ret->data, "1", xxx, 1);
 
 	*(unsigned short *)(xxx) = htons(0);
