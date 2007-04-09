@@ -618,7 +618,7 @@ int SendChar(struct connection *c, char Chr) {
 	}
 
 	WriteBuf[WriteBufLen++] = Chr;
-
+printf("AAA %c %d %x\n", Chr, Chr, Chr);
 	return 1;
 }
 
@@ -1053,7 +1053,7 @@ void CancelPromptRequest(struct connection *conn, char *d) {
 	}
 }
 
-void LoginPromptRequest(struct connection *conn, char *d) {
+void LoginPromptRequest(struct connection *conn, char *exch, char *d) {
 	pdebug("LoginPromptRequest()\n");
 
 	if (LoggedIn) return;
@@ -1118,12 +1118,22 @@ void SendIntro(struct connection *conn) {
 	WriteChar(conn, SI); /* end burst */
 }
 
+// TODO: get rid of this SendChar shit (the 3, 6, 7 constants)
 void LogoutRequest(struct connection *c, char *d) {
-	if (!c->authenticated) return;
+	log_msg("LogoutRequest()\n");
 
+	if (!c->authenticated) return;
+/*
 	char cmd[256] = "ENDSESSION;";
+
+	SendChar(NULL, 6);
+	SendChar(NULL, 7);
+
 	char *ptr = cmd;
 	while (*ptr) SendChar(NULL, *ptr++);
+
+	SendChar(NULL, 3);
+	SendChar(NULL, 7);*/
 }
 
 void ExchangeListRequest(struct connection *c, char *d) {
@@ -1132,7 +1142,7 @@ void ExchangeListRequest(struct connection *c, char *d) {
 	char list[1024] = "";
 	strcat(list, "Neni nutne nic vyplnovat!!!");
 
-	IProtoSEND(c, 0x50, list);
+	IProtoSEND(c, 0x50, NULL);
 }
 
 void CancelJobRequest(struct connection *c, char *d) {
@@ -1667,7 +1677,10 @@ int main(int argc, char *argv[]) {
 				} else {
 					char Chr;
 
-					while (Read(c, &Chr, 1)) TestIProtoChar(c, Chr);
+					while (Read(c, &Chr, 1)) {
+						TestIProtoChar(c, Chr);
+printf("BBB %c %d %x\n", Chr, Chr, Chr);
+					}
 				}
 
 				if (Reselect) goto reselect;
