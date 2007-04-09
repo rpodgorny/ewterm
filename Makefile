@@ -82,7 +82,7 @@ RM   = rm -f
 EWTERM_SRCS = bfu.c buffer.c colors.c edit.c ewterm.c exch.c frq.c gstr.c help.c history.c lists.c menu.c options.c forms.c formshlp.c formstk.c parseforms.tab.c lex.yy.c iproto.c mml.c sendfile.c md5.c filter.c
 EWTERM_OBJS = $(EWTERM_SRCS:.c=.o)
 
-all: .deps mkforms ewterm ewrecv ewalarm
+all: .deps mkforms ewterm ewrecv ewrecv_serial ewalarm
 
 ewalarm: ewalarm.o iproto.o md5.o
 	$(CC) $(CFLAGS) $(LDFLAGS) -o ewalarm ewalarm.o iproto.o md5.o
@@ -94,6 +94,8 @@ ewterm: $(EWTERM_OBJS)
 ewrecv: ewrecv.o logging.o iproto.o md5.o x25_packet.o x25_block.o x25_utils.o
 	$(CC) $(CFLAGS) $(LDFLAGS) -o ewrecv ewrecv.o logging.o iproto.o md5.o x25_packet.o x25_block.o x25_utils.o
 
+ewrecv_serial: ewrecv_serial.o logging.o iproto.o md5.o x25_packet.o x25_block.o x25_utils.o
+	$(CC) $(CFLAGS) $(LDFLAGS) -o ewrecv_serial ewrecv_serial.o logging.o iproto.o md5.o x25_packet.o x25_block.o x25_utils.o
 
 mkforms: mkforms.o
 	$(CC) $(CFLAGS) $(LDFLAGS) -o mkforms mkforms.o
