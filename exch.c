@@ -305,8 +305,6 @@ void ELogOff() {
 }
 
 void StopLogOn() {
-	///IProtoASK(connection, 0x46, NULL);
-
 	InputRequest = 1; CancelCommand();
 	RefreshLogTxt();
 }
