@@ -174,7 +174,50 @@ void ProcessPrompt() {
 void CancelCommand() {
 	if (!connection) return;
 	
-	IProtoASK(connection, 0x51, NULL);
+	if (strlen(X25Exchange)) {
+		// this has to be a X.25 ewrecv
+		IProtoASK(connection, 0x51, NULL);
+		return;
+	}
+
+	// fallback to old serial behaviour
+	char cmd[256];
+
+	ShadowHelp = 0;
+
+	if (CancelHook) {
+		CancelHook();
+		return;
+	}
+
+	if (connection->fwmode == FWD_IN) {
+		AddEStr("This connection is now for observation only.\n", 0, 0);
+		return;
+	}
+
+	if (InputRequest) {
+		InputRequest = 0;
+		IProtoASK(connection, 0x42, NULL);
+		return;
+	}
+
+	if (!ActJob) {
+		AddEStr("Nothing to cancel!\n", 0, 0);
+		return;
+	}
+
+	PendingCmd = NULL; /* we are more important. definitively. */
+
+	pdebug("LastCmd %s\n", LastCmd);
+	if (!strncasecmp(LastCmd, "DISP", 4) || !strncasecmp(LastCmd, "STAT", 4)) {
+		sprintf(cmd, "STOPDISP:JN=%d;\n", ActJob);
+		AddCommandToQueue(cmd, 2);
+	} else if (!strncasecmp(LastCmd, "EXECCMDFILE", 11)) {
+		sprintf(cmd, "STOPJOB:JN=%d;\n", ActJob);
+		AddCommandToQueue(cmd, 2);
+	} else {
+		AddEStr("Cancel action not specified!\n", 0, 0);
+	}
 }
 
 void ForceCommand() {
@@ -201,17 +244,19 @@ void ForceCommand() {
 }
 
 void DoLogOff() {
+	/* I hope this won't break anytime. --pasky */
+	if (InputRequest) CancelCommand(); /* Quit from EDTS8 ;))) */
+
+	if (!strlen(X25Exchange)) {
+		// this has to be a serial ewrecv
+		AddCommandToQueue("ENDSESSION;", 2);
+	}
+
+	IProtoASK(connection, 0x46, NULL);
+
 	X25Exchange[0] = 0;
 	ActUsrname[0] = 0;
 	ActPasswd[0] = 0; /* Clear password when logon invoked by user */
-
-	/* I hope this won't break anytime. --pasky */
-	if (InputRequest) CancelCommand(); /* Quit from EDTS8 ;))) */
-	///AddCommandToQueue("ENDSESSION;", 2);
-	/// TODO: make sure the new method works
-
-	/// TODO: finish - done?
-	IProtoASK(connection, 0x46, NULL);
 
 	RefreshLogTxt();
 }
@@ -295,6 +340,12 @@ void DoSendX25Exchange() {
 }
 
 void ChangeX25Exchange(char *list) {
+	if (!strlen(list)) {
+		X25Exchange[0] = 0;
+		DoSendX25Exchange();
+		return;
+	}
+
 	char title[256] = "";
 	sprintf(title, "Exchanges: %s", list);
 
