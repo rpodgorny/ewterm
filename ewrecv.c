@@ -2090,7 +2090,7 @@ perror("CONN");
 						idx = index(c->X25Passwd, 10);
 						if (idx) *idx = 0;
 
-						p = login_packet(c->id, c->X25User, c->X25Passwd, NULL, 0);
+						p = login_packet(c->id, c->host, c->X25User, c->X25Passwd, NULL, 0);
 						c->X25Prompt[j] = 0;
 							
 						char msg[256] = "";
@@ -2108,7 +2108,7 @@ perror("CONN");
 						idx = index(c->X25NewPasswd, 10);
 						if (idx) *idx = 0;
 
-						p = login_packet(c->id, c->X25User, c->X25Passwd, c->X25NewPasswd, 0);
+						p = login_packet(c->id, c->host, c->X25User, c->X25Passwd, c->X25NewPasswd, 0);
 						c->X25Prompt[j] = 0;
 					} else if (c->X25Prompt[j] == 'X') {
 						p = logout_packet(c->id);
@@ -2119,7 +2119,7 @@ perror("CONN");
 						LogStr(MLog, msg, strlen(msg));
 					} else if (c->X25Prompt[j] == 'R') {
 						if (c->X25WriteBufLen == 1 && c->X25WriteBuf[0] == '+') {
-							p = login_packet(c->id, c->X25User, c->X25Passwd, NULL, 1);
+							p = login_packet(c->id, c->host, c->X25User, c->X25Passwd, NULL, 1);
 						} else {
 							char msg[256] = "";
 							sprintf(msg, "\n\n:::WRONG ANSWER!!!\n\n");

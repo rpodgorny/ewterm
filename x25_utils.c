@@ -44,7 +44,7 @@ int to_bcd(unsigned char *buf, char *str) {
 	return ret;
 }
 
-struct packet *login_packet(unsigned short sessid, char *username, char *password, char *newpassword, unsigned char reopen) {
+struct packet *login_packet(unsigned short sessid, char *hostname, char *username, char *password, char *newpassword, unsigned char reopen) {
 	char pwd[256] = "";
 	char npwd[256] = "";
 
@@ -86,8 +86,6 @@ struct packet *login_packet(unsigned short sessid, char *username, char *passwor
 	*(unsigned short *)(xxx+8) = htons(0);
 	block_addchild(ret->data, "2", xxx, 0x0a);
 
-	char hostname[256];
-	gethostname(hostname, 256);
 	block_addchild(ret->data, "4-1", (unsigned char *)hostname, strlen(hostname));
 
 	memset(xxx, 0xff, 0x01b8);
