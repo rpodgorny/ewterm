@@ -53,6 +53,24 @@ void Init() {
 	signal(SIGALRM, SigAlrmCaught);
 }
 
+void GotPromptStart(struct connection *c, char *d) {
+}
+
+void GotPromptEnd(struct connection *c, char type, char *job, char *d) {
+}
+
+void GotLoginError(struct connection *c, char *d) {
+}
+
+void GotLoginSuccess(struct connection *c, char *d) {
+}
+
+void GotLogout(struct connection *c, char *d) {
+}
+
+void GotJob(struct connection *c, char *job, char *d) {
+}
+
 void CheckChr(struct connection *c, int Chr) {
 	if (Chr < 32 && Chr != 9 && Chr != 10) {
 	} else {
@@ -76,12 +94,12 @@ struct connection *MkConnection(int SockFd) {
 		NULL,
 
 		/* 2.2a */
-		NULL,
-		NULL,
-		NULL,
-		NULL,
-		NULL,
-		NULL,
+		GotPromptStart,
+		GotPromptEnd,
+		GotLoginError,
+		GotLoginSuccess,
+		GotLogout,
+		GotJob,
 		NULL,
 		NULL,
 
