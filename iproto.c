@@ -497,6 +497,19 @@ ProcessIProtoChar(struct connection *conn, unsigned char Chr) {
         break;
       }
       IProtoSEND(conn, 0x80, "");
+	case 0x52: /* detach request */
+	  if (conn->handlers->ASKDetach) {
+        conn->handlers->ASKDetach(conn, conn->IProtoPacket);
+        break;
+      }
+      IProtoSEND(conn, 0x80, "");
+	case 0x53: /* attach request */
+	  if (conn->handlers->ASKAttach) {
+		int id = strtol(conn->IProtoPacket, NULL, 10);
+        conn->handlers->ASKAttach(conn, id, conn->IProtoPacket);
+        break;
+      }
+      IProtoSEND(conn, 0x80, "");
 
 	default:
 	  IProtoSEND(conn, 0x80, "");
