@@ -90,6 +90,11 @@ DC2:
 
 	0x50	Exchange list - List of exchanges, delimitied by ","
 
+== 6.2 ==
+
+	0x51	Detached successfully - connection id follows.
+	0x52	Attach status. "1" for success, "0" for failure.
+
 DC3:
 	We ASK the peer for something. The packet has format:
 	<DC3> <opcode> [<data>] <DCx>
@@ -139,6 +144,11 @@ DC3:
 
 	0x50	Request list of exchanges.
 	0x51	Cancel current job.
+
+== 6.2 ==
+
+	0x52	Detach.
+	0x53	Attach. Connection id as parameter.
 
 DC4:
  	Like DC1, but we don't forward the stuff to other ewterms. Nice for passwords stuff.
