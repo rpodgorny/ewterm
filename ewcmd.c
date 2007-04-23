@@ -81,19 +81,26 @@ void SendPassword() {
 }
 
 void SendCommand() {
+	// TODO: move to somewhere else
+	if (Command[0] == 0) {
+		// we're done, log out
+		IProtoASK(connection, 0x46, NULL);
+	}
+
 	char *TmpPtr = Command;
 
 	while (*TmpPtr) SendChar(*TmpPtr++);
 	SendChar(13);
 	SendChar(10);
+
+	// TODO: change to "jump to next command" in the future
+	Command[0] = 0;
 }
 
 void GotPromptStart(struct connection *c, char *d) {
 }
 
 void GotPromptEnd(struct connection *c, char type, char *job, char *d) {
-printf("TYPE: %c\n", type);
-
 	switch (type) {
 		case '<': SendCommand(); break;
 		case 'U': SendUsername(); break;
@@ -114,6 +121,7 @@ void GotLogout(struct connection *c, char *d) {
 }
 
 void GotJob(struct connection *c, char *job, char *d) {
+	exit(0);
 }
 
 void CheckChr(struct connection *c, int Chr) {
