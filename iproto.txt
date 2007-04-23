@@ -149,6 +149,7 @@ DC3:
 
 	0x52	Detach.
 	0x53	Attach. Connection id as parameter.
+	0x54	Get connection id (for reattachment)
 
 DC4:
  	Like DC1, but we don't forward the stuff to other ewterms. Nice for passwords stuff.

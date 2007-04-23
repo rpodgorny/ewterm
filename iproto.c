@@ -510,6 +510,12 @@ ProcessIProtoChar(struct connection *conn, unsigned char Chr) {
         break;
       }
       IProtoSEND(conn, 0x80, "");
+	case 0x54: /* get connection id request */
+	  if (conn->handlers->ASKConnectionId) {
+        conn->handlers->ASKConnectionId(conn, conn->IProtoPacket);
+        break;
+      }
+      IProtoSEND(conn, 0x80, "");
 
 	default:
 	  IProtoSEND(conn, 0x80, "");

@@ -70,6 +70,7 @@ struct conn_handlers {
 
 	void (*ASKDetach)(struct connection *, char *);
 	void (*ASKAttach)(struct connection *, int, char *);
+	void (*ASKConnectionId)(struct connection *, char *);
 
 	void (*AuthSuccess)(struct connection *);
 	void (*AuthFailed)(struct connection *);

@@ -950,6 +950,7 @@ struct connection *MkConnection(int SockFd) {
 		// 6.2
 		NULL,
 		NULL,
+		NULL,
 
 		/* 0.5pre3 */
 		NULL,
