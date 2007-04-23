@@ -922,6 +922,10 @@ struct connection *MkConnection(int SockFd) {
 		/* 6.1 */
 		GotExchangeList,
 
+		// 6.2
+		NULL,
+		NULL,
+
 		/* 2.1a */
 		NULL,
 		GotUserRequest,
