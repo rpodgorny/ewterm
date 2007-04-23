@@ -1404,6 +1404,10 @@ struct connection *TryAccept(int Fd) {
 			/* 6.1 */
 			NULL,
 
+			// 6.2
+			NULL,
+			NULL,
+
 			/* 2.1a */
 			NULL,
 			NULL,

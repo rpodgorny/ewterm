@@ -95,6 +95,10 @@ struct connection *MkConnection(int SockFd) {
 		/* 6.1 */
 		NULL,
 
+		// 6.2
+		NULL,
+		NULL,
+
 		/* 2.1a */
 		NULL,
 		NULL, //GotUserRequest,
