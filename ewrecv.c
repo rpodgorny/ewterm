@@ -1295,9 +1295,6 @@ void LogoutRequest(struct connection *c, char *d) {
 
 		IProtoSEND(c, 0x44, NULL);
 	}
-
-close(c->Fd);
-c->Fd = -1;
 }
 
 void ExchangeListRequest(struct connection *c, char *d) {
