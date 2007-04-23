@@ -1004,7 +1004,7 @@ void AnnounceUser(struct connection *conn, int opcode);
 void DestroyConnection(struct connection *conn) {
 	AnnounceUser(conn, 0x06);
 
-	close(conn->Fd);
+	if (conn->Fd != -1) close(conn->Fd);
 	free(conn->X25WriteBuf);
 
 	// find the index and move the connection from end there
@@ -1278,6 +1278,8 @@ void SendIntro(struct connection *conn) {
 }
 
 void LogoutRequest(struct connection *c, char *d) {
+	log_msg("LogoutRequest()\n");
+
 	if (!c->authenticated) return;
 
 	int i = 0;
@@ -1293,6 +1295,9 @@ void LogoutRequest(struct connection *c, char *d) {
 
 		IProtoSEND(c, 0x44, NULL);
 	}
+
+close(c->Fd);
+c->Fd = -1;
 }
 
 void ExchangeListRequest(struct connection *c, char *d) {
@@ -1757,6 +1762,8 @@ int main(int argc, char *argv[]) {
 		for (i = 0; i < ConnCount; i++) {
 			struct connection *c = Conns[i];
 
+			if (c->Fd == -1) continue;
+
 			FD_SET(c->Fd, &ReadQ);
 			if (c->Fd > MaxFd) MaxFd = c->Fd;
 			if (c->WriteBuffer) FD_SET(c->Fd, &WriteQ);
@@ -1829,6 +1836,7 @@ int main(int argc, char *argv[]) {
 			for (i = 0; i < ConnCount; i++) {
 				struct connection *c = Conns[i];
 
+				if (c->Fd == -1) continue;
 				if (!FD_ISSET(c->Fd, &ReadQ)) continue;
 
 				errno = 0;
@@ -1846,6 +1854,7 @@ int main(int argc, char *argv[]) {
 			for (i = 0; i < ConnCount; i++) {
 				struct connection *c = Conns[i];
 
+				if (c->Fd == -1) continue;
 				if (!FD_ISSET(c->Fd, &WriteQ)) continue;
 
 				errno = 0; /* XXX: Is write() returning 0 an error? */
@@ -1858,6 +1867,7 @@ int main(int argc, char *argv[]) {
 			for (i = 0; i < ConnCount; i++) {
 				struct connection *c = Conns[i];
 
+				if (c->Fd == -1) continue;
 				if (!FD_ISSET(c->Fd, &ErrorQ)) continue;
 
 				ErrorConnection(c);
