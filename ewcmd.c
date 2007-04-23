@@ -21,6 +21,8 @@ int MainLoop = 0;
 char HostName[256] = "localhost", HostPortStr[256] = "";
 unsigned int HostPort = 7880;
 
+char Exchanges[256] = "", Username[256] = "", Password[256] = "";
+
 int Reconnect = 0;
 
 
@@ -269,6 +271,15 @@ void ProcessArgs(int argc, char *argv[]) {
 				HostPort = atoi(argv[ac]);
 				*HostPortStr = 0;
 				break;
+			case 3:
+				strncpy(Exchanges, argv[ac], 256);
+				break;
+			case 4:
+				strncpy(Username, argv[ac], 256);
+				break;
+			case 5:
+				strncpy(Password, argv[ac], 256);
+				break;
 		}
 
 		if (swp) {
@@ -295,6 +306,12 @@ void ProcessArgs(int argc, char *argv[]) {
 			swp = 1;
 		} else if (! strcmp(argv[ac], "-p") || ! strcmp(argv[ac], "--port")) {
 			swp = 2;
+		} else if (!strcmp(argv[ac], "-X")) {
+			swp = 3;
+		} else if (!strcmp(argv[ac], "-U")) {
+			swp = 4;
+		} else if (!strcmp(argv[ac], "-P")) {
+			swp = 5;
 		} else if (argv[ac][0] == '-') {
 			fprintf(stderr, "Unknown option \"%s\". Use -h or --help to get list of all the\n", argv[ac]);
 			fprintf(stderr, "available options.\n");
