@@ -389,6 +389,18 @@ ProcessIProtoChar(struct connection *conn, unsigned char Chr) {
 	    break;
 	  }
 	  break;
+	case 0x51: /* connection id */
+	  if (conn->handlers->SENDConnectionId) {
+	    conn->handlers->SENDConnectionId(conn, conn->IProtoPacket, NULL);
+	    break;
+	  }
+	  break;
+	case 0x52: /* attach status */
+	  if (conn->handlers->SENDAttach) {
+	    conn->handlers->SENDAttach(conn, conn->IProtoPacket, NULL);
+	    break;
+	  }
+	  break;
 	default:
 	  break;
       }

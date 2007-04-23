@@ -49,6 +49,9 @@ struct conn_handlers {
 
 	void (*SENDExchangeList)(struct connection*, char *, char *);
 
+	void (*SENDConnectionId)(struct connection*, int, char *);
+	void (*SENDAttach)(struct connection*, int, char *);
+
 	void (*ASKVersion)(struct connection *, char *);
 	void (*ASKUser)(struct connection *, char *);
 
