@@ -92,7 +92,7 @@ DC2:
 
 == 6.2 ==
 
-	0x51	Detached successfully - connection id follows.
+	0x51	Connection id follows.
 	0x52	Attach status. "1" for success, "0" for failure.
 
 DC3:
