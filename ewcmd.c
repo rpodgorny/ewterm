@@ -12,6 +12,7 @@
 
 #include "version.h"
 #include "iproto.h"
+#include "ascii.h"
 
 
 struct connection *connection = NULL;
@@ -22,6 +23,8 @@ char HostName[256] = "localhost", HostPortStr[256] = "";
 unsigned int HostPort = 7880;
 
 char Exchanges[256] = "", Username[256] = "", Password[256] = "";
+
+char Command[256] = "DISPALARM;";
 
 int Reconnect = 0;
 
@@ -55,16 +58,53 @@ void Init() {
 	signal(SIGALRM, SigAlrmCaught);
 }
 
+void SendChar(char c) {
+	if (connection) Write(connection, &c, 1);
+}
+
+void SendUsername() {
+	char *TmpPtr = Username;
+
+	while (*TmpPtr) SendChar(*TmpPtr++);
+	SendChar(13);
+	SendChar(10);
+}
+
+void SendPassword() {
+	char *TmpPtr = Password;
+
+	SendChar(DC4);
+	while (*TmpPtr) SendChar(*TmpPtr++);
+	SendChar(DC1);
+	SendChar(13);
+	SendChar(10);
+}
+
+void SendCommand() {
+	char *TmpPtr = Command;
+
+	while (*TmpPtr) SendChar(*TmpPtr++);
+	SendChar(13);
+	SendChar(10);
+}
+
 void GotPromptStart(struct connection *c, char *d) {
 }
 
 void GotPromptEnd(struct connection *c, char type, char *job, char *d) {
+	switch (type) {
+		case '<': SendCommand(); break;
+		case 'U': SendUsername(); break;
+		case 'P': SendPassword(); break;
+	}
 }
 
 void GotLoginError(struct connection *c, char *d) {
 }
 
 void GotLoginSuccess(struct connection *c, char *d) {
+	// ask for prompt
+	IProtoASK(connection, 0x40, NULL);
 }
 
 void GotLogout(struct connection *c, char *d) {
@@ -192,8 +232,8 @@ void AttachConnection() {
 		exit(9);
 	}
 
-	// subsrcibe for alarms
-	IProtoASK(connection, 0x44, NULL);
+	// log in
+	IProtoASK(connection, 0x41, Exchanges);
 }
 
 void MainProc() {
