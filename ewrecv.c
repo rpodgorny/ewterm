@@ -1324,6 +1324,14 @@ void CancelJobRequest(struct connection *c, char *d) {
 	}
 }
 
+void DetachRequest(struct connection *c, char *d) {
+	log_msg("DetachJobRequest()\n");
+}
+
+void AttachRequest(struct connection *c, int id, char *d) {
+	log_msg("AttachJobRequest()\n");
+}
+
 struct connection *TryAccept(int Fd) {
 	printf("TryAccept()\n");
 
@@ -1399,6 +1407,10 @@ struct connection *TryAccept(int Fd) {
 			/* 6.1 */
 			ExchangeListRequest,
 			CancelJobRequest,
+
+			// 6.2
+			DetachRequest,
+			AttachRequest,
 
 			/* 0.5pre3 */
 			SendIntro /* AuthSuccess */,

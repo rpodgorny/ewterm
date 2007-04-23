@@ -118,6 +118,11 @@ struct connection *MkConnection(int SockFd) {
 
 		/* 6.1 */
 		NULL,
+		NULL,
+
+		// 6.2
+		NULL,
+		NULL,
 
 		/* 0.5pre3 */
 		NULL,
