@@ -82,8 +82,11 @@ RM   = rm -f
 EWTERM_SRCS = bfu.c buffer.c colors.c edit.c ewterm.c exch.c frq.c gstr.c help.c history.c lists.c menu.c options.c forms.c formshlp.c formstk.c parseforms.tab.c lex.yy.c iproto.c mml.c sendfile.c md5.c filter.c
 EWTERM_OBJS = $(EWTERM_SRCS:.c=.o)
 
-all: .deps mkforms ewterm ewrecv ewrecv_serial ewalarm
+all: .deps mkforms ewterm ewrecv ewrecv_serial ewalarm ewcmd
 
+ewcmd: ewcmd.o iproto.o md5.o
+	$(CC) $(CFLAGS) $(LDFLAGS) -o ewcmd ewcmd.o iproto.o md5.o
+	
 ewalarm: ewalarm.o iproto.o md5.o
 	$(CC) $(CFLAGS) $(LDFLAGS) -o ewalarm ewalarm.o iproto.o md5.o
 
