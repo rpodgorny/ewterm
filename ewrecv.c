@@ -1326,10 +1326,31 @@ void CancelJobRequest(struct connection *c, char *d) {
 
 void DetachRequest(struct connection *c, char *d) {
 	log_msg("DetachJobRequest()\n");
+
+	close(c->Fd);
+	c->Fd = -1;
 }
 
 void AttachRequest(struct connection *c, int id, char *d) {
 	log_msg("AttachJobRequest()\n");
+
+	// find the connection with given id
+	int i = 0;
+	for (i = 0; i < ConnCount; i++) {
+		if (Conns[i]->id == id) break;
+	}
+
+	if (i == ConnCount) {
+		// not found
+	}
+
+	if (Conns[i]->Fd != -1) {
+		// someone's already attached
+	}
+}
+
+void ConnectionIdRequest(struct connection *c, char *d) {
+	log_msg("ConnectionIdRequest()\n");
 }
 
 struct connection *TryAccept(int Fd) {
@@ -1411,6 +1432,7 @@ struct connection *TryAccept(int Fd) {
 			// 6.2
 			DetachRequest,
 			AttachRequest,
+			ConnectionIdRequest,
 
 			/* 0.5pre3 */
 			SendIntro /* AuthSuccess */,
