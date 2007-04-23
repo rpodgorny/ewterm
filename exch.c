@@ -947,6 +947,10 @@ struct connection *MkConnection(int SockFd) {
 		NULL,
 		NULL,
 
+		// 6.2
+		NULL,
+		NULL,
+
 		/* 0.5pre3 */
 		NULL,
 		AuthFailed,
