@@ -92,6 +92,8 @@ void GotPromptStart(struct connection *c, char *d) {
 }
 
 void GotPromptEnd(struct connection *c, char type, char *job, char *d) {
+printf("TYPE: %c\n", type);
+
 	switch (type) {
 		case '<': SendCommand(); break;
 		case 'U': SendUsername(); break;
@@ -100,6 +102,7 @@ void GotPromptEnd(struct connection *c, char type, char *job, char *d) {
 }
 
 void GotLoginError(struct connection *c, char *d) {
+	printf("LOGIN ERROR\n");
 }
 
 void GotLoginSuccess(struct connection *c, char *d) {
