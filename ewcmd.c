@@ -19,12 +19,17 @@ struct connection *connection = NULL;
 
 int MainLoop = 0;
 
+char Prompt = 0;
+
 char HostName[256] = "localhost", HostPortStr[256] = "";
 unsigned int HostPort = 7880;
 
 char Exchanges[256] = "", Username[256] = "", Password[256] = "";
+int login = 0, attach = 0, logout = 0;
 
-char Command[256] = "DISPALARM;";
+char Command[256] = "DISPALARM;\nDISPALARM\n";
+
+int jobs = 0; // number or currently running jobs
 
 int Reconnect = 0;
 
@@ -62,16 +67,16 @@ void SendChar(char c) {
 	if (connection) Write(connection, &c, 1);
 }
 
-void SendUsername() {
-	char *TmpPtr = Username;
+void SendUsername(char *s) {
+	char *TmpPtr = s;
 
 	while (*TmpPtr) SendChar(*TmpPtr++);
 	SendChar(13);
 	SendChar(10);
 }
 
-void SendPassword() {
-	char *TmpPtr = Password;
+void SendPassword(char *s) {
+	char *TmpPtr = s;
 
 	SendChar(DC4);
 	while (*TmpPtr) SendChar(*TmpPtr++);
@@ -80,31 +85,23 @@ void SendPassword() {
 	SendChar(10);
 }
 
-void SendCommand() {
-	// TODO: move to somewhere else
-	if (Command[0] == 0) {
-		// we're done, log out
-		IProtoASK(connection, 0x46, NULL);
-	}
-
-	char *TmpPtr = Command;
+void SendCommand(char *s) {
+	char *TmpPtr = s;
 
 	while (*TmpPtr) SendChar(*TmpPtr++);
 	SendChar(13);
 	SendChar(10);
-
-	// TODO: change to "jump to next command" in the future
-	Command[0] = 0;
 }
 
 void GotPromptStart(struct connection *c, char *d) {
 }
 
 void GotPromptEnd(struct connection *c, char type, char *job, char *d) {
+	Prompt = type;
+
 	switch (type) {
-		case '<': SendCommand(); break;
-		case 'U': SendUsername(); break;
-		case 'P': SendPassword(); break;
+		case 'U': SendUsername(Username); break;
+		case 'P': SendPassword(Password); break;
 	}
 }
 
@@ -114,14 +111,26 @@ void GotLoginError(struct connection *c, char *d) {
 
 void GotLoginSuccess(struct connection *c, char *d) {
 	// ask for prompt
-	IProtoASK(connection, 0x40, NULL);
+//	IProtoASK(connection, 0x40, NULL);
 }
 
 void GotLogout(struct connection *c, char *d) {
+	exit(0);
 }
 
 void GotJob(struct connection *c, char *job, char *d) {
-	exit(0);
+	jobs--;
+}
+
+void GotConnectionId(struct connection *c, int id, char *d) {
+	printf("%d\n", id);
+
+	// we have id, detach now...
+	IProtoASK(c, 0x52, NULL);
+}
+
+void GotAttach(struct connection *c, int status, char *d) {
+	printf("STATUS: %d\n", status);
 }
 
 void CheckChr(struct connection *c, int Chr) {
@@ -167,8 +176,8 @@ struct connection *MkConnection(int SockFd) {
 		NULL,
 
 		// 6.2
-		NULL,
-		NULL,
+		GotConnectionId,
+		GotAttach,
 
 		/* 2.1a */
 		NULL,
@@ -243,8 +252,13 @@ void AttachConnection() {
 		exit(9);
 	}
 
-	// log in
-	IProtoASK(connection, 0x41, Exchanges);
+	if (login) {
+		IProtoASK(connection, 0x41, Exchanges);
+	} else if (attach) {
+		char tmp[20] = "";
+		sprintf(tmp, "%d", attach);
+		IProtoASK(connection, 0x53, tmp);
+	}
 }
 
 void MainProc() {
@@ -267,6 +281,9 @@ void MainProc() {
 		FD_ZERO(&ReadQ);
 		FD_ZERO(&WriteQ);
 
+		// stdin
+		FD_SET(0, &ReadQ);
+
 		if (connection) {
 			FD_SET(connection->Fd, &ReadQ);
 			if (connection->Fd > MaxFd) MaxFd = connection->Fd;
@@ -278,6 +295,28 @@ void MainProc() {
 			perror("Select failed");
 			Done(1);
 		} else {
+			// stdin
+			if (FD_ISSET(0, &ReadQ)) {
+				char buf[256] = "";
+				int r = read(0, buf, 256);
+				buf[r] = 0;
+
+				if (buf[0] == '.') {
+					if (logout) {
+						IProtoASK(connection, 0x46, NULL);
+					} else {
+						// get the connection id first
+						IProtoASK(connection, 0x54, NULL);
+					}
+				} else {
+					// get prompt
+					if (Prompt != '<') IProtoASK(connection, 0x40, NULL);
+
+					SendCommand(buf);
+					jobs++; // TODO: tohle je blbe, command muze bejt kravina
+				}
+			}
+
 			/* Exchange input */
 			if (connection && FD_ISSET(connection->Fd, &ReadQ)) {
 				errno = 0;
@@ -331,6 +370,15 @@ void ProcessArgs(int argc, char *argv[]) {
 			case 5:
 				strncpy(Password, argv[ac], 256);
 				break;
+			case 6:
+				login = 1;
+				break;
+			case 7:
+				attach = atoi(argv[ac]);
+				break;
+			case 8:
+				logout = 1;
+				break;
 		}
 
 		if (swp) {
@@ -345,6 +393,9 @@ void ProcessArgs(int argc, char *argv[]) {
 			printf("\t-X exch1,exch2,...\n");
 			printf("\t-U user\n");
 			printf("\t-P pass\n");
+			printf("\t--login\n");
+			printf("\t--attach id\n");
+			printf("\t--logout\n");
 			printf("\n");
 			printf("-h\tDisplay this help\n");
 			printf("-c\tConnect to <host> (defaults to %s)\n", HostName);
@@ -363,6 +414,12 @@ void ProcessArgs(int argc, char *argv[]) {
 			swp = 4;
 		} else if (!strcmp(argv[ac], "-P")) {
 			swp = 5;
+		} else if (!strcmp(argv[ac], "--login")) {
+			swp = 6;
+		} else if (!strcmp(argv[ac], "--attach")) {
+			swp = 7;
+		} else if (!strcmp(argv[ac], "--logout")) {
+			swp = 8;
 		} else if (argv[ac][0] == '-') {
 			fprintf(stderr, "Unknown option \"%s\". Use -h or --help to get list of all the\n", argv[ac]);
 			fprintf(stderr, "available options.\n");

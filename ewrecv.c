@@ -1342,15 +1342,37 @@ void AttachRequest(struct connection *c, int id, char *d) {
 
 	if (i == ConnCount) {
 		// not found
+		char msg[256] = "";
+		sprintf(msg, ":::CONNECTION WITH ID %d NOT FOUND!!!\n", id);
+		Write(c, msg, strlen(msg));
+		IProtoSEND(c, 0x52, "0");
+		return;
 	}
 
 	if (Conns[i]->Fd != -1) {
 		// someone's already attached
+		char msg[256] = "";
+		sprintf(msg, ":::CONNECTION WITH ID %d NOT DETACHED!!!\n", id);
+		Write(c, msg, strlen(msg));
+		IProtoSEND(c, 0x52, "0");
+		return;
 	}
+
+	Conns[id]->Fd = c->Fd;
+	c->Fd = -1;
+	//DestroyConnection(c);
+
+	IProtoSEND(Conns[id], 0x52, "1");
+
+	Reselect = 1;
 }
 
 void ConnectionIdRequest(struct connection *c, char *d) {
 	log_msg("ConnectionIdRequest()\n");
+
+	char tmp[20] = "";
+	sprintf(tmp, "%d", c->id);
+	IProtoSEND(c, 0x51, tmp);
 }
 
 struct connection *TryAccept(int Fd) {
