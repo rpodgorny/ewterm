@@ -131,6 +131,8 @@ void GotConnectionId(struct connection *c, int id, char *d) {
 
 void GotAttach(struct connection *c, int status, char *d) {
 	printf("STATUS: %d\n", status);
+
+	if (status == 0) exit(0);
 }
 
 void CheckChr(struct connection *c, int Chr) {
