@@ -1358,11 +1358,11 @@ void AttachRequest(struct connection *c, int id, char *d) {
 		return;
 	}
 
-	Conns[id]->Fd = c->Fd;
+	Conns[i]->Fd = c->Fd;
 	c->Fd = -1;
 	//DestroyConnection(c);
 
-	IProtoSEND(Conns[id], 0x52, "1");
+	IProtoSEND(Conns[i], 0x52, "1");
 
 	Reselect = 1;
 }
