@@ -27,7 +27,7 @@ unsigned int HostPort = 7880;
 char Exchanges[256] = "", Username[256] = "", Password[256] = "";
 int login = 0, attach = 0, logout = 0;
 
-char Command[256] = "DISPALARM;\nDISPALARM\n";
+char Commands[1024] = "";
 
 int jobs = 0; // number or currently running jobs
 
@@ -85,12 +85,25 @@ void SendPassword(char *s) {
 	SendChar(10);
 }
 
-void SendCommand(char *s) {
-	char *TmpPtr = s;
+void SendNextCommand() {
+	// we have no complete command in the queue
+	if (!index(Commands, '\n')) return;
 
-	while (*TmpPtr) SendChar(*TmpPtr++);
+	if (Prompt != '<') {
+		// get prompt if we don't have it
+		IProtoASK(connection, 0x40, NULL);
+	}
+
+	char *TmpPtr = Commands;
+
+	while (*TmpPtr != 0 && *TmpPtr != '\n') SendChar(*TmpPtr++);
 	SendChar(13);
 	SendChar(10);
+
+	// move to next command
+	memmove(Commands, TmpPtr+1, strlen(TmpPtr));
+
+	jobs++;
 }
 
 void GotPromptStart(struct connection *c, char *d) {
@@ -100,6 +113,7 @@ void GotPromptEnd(struct connection *c, char type, char *job, char *d) {
 	Prompt = type;
 
 	switch (type) {
+		case '<': SendNextCommand(); break;
 		case 'U': SendUsername(Username); break;
 		case 'P': SendPassword(Password); break;
 	}
@@ -111,7 +125,7 @@ void GotLoginError(struct connection *c, char *d) {
 
 void GotLoginSuccess(struct connection *c, char *d) {
 	// ask for prompt
-//	IProtoASK(connection, 0x40, NULL);
+	IProtoASK(connection, 0x40, NULL);
 }
 
 void GotLogout(struct connection *c, char *d) {
@@ -130,9 +144,10 @@ void GotConnectionId(struct connection *c, int id, char *d) {
 }
 
 void GotAttach(struct connection *c, int status, char *d) {
-	printf("STATUS: %d\n", status);
-
-	if (status == 0) exit(0);
+	if (status == 0) {
+		fprintf(stderr, "ATTACH FAILED!!!\n");
+		exit(0);
+	}
 }
 
 void CheckChr(struct connection *c, int Chr) {
@@ -311,11 +326,9 @@ void MainProc() {
 						IProtoASK(connection, 0x54, NULL);
 					}
 				} else {
-					// get prompt
-					if (Prompt != '<') IProtoASK(connection, 0x40, NULL);
+					strncat(Commands, buf, r);
 
-					SendCommand(buf);
-					jobs++; // TODO: tohle je blbe, command muze bejt kravina
+					SendNextCommand();
 				}
 			}
 
