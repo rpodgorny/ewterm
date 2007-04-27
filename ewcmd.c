@@ -29,7 +29,10 @@ int login = 0, attach = 0, logout = 0;
 
 char Commands[1024] = "";
 
+int logged_in = 0;
+
 int jobs = 0; // number or currently running jobs
+int want_quit = 0;
 
 int Reconnect = 0;
 
@@ -89,6 +92,8 @@ void SendNextCommand() {
 	// we have no complete command in the queue
 	if (!index(Commands, '\n')) return;
 
+	if (!logged_in) return;
+
 	if (Prompt != '<') {
 		// get prompt if we don't have it
 		IProtoASK(connection, 0x40, NULL);
@@ -106,6 +111,22 @@ void SendNextCommand() {
 	jobs++;
 }
 
+void TryQuit() {
+	if (!logged_in) return;
+
+	if (jobs > 0) return;
+	if (!want_quit) return;
+
+	if (logout) {
+		IProtoASK(connection, 0x46, NULL);
+	} else {
+		// get the connection id first
+		IProtoASK(connection, 0x54, NULL);
+	}
+
+	logged_in = 0;
+}
+
 void GotPromptStart(struct connection *c, char *d) {
 }
 
@@ -117,6 +138,8 @@ void GotPromptEnd(struct connection *c, char type, char *job, char *d) {
 		case 'U': SendUsername(Username); break;
 		case 'P': SendPassword(Password); break;
 	}
+
+	TryQuit();
 }
 
 void GotLoginError(struct connection *c, char *d) {
@@ -124,8 +147,9 @@ void GotLoginError(struct connection *c, char *d) {
 }
 
 void GotLoginSuccess(struct connection *c, char *d) {
-	// ask for prompt
-	IProtoASK(connection, 0x40, NULL);
+	logged_in = 1;
+
+	SendNextCommand();
 }
 
 void GotLogout(struct connection *c, char *d) {
@@ -134,6 +158,8 @@ void GotLogout(struct connection *c, char *d) {
 
 void GotJob(struct connection *c, char *job, char *d) {
 	jobs--;
+
+	TryQuit();
 }
 
 void GotConnectionId(struct connection *c, int id, char *d) {
@@ -319,12 +345,9 @@ void MainProc() {
 				buf[r] = 0;
 
 				if (r == 0) {
-					if (logout) {
-						IProtoASK(connection, 0x46, NULL);
-					} else {
-						// get the connection id first
-						IProtoASK(connection, 0x54, NULL);
-					}
+					want_quit = 1;
+
+					TryQuit();
 				} else {
 					strncat(Commands, buf, r);
 
