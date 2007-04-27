@@ -303,7 +303,7 @@ void MainProc() {
 				int r = read(0, buf, 256);
 				buf[r] = 0;
 
-				if (buf[0] == '.') {
+				if (r == 0) {
 					if (logout) {
 						IProtoASK(connection, 0x46, NULL);
 					} else {
