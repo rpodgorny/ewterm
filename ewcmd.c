@@ -89,6 +89,8 @@ void SendPassword(char *s) {
 }
 
 void SendNextCommand() {
+printf("SENDING NEXT COMMAND\n");
+
 	// we have no complete command in the queue
 	if (!index(Commands, '\n')) return;
 
@@ -99,8 +101,9 @@ void SendNextCommand() {
 		IProtoASK(connection, 0x40, NULL);
 	}
 
-	char *TmpPtr = Commands;
+printf("REALLY SENDING NEXT COMMAND ->%s<-\n", Commands);
 
+	char *TmpPtr = Commands;
 	while (*TmpPtr != 0 && *TmpPtr != '\n') SendChar(*TmpPtr++);
 	SendChar(13);
 	SendChar(10);
@@ -109,13 +112,25 @@ void SendNextCommand() {
 	memmove(Commands, TmpPtr+1, strlen(TmpPtr));
 
 	jobs++;
+
+	Prompt = 0;
 }
 
 void TryQuit() {
-	if (!logged_in) return;
+	if (!logged_in) {
+		printf("STILL LOGGED IN\n");
+		return;
+	}
 
-	if (jobs > 0) return;
-	if (!want_quit) return;
+	if (jobs > 0) {
+		printf("STILL HAVE SOME RUNNING JOBS\n");
+		return;
+	}
+
+	if (!want_quit) {
+		printf("INPUT STILL NOT CLOSED\n");
+		return;
+	}
 
 	if (logout) {
 		IProtoASK(connection, 0x46, NULL);
@@ -325,7 +340,7 @@ void MainProc() {
 		FD_ZERO(&WriteQ);
 
 		// stdin
-		FD_SET(0, &ReadQ);
+		if (!want_quit) FD_SET(0, &ReadQ);
 
 		if (connection) {
 			FD_SET(connection->Fd, &ReadQ);
@@ -349,7 +364,8 @@ void MainProc() {
 
 					TryQuit();
 				} else {
-					strncat(Commands, buf, r);
+printf("BUF: ->%s<-\n", buf);
+					strcat(Commands, buf);
 
 					SendNextCommand();
 				}
