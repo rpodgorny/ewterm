@@ -1231,6 +1231,9 @@ void PromptRequest(struct connection *conn, char *d) {
 		if (conn->X25Connected[i] && conn->X25LoggedIn[i] == 0) return;
 	}
 
+	// we have a command in queue, don't send another prompt
+	if (conn->ReadBufferLen > 0) return;
+
 	IProtoSEND(conn, 0x40, NULL);
 	Write(conn, "<", 1);
 	IProtoSEND(conn, 0x41, "<");
