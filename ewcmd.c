@@ -147,6 +147,7 @@ void GotPromptStart(struct connection *c, char *d) {
 
 void GotPromptEnd(struct connection *c, char type, char *job, char *d) {
 	Prompt = type;
+printf("TYPE: %c %d\n", type, type);
 
 	switch (type) {
 		case '<': SendNextCommand(); break;
@@ -424,14 +425,8 @@ void ProcessArgs(int argc, char *argv[]) {
 			case 5:
 				strncpy(Password, argv[ac], 256);
 				break;
-			case 6:
-				login = 1;
-				break;
 			case 7:
 				attach = atoi(argv[ac]);
-				break;
-			case 8:
-				logout = 1;
 				break;
 		}
 
@@ -469,11 +464,11 @@ void ProcessArgs(int argc, char *argv[]) {
 		} else if (!strcmp(argv[ac], "-P")) {
 			swp = 5;
 		} else if (!strcmp(argv[ac], "--login")) {
-			swp = 6;
+			login = 1;
 		} else if (!strcmp(argv[ac], "--attach")) {
 			swp = 7;
 		} else if (!strcmp(argv[ac], "--logout")) {
-			swp = 8;
+			logout = 1;
 		} else if (argv[ac][0] == '-') {
 			fprintf(stderr, "Unknown option \"%s\". Use -h or --help to get list of all the\n", argv[ac]);
 			fprintf(stderr, "available options.\n");
