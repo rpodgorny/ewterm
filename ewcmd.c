@@ -186,10 +186,15 @@ void GotConnectionId(struct connection *c, int id, char *d) {
 }
 
 void GotAttach(struct connection *c, int status, char *d) {
+printf("Got attach\n");
 	if (status == 0) {
 		fprintf(stderr, "ATTACH FAILED!!!\n");
 		exit(0);
 	}
+
+	logged_in = 1;
+
+	SendNextCommand();
 }
 
 void CheckChr(struct connection *c, int Chr) {
