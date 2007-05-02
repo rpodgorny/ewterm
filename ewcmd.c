@@ -46,12 +46,20 @@ void DoneQuit() {
 }
 
 void SigIntCaught() {
-	Done(0);
+printf("Got INT\n");
+	// logout
+	IProtoASK(connection, 0x46, NULL);
+
+//	Done(0);
 }
 
 void SigTermCaught() {
-	Done(0);
-	signal(SIGTERM, SigTermCaught);
+printf("Got TERM\n");
+	// logout
+	IProtoASK(connection, 0x46, NULL);
+
+//	Done(0);
+//	signal(SIGTERM, SigTermCaught);
 }
 
 void SigAlrmCaught() {
