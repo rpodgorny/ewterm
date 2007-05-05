@@ -413,9 +413,9 @@ printf("BUF: ->%s<-\n", buf);
 
 void ProcessArgs(int argc, char *argv[]) {
 	// set default values
-	strcpy(Exchanges, getenv("MML_EXCH"));
-	strcpy(Username, getenv("MML_USER"));
-	strcpy(Password, getenv("MML_PASS"));
+	strcpy(Exchanges, getenv("EW_EXCHANGES"));
+	strcpy(Username, getenv("EW_USERNAME"));
+	strcpy(Password, getenv("EW_PASSWORD"));
 
 
 	int ac, swp = 0;
