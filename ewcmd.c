@@ -45,21 +45,13 @@ void DoneQuit() {
 	Done(0);
 }
 
-void SigIntCaught() {
-printf("Got INT\n");
-	// logout
-	IProtoASK(connection, 0x46, NULL);
-
-//	Done(0);
-}
-
 void SigTermCaught() {
-printf("Got TERM\n");
-	// logout
-	IProtoASK(connection, 0x46, NULL);
-
-//	Done(0);
-//	signal(SIGTERM, SigTermCaught);
+	if (logged_in) {
+		// logout
+		IProtoASK(connection, 0x46, NULL);
+	} else {
+		Done(0);
+	}
 }
 
 void SigAlrmCaught() {
@@ -70,7 +62,7 @@ void SigAlrmCaught() {
 void Init() {
 	signal(SIGTERM, SigTermCaught);
 	signal(SIGQUIT, SigTermCaught);
-	signal(SIGINT, SigIntCaught);
+	signal(SIGINT, SigTermCaught);
 	signal(SIGALRM, SigAlrmCaught);
 }
 
@@ -177,7 +169,7 @@ void GotLoginSuccess(struct connection *c, char *d) {
 }
 
 void GotLogout(struct connection *c, char *d) {
-	exit(0);
+	Done(0);
 }
 
 void GotJob(struct connection *c, char *job, char *d) {
