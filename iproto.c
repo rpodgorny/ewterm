@@ -42,6 +42,8 @@ struct connection *MakeConnection(int Fd, struct conn_handlers *handlers) {
 	conn->handlers = handlers;
 	StartHandshake(conn);
 
+	conn->destroy = 0;
+
 	conn->alarms = 0;
 
 	return conn;
@@ -53,6 +55,7 @@ void FreeConnection(struct connection *conn) {
 	if (conn->IProtoPacket) free(conn->IProtoPacket);
 	if (conn->ReadBuffer) free(conn->ReadBuffer);
 	if (conn->WriteBuffer) free(conn->WriteBuffer);
+	if (conn->X25WriteBuf) free(conn->X25WriteBuf);
 	free(conn);
 }
 

@@ -1002,10 +1002,10 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 void AnnounceUser(struct connection *conn, int opcode);
 
 void DestroyConnection(struct connection *conn) {
+printf("Destroying connection %d\n", conn->id);
 	AnnounceUser(conn, 0x06);
 
 	if (conn->Fd != -1) close(conn->Fd);
-	free(conn->X25WriteBuf);
 
 	// find the index and move the connection from end there
 	int i = 0;
@@ -1231,9 +1231,6 @@ void PromptRequest(struct connection *conn, char *d) {
 		if (conn->X25Connected[i] && conn->X25LoggedIn[i] == 0) return;
 	}
 
-	// we have a command in queue, don't send another prompt
-	if (conn->ReadBufferLen > 0) return;
-
 	IProtoSEND(conn, 0x40, NULL);
 	Write(conn, "<", 1);
 	IProtoSEND(conn, 0x41, "<");
@@ -1363,7 +1360,10 @@ void AttachRequest(struct connection *c, int id, char *d) {
 
 	Conns[i]->Fd = c->Fd;
 	c->Fd = -1;
-	//DestroyConnection(c);
+
+	Conns[i]->IProtoState = c->IProtoState;
+
+	c->destroy = 1; // we can't destroy a connection in handles so we just flag it and destroy elsewhere
 
 	IProtoSEND(Conns[i], 0x52, "1");
 
@@ -1798,6 +1798,15 @@ int main(int argc, char *argv[]) {
 
 	/* select forever */
 	for (;;) {
+		// destroy connections flagged to be destroyed
+		int i = 0;
+		for (i = 0; i < ConnCount; i++) {
+			if (Conns[i]->destroy) {
+				DestroyConnection(Conns[i]);
+				i = 0; // restart the loop because the array has changed
+			}
+		}
+
 		int MaxFd;
 		fd_set ReadQ;
 		fd_set WriteQ;
@@ -1805,7 +1814,7 @@ int main(int argc, char *argv[]) {
 
 		/* prepare for select */
 		Reselect = 0;
-/* TODO
+/* TODO - done above?
 		if (to_destroy && !to_destroy->WriteBufferLen) {
 			DestroyConnection(to_destroy);
 			to_destroy = NULL;
@@ -1815,8 +1824,6 @@ int main(int argc, char *argv[]) {
 
 		FD_ZERO(&ReadQ);
 		FD_ZERO(&WriteQ);
-
-		int i = 0;
 
 		// terminals
 		for (i = 0; i < ConnCount; i++) {

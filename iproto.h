@@ -85,6 +85,8 @@ struct connection {
 	int id;
 	int Fd;
 
+	int destroy; // "to be destroyed" flag
+
 	enum IProtoState IProtoState; /* InternalProtocolState */
 	char *IProtoPacket;
 	int IProtoPacketLen;
