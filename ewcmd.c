@@ -89,8 +89,6 @@ void SendPassword(char *s) {
 }
 
 void SendNextCommand() {
-printf("SENDING NEXT COMMAND\n");
-
 	// we have no complete command in the queue
 	if (!index(Commands, '\n')) return;
 
@@ -100,8 +98,6 @@ printf("SENDING NEXT COMMAND\n");
 		// get prompt if we don't have it
 		IProtoASK(connection, 0x40, NULL);
 	}
-
-printf("REALLY SENDING NEXT COMMAND ->%s<-\n", Commands);
 
 	char *TmpPtr = Commands;
 	while (*TmpPtr != 0 && *TmpPtr != '\n') SendChar(*TmpPtr++);
@@ -118,17 +114,17 @@ printf("REALLY SENDING NEXT COMMAND ->%s<-\n", Commands);
 
 void TryQuit() {
 	if (!logged_in) {
-		printf("STILL LOGGED IN\n");
+		//printf("STILL LOGGED IN\n");
 		return;
 	}
 
 	if (jobs > 0) {
-		printf("STILL HAVE SOME RUNNING JOBS\n");
+		//printf("STILL HAVE SOME RUNNING JOBS\n");
 		return;
 	}
 
 	if (!want_quit) {
-		printf("INPUT STILL NOT CLOSED\n");
+		//printf("INPUT STILL NOT CLOSED\n");
 		return;
 	}
 
@@ -147,7 +143,6 @@ void GotPromptStart(struct connection *c, char *d) {
 
 void GotPromptEnd(struct connection *c, char type, char *job, char *d) {
 	Prompt = type;
-printf("TYPE: %c %d\n", type, type);
 
 	switch (type) {
 		case '<': SendNextCommand(); break;
@@ -159,7 +154,7 @@ printf("TYPE: %c %d\n", type, type);
 }
 
 void GotLoginError(struct connection *c, char *d) {
-	printf("LOGIN ERROR\n");
+	printf("LOGIN ERROR!!!\n");
 }
 
 void GotLoginSuccess(struct connection *c, char *d) {
@@ -186,7 +181,6 @@ void GotConnectionId(struct connection *c, int id, char *d) {
 }
 
 void GotAttach(struct connection *c, int status, char *d) {
-printf("Got attach\n");
 	if (status == 0) {
 		fprintf(stderr, "ATTACH FAILED!!!\n");
 		exit(0);
@@ -370,7 +364,6 @@ void MainProc() {
 
 					TryQuit();
 				} else {
-printf("BUF: ->%s<-\n", buf);
 					strcat(Commands, buf);
 
 					SendNextCommand();
