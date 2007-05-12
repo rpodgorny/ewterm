@@ -398,9 +398,9 @@ void MainProc() {
 
 void ProcessArgs(int argc, char *argv[]) {
 	// set default values
-	strcpy(Exchanges, getenv("EW_EXCHANGES"));
-	strcpy(Username, getenv("EW_USERNAME"));
-	strcpy(Password, getenv("EW_PASSWORD"));
+	if (getenv("EW_EXCHANGES")) strcpy(Exchanges, getenv("EW_EXCHANGES"));
+	if (getenv("EW_USERNAME")) strcpy(Username, getenv("EW_USERNAME"));
+	if (getenv("EW_PASSWORD")) strcpy(Password, getenv("EW_PASSWORD"));
 
 
 	int ac, swp = 0;
