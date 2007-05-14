@@ -97,6 +97,7 @@ void SendNextCommand() {
 	if (Prompt != '<') {
 		// get prompt if we don't have it
 		IProtoASK(connection, 0x40, NULL);
+		return;
 	}
 
 	char *TmpPtr = Commands;
@@ -161,6 +162,8 @@ void GotLoginSuccess(struct connection *c, char *d) {
 	logged_in = 1;
 
 	SendNextCommand();
+
+	TryQuit();
 }
 
 void GotLogout(struct connection *c, char *d) {
@@ -189,6 +192,8 @@ void GotAttach(struct connection *c, int status, char *d) {
 	logged_in = 1;
 
 	SendNextCommand();
+
+	TryQuit();
 }
 
 void CheckChr(struct connection *c, int Chr) {
@@ -485,6 +490,25 @@ void ProcessArgs(int argc, char *argv[]) {
 int main(int argc, char **argv) {
 	// Process args
 	ProcessArgs(argc, argv);
+
+	if (login) {
+		int exit = 0;
+
+		if (!strlen(Exchanges)) {
+			printf("EXCHANGES NOT SPECIFIED!\n");
+			exit = 1;
+		}
+		if (!strlen(Username)) {
+			printf("USERNAME NOT SPECIFIED!\n");
+			exit = 1;
+		}
+		if (!strlen(Password)) {
+			printf("PASSWORD NOT SPECIFIED!\n");
+			exit = 1;
+		}
+
+		if (exit) Done(0);
+	}
 
 	if (*HostPortStr && *HostPortStr != '0') HostPort = atoi(HostPortStr);
 
