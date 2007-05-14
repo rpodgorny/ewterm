@@ -316,6 +316,7 @@ void AttachConnection() {
 		char tmp[20] = "";
 		sprintf(tmp, "%d", attach);
 		IProtoASK(connection, 0x53, tmp);
+		connection->IProtoState = IPR_DC2; // HACK
 	}
 }
 
