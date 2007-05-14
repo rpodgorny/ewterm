@@ -26,6 +26,8 @@ unsigned int HostPort = 7880;
 
 char Exchanges[256] = "", Username[256] = "", Password[256] = "";
 int login = 0, attach = 0, logout = 0;
+int read_from_stdin = 1;
+int detaching = 0; // are we in the phase of detaching (expecting server to drop connection)?
 
 char Commands[1024] = "";
 
@@ -119,12 +121,17 @@ void TryQuit() {
 		return;
 	}
 
+	if (strlen(Commands)) {
+		//printf("SOME COMMANDS STILL TO BE EXECUTED\n");
+		return;
+	}
+
 	if (jobs > 0) {
 		//printf("STILL HAVE SOME RUNNING JOBS\n");
 		return;
 	}
 
-	if (!want_quit) {
+	if (read_from_stdin && !want_quit) {
 		//printf("INPUT STILL NOT CLOSED\n");
 		return;
 	}
@@ -156,6 +163,8 @@ void GotPromptEnd(struct connection *c, char type, char *job, char *d) {
 
 void GotLoginError(struct connection *c, char *d) {
 	printf("LOGIN ERROR!!!\n");
+
+	Done(100);
 }
 
 void GotLoginSuccess(struct connection *c, char *d) {
@@ -181,12 +190,14 @@ void GotConnectionId(struct connection *c, int id, char *d) {
 
 	// we have id, detach now...
 	IProtoASK(c, 0x52, NULL);
+
+	detaching = 1;
 }
 
 void GotAttach(struct connection *c, int status, char *d) {
 	if (status == 0) {
 		fprintf(stderr, "ATTACH FAILED!!!\n");
-		exit(0);
+		Done(100);
 	}
 
 	logged_in = 1;
@@ -346,7 +357,7 @@ void MainProc() {
 		FD_ZERO(&WriteQ);
 
 		// stdin
-		if (!want_quit) FD_SET(0, &ReadQ);
+		if (read_from_stdin && !want_quit) FD_SET(0, &ReadQ);
 
 		if (connection) {
 			FD_SET(connection->Fd, &ReadQ);
@@ -360,7 +371,7 @@ void MainProc() {
 			Done(1);
 		} else {
 			// stdin
-			if (FD_ISSET(0, &ReadQ)) {
+			if (read_from_stdin && FD_ISSET(0, &ReadQ)) {
 				char buf[256] = "";
 				int r = read(0, buf, 256);
 				buf[r] = 0;
@@ -376,12 +387,16 @@ void MainProc() {
 				}
 			}
 
-			/* Exchange input */
+			// Exchange input
 			if (connection && FD_ISSET(connection->Fd, &ReadQ)) {
 				errno = 0;
 				if (DoRead(connection) <= 0) {
-					perror("Read from fd failed");
-					Done(1);
+					if (detaching) {
+						Done(0);
+					} else {
+						perror("Read from fd failed");
+						Done(1);
+					}
 				} else {
 					int Chr;
 
@@ -447,7 +462,7 @@ void ProcessArgs(int argc, char *argv[]) {
 
 		if (!strcmp(argv[ac], "-h") || !strcmp(argv[ac], "--help")) {
 			printf("ewcmd "VERSION" written by Radek Podgorny, 2006, 2007\n\n");
-			printf("Usage:\t%s [-h|--help] [-c|--connect <host>[:<port>]\n", argv[0]);
+			printf("Usage:\t%s [-h|--help] [-c|--connect <host>[:<port>] [command]\n", argv[0]);
 			printf("\t[-p|--port <port>]\n");
 			printf("\t-X exch1,exch2,...\n");
 			printf("\t-U user\n");
@@ -483,6 +498,9 @@ void ProcessArgs(int argc, char *argv[]) {
 			fprintf(stderr, "Unknown option \"%s\". Use -h or --help to get list of all the\n", argv[ac]);
 			fprintf(stderr, "available options.\n");
 			exit(1);
+		} else {
+			strcat(Commands, argv[ac]);
+			strcat(Commands, "\n");
 		}
 	}
 }
@@ -490,6 +508,8 @@ void ProcessArgs(int argc, char *argv[]) {
 int main(int argc, char **argv) {
 	// Process args
 	ProcessArgs(argc, argv);
+
+	if (strlen(Commands)) read_from_stdin = 0;
 
 	if (login) {
 		int exit = 0;
