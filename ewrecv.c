@@ -2171,7 +2171,7 @@ perror("CONN");
 						c->X25Prompt[j] = 0;
 							
 						char msg[256] = "";
-						sprintf(msg, "\n\n:::%s@%s TRIED TO LOG IN AS %s\n", c->user, c->host, c->X25User);
+						sprintf(msg, "\n\n:::%s@%s TRIED TO LOG IN TO %s AS %s\n", c->user, c->host, X25Conns[j].name, c->X25User);
 						LogStr(MLog, msg, strlen(msg));
 					} else if (c->X25Prompt[j] == 'N') {
 						strncpy(c->X25NewPasswd, c->X25WriteBuf, c->X25WriteBufLen);
