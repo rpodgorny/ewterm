@@ -2100,8 +2100,9 @@ perror("CONN");
 			for (i = 0; i < ConnCount; i++) {
 				struct connection *c = Conns[i];
 
-				/// TODO: fix this workaround
+				/// TODO: fix these workarounds
 				int sent = 0;
+				int ask_for_password = 0;
 
 				int j = 0;
 				for (j = 0; j < X25ConnCount; j++) {
@@ -2155,8 +2156,9 @@ perror("CONN");
 						strncpy(c->X25User, c->X25WriteBuf, c->X25WriteBufLen);
 						c->X25User[c->X25WriteBufLen] = 0;
 
-						IProtoSEND(c, 0x41, "P");
 						c->X25Prompt[j] = 'P';
+
+						ask_for_password = 1;
 					} else if (c->X25Prompt[j] == 'P') {
 						strncpy(c->X25Passwd, c->X25WriteBuf, c->X25WriteBufLen);
 						c->X25Passwd[c->X25WriteBufLen] = 0;
@@ -2258,6 +2260,8 @@ perror("CONN");
 				}
 
 				if (sent) c->X25WriteBufLen = 0;
+
+				if (ask_for_password) IProtoSEND(c, 0x41, "P");
 			}
 reselect:
 			;
