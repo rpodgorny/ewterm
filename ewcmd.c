@@ -472,6 +472,7 @@ void ProcessArgs(int argc, char *argv[]) {
 			printf("\t--login\n");
 			printf("\t--attach id\n");
 			printf("\t--logout\n");
+			printf("\t--silent\n");
 			printf("\n");
 			printf("-h\tDisplay this help\n");
 			printf("-c\tConnect to <host> (defaults to %s)\n", HostName);
