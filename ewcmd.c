@@ -186,7 +186,8 @@ void GotJob(struct connection *c, char *job, char *d) {
 }
 
 void GotConnectionId(struct connection *c, int id, char *d) {
-	printf("%d\n", id);
+	// print only on login
+	if (login) printf("%d\n", id);
 
 	// we have id, detach now...
 	IProtoASK(c, 0x52, NULL);
@@ -510,6 +511,12 @@ int main(int argc, char **argv) {
 	ProcessArgs(argc, argv);
 
 	if (strlen(Commands)) read_from_stdin = 0;
+
+	if (!login || !logout) {
+		// no commands allowed when only logging in or out
+		Commands[0] = 0;
+		read_from_stdin = 0;
+	}
 
 	if (login) {
 		int exit = 0;
