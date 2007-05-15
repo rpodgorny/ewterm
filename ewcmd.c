@@ -27,6 +27,7 @@ unsigned int HostPort = 7880;
 char Exchanges[256] = "", Username[256] = "", Password[256] = "";
 int login = 0, attach = 0, logout = 0;
 int read_from_stdin = 1;
+int silent = 0;
 int detaching = 0; // are we in the phase of detaching (expecting server to drop connection)?
 
 char Commands[1024] = "";
@@ -210,7 +211,7 @@ void GotAttach(struct connection *c, int status, char *d) {
 
 void CheckChr(struct connection *c, int Chr) {
 	if (Chr < 32 && Chr != 9 && Chr != 10) {
-	} else {
+	} else if (!silent){
 		fprintf(stdout, "%c", Chr);
 		fflush(stdout);
 	}
@@ -495,6 +496,8 @@ void ProcessArgs(int argc, char *argv[]) {
 			swp = 7;
 		} else if (!strcmp(argv[ac], "--logout")) {
 			logout = 1;
+		} else if (!strcmp(argv[ac], "--silent")) {
+			silent = 1;
 		} else if (argv[ac][0] == '-') {
 			fprintf(stderr, "Unknown option \"%s\". Use -h or --help to get list of all the\n", argv[ac]);
 			fprintf(stderr, "available options.\n");
