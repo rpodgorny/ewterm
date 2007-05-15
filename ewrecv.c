@@ -1002,7 +1002,8 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 void AnnounceUser(struct connection *conn, int opcode);
 
 void DestroyConnection(struct connection *conn) {
-printf("Destroying connection %d\n", conn->id);
+	printf("Destroying connection %d\n", conn->id);
+
 	AnnounceUser(conn, 0x06);
 
 	if (conn->Fd != -1) close(conn->Fd);
