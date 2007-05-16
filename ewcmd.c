@@ -516,7 +516,9 @@ int main(int argc, char **argv) {
 
 	if (strlen(Commands)) read_from_stdin = 0;
 
-	if (!login || !logout) {
+	if (attach && !logout) {
+	} else if (login && logout) {
+	} else {
 		// no commands allowed when only logging in or out
 		Commands[0] = 0;
 		read_from_stdin = 0;
