@@ -221,7 +221,7 @@ void CheckChr(struct connection *c, char Chr) {
 	if (Chr == 10) {
 		if (strstr(curline, "<") == curline) curline[0] = 0;
 		if (strstr(curline, ":::") == curline) curline[0] = 0;
-		if (curline[0] == 10 && lastline[0] == 10) curline[0] = 0;
+		if (curline[0] == 10 && (lastline[0] == 10 || lastline[0] == 0)) curline[0] = 0;
 
 		fprintf(stdout, "%s", curline);
 		fflush(stdout);
