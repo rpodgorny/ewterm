@@ -209,11 +209,27 @@ void GotAttach(struct connection *c, int status, char *d) {
 	TryQuit();
 }
 
-void CheckChr(struct connection *c, int Chr) {
-	if (Chr < 32 && Chr != 9 && Chr != 10) {
-	} else if (!silent){
-		fprintf(stdout, "%c", Chr);
+char lastline[256] = "";
+char curline[256] = "";
+
+void CheckChr(struct connection *c, char Chr) {
+	if (Chr < 32 && Chr != 9 && Chr != 10) return;
+
+	strncat(curline, &Chr, 1);
+
+	// newline has come
+	if (Chr == 10) {
+		if (strstr(curline, "<") == curline) curline[0] = 0;
+		if (strstr(curline, ":::") == curline) curline[0] = 0;
+		if (curline[0] == 10 && lastline[0] == 10) curline[0] = 0;
+
+		fprintf(stdout, "%s", curline);
 		fflush(stdout);
+
+		if (curline[0]) {
+			strcpy(lastline, curline);
+			curline[0] = 0;
+		}
 	}
 }
 
