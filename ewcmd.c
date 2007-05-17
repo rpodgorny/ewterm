@@ -536,6 +536,9 @@ int main(int argc, char **argv) {
 
 	if (strlen(Commands)) read_from_stdin = 0;
 
+	// if user does not specify a --login, --logout or --attach action, he wants a --login --logout combination
+	if (!login && !logout && !attach) login = logout = 1;
+
 	if (attach && !logout) {
 	} else if (login && logout) {
 	} else {
