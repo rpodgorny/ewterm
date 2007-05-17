@@ -27,7 +27,7 @@ unsigned int HostPort = 7880;
 char Exchanges[256] = "", Username[256] = "", Password[256] = "";
 int login = 0, attach = 0, logout = 0;
 int read_from_stdin = 1;
-int silent = 0;
+int verbose = 0;
 int detaching = 0; // are we in the phase of detaching (expecting server to drop connection)?
 
 char Commands[1024] = "";
@@ -219,9 +219,13 @@ void CheckChr(struct connection *c, char Chr) {
 
 	// newline has come
 	if (Chr == 10) {
-		if (strstr(curline, "<") == curline) curline[0] = 0;
-		if (strstr(curline, ":::") == curline) curline[0] = 0;
-		if (curline[0] == 10 && (lastline[0] == 10 || lastline[0] == 0)) curline[0] = 0;
+		if (!verbose) {
+			if (strstr(curline, "<") == curline
+			|| strstr(curline, ":::") == curline
+			|| (curline[0] == 10 && (lastline[0] == 10 || lastline[0] == 0))) {
+				curline[0] = 0;
+			}
+		}
 
 		fprintf(stdout, "%s", curline);
 		fflush(stdout);
@@ -488,7 +492,7 @@ void ProcessArgs(int argc, char *argv[]) {
 			printf("\t--login\n");
 			printf("\t--attach id\n");
 			printf("\t--logout\n");
-			printf("\t--silent\n");
+			printf("\t[-v|--verbose]\n");
 			printf("\n");
 			printf("-h\tDisplay this help\n");
 			printf("-c\tConnect to <host> (defaults to %s)\n", HostName);
@@ -513,8 +517,8 @@ void ProcessArgs(int argc, char *argv[]) {
 			swp = 7;
 		} else if (!strcmp(argv[ac], "--logout")) {
 			logout = 1;
-		} else if (!strcmp(argv[ac], "--silent")) {
-			silent = 1;
+		} else if (!strcmp(argv[ac], "-v") || !strcmp(argv[ac], "--verbose")) {
+			verbose = 1;
 		} else if (argv[ac][0] == '-') {
 			fprintf(stderr, "Unknown option \"%s\". Use -h or --help to get list of all the\n", argv[ac]);
 			fprintf(stderr, "available options.\n");
