@@ -97,7 +97,9 @@ void SendNextCommand() {
 
 	if (!logged_in) return;
 
-	if (Prompt != '<') {
+	if (jobs > 0) return;
+
+	if (Prompt != '<' && Prompt != 'I') {
 		// get prompt if we don't have it
 		IProtoASK(connection, 0x40, NULL);
 		return;
@@ -111,7 +113,7 @@ void SendNextCommand() {
 	// move to next command
 	memmove(Commands, TmpPtr+1, strlen(TmpPtr));
 
-	jobs++;
+	if (Prompt == '<') jobs++;
 
 	Prompt = 0;
 }
@@ -154,6 +156,7 @@ void GotPromptEnd(struct connection *c, char type, char *job, char *d) {
 	Prompt = type;
 
 	switch (type) {
+		case 'I':
 		case '<': SendNextCommand(); break;
 		case 'U': SendUsername(Username); break;
 		case 'P': SendPassword(Password); break;
@@ -182,6 +185,8 @@ void GotLogout(struct connection *c, char *d) {
 
 void GotJob(struct connection *c, char *job, char *d) {
 	jobs--;
+
+	SendNextCommand();
 
 	TryQuit();
 }
@@ -403,7 +408,7 @@ void MainProc() {
 
 					TryQuit();
 				} else {
-					strcat(Commands, buf);
+					strncat(Commands, buf, r);
 
 					SendNextCommand();
 				}
