@@ -97,7 +97,7 @@ void SendNextCommand() {
 
 	if (!logged_in) return;
 
-	if (jobs > 0) return;
+	if (Prompt == '<' && jobs > 0) return;
 
 	if (Prompt != '<' && Prompt != 'I') {
 		// get prompt if we don't have it
