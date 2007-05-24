@@ -1182,7 +1182,7 @@ void LoginPromptRequest(struct connection *conn, char *exch, char *d) {
 	}
 
 	char *p;
-	p = strtok(exch,",");
+	p = strtok(exch, ",");
 	while (p != NULL) {
 		int found = 0;
 
@@ -2192,7 +2192,7 @@ perror("CONN");
 						sprintf(msg, "\n\n:::%s@%s TRIED TO LOG OUT FROM %s AS %s\n", c->user, c->host, X25Conns[j].name, c->X25User);
 						LogStr(MLog, msg, strlen(msg));
 
-						sprintf(msg, "\n\n:::LOGOUT FROM %s\n\n", X25Conns[i].name);
+						sprintf(msg, "\n\n:::LOGOUT FROM %s\n\n", X25Conns[j].name);
 						Write(c, msg, strlen(msg));
 
 						// TODO: create function for this test
