@@ -1285,16 +1285,10 @@ void LogoutRequest(struct connection *c, char *d) {
 
 	int i = 0;
 	for (i = 0; i < X25ConnCount; i++) {
-		if (c->X25Connected && c->X25LoggedIn[i] == 0) continue;
+		if (c->X25Connected[i] == 0) continue;
+		if (c->X25LoggedIn[i] == 0) continue;
 
-		c->X25LoggedIn[i] = 0;
 		c->X25Prompt[i] = 'X';
-
-		char msg[256] = "";
-		sprintf(msg, "\n\n:::LOGOUT FROM %s\n\n", X25Conns[i].name);
-		Write(c, msg, strlen(msg));
-
-		IProtoSEND(c, 0x44, NULL);
 	}
 }
 
@@ -2128,7 +2122,6 @@ perror("CONN");
 						// TODO: create function for this test
 						// are all exchanges ready?
 						int alllogged = 1;
-
 						int k = 0;
 						for (k = 0; k < X25ConnCount; k++) {
 							if (c->X25Connected[k] && c->X25LoggedIn[k] != 1) alllogged = 0;
@@ -2193,10 +2186,23 @@ perror("CONN");
 					} else if (c->X25Prompt[j] == 'X') {
 						p = logout_packet(c->id);
 						c->X25Prompt[j] = 0;
+						c->X25LoggedIn[j] = 0;
 						
 						char msg[256] = "";
 						sprintf(msg, "\n\n:::%s@%s TRIED TO LOG OUT FROM %s AS %s\n", c->user, c->host, X25Conns[j].name, c->X25User);
 						LogStr(MLog, msg, strlen(msg));
+
+						sprintf(msg, "\n\n:::LOGOUT FROM %s\n\n", X25Conns[i].name);
+						Write(c, msg, strlen(msg));
+
+						// TODO: create function for this test
+						int nonelogged = 1;
+						int k = 0;
+						for (k = 0; k < X25ConnCount; k++) {
+							if (c->X25Connected[k] && c->X25LoggedIn[k] == 1) nonelogged = 0;
+						}
+
+						if (nonelogged) IProtoSEND(c, 0x44, NULL);
 					} else if (c->X25Prompt[j] == 'R') {
 						if (c->X25WriteBufLen == 1 && c->X25WriteBuf[0] == '+') {
 							p = login_packet(c->id, c->host, c->X25User, c->X25Passwd, NULL, 1);
