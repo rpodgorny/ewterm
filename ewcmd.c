@@ -25,7 +25,6 @@ char HostName[256] = "localhost", HostPortStr[256] = "";
 unsigned int HostPort = 7880;
 
 char Exchanges[256] = "", Username[256] = "", Password[256] = "";
-int exchange_count = 0;
 int login = 0, attach = 0, logout = 0, force_login = 0;
 int read_from_stdin = 1;
 int verbose = 0;
@@ -114,7 +113,7 @@ void SendNextCommand() {
 	// move to next command
 	memmove(Commands, TmpPtr+1, strlen(TmpPtr));
 
-	if (Prompt == '<') jobs += exchange_count;
+	if (Prompt == '<') jobs++;
 
 	Prompt = 0;
 }
@@ -588,16 +587,6 @@ int main(int argc, char **argv) {
 		}
 
 		if (exit) Done(0);
-	}
-
-	// Count number of exchanges specified
-	char exch[256];
-	strcpy(exch, Exchanges);
-	char *p;
-	p = strtok(exch, ",");
-	while (p) {
-		exchange_count++;
-		p = strtok(NULL, ",");
 	}
 
 	if (*HostPortStr && *HostPortStr != '0') HostPort = atoi(HostPortStr);

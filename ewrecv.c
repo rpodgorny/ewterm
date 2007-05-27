@@ -978,9 +978,15 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 
 		if (c) {
 			Write(c, tmp, strlen(tmp));
-			IProtoSEND(c, 0x45, jobnr_s);
 
 			c->X25LastJob[idx] = 0;
+
+			// send job end only if there are no other jobs running
+			int k = 0;
+			for (k = 0; k < X25ConnCount; k++) {
+				if (c->X25Connected[k] && c->X25LastJob[k] != 0) break;
+			}
+			if (k == X25ConnCount) IProtoSEND(c, 0x45, "");
 		}
 
 		LogStr(log, tmp, strlen(tmp));
