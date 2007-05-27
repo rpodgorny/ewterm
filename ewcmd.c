@@ -26,7 +26,7 @@ unsigned int HostPort = 7880;
 
 char Exchanges[256] = "", Username[256] = "", Password[256] = "";
 int exchange_count = 0;
-int login = 0, attach = 0, logout = 0;
+int login = 0, attach = 0, logout = 0, force_login = 0;
 int read_from_stdin = 1;
 int verbose = 0;
 int detaching = 0; // are we in the phase of detaching (expecting server to drop connection)?
@@ -167,7 +167,7 @@ void GotPromptEnd(struct connection *c, char type, char *job, char *d) {
 }
 
 void GotLoginError(struct connection *c, char *d) {
-	printf("LOGIN ERROR!!!\n");
+	fprintf(stderr, "LOGIN ERROR!!!\n");
 
 	Done(100);
 }
@@ -225,9 +225,23 @@ void CheckChr(struct connection *c, char Chr) {
 
 	// newline has come
 	if (Chr == 10) {
+		// this is a fucking hack to handle unwanted interactivity (session in use)
+		if (strstr(curline, "SESSION REJECTED") && strstr(curline, "IN USE")) {
+			if (force_login) {
+				SendChar('+');
+				SendChar(13);
+				SendChar(10);
+			} else {
+				fprintf(stderr, "LOGIN ERROR!!! SESSION IN USE!!!\n");
+				Done(100);
+			}
+		}
+
 		if (!verbose) {
 			if (strstr(curline, "<") == curline
 			|| strstr(curline, ":::") == curline
+			|| strstr(curline, "SESSION REJECTED") == curline
+			|| strstr(curline, "RE-OPEN SUCCESSFUL. NEW SESSION ESTABLISHED.") == curline
 			|| (curline[0] == 10 && (lastline[0] == 10 || lastline[0] == 0))) {
 				curline[0] = 0;
 			}
@@ -523,6 +537,8 @@ void ProcessArgs(int argc, char *argv[]) {
 			swp = 7;
 		} else if (!strcmp(argv[ac], "--logout")) {
 			logout = 1;
+		} else if (!strcmp(argv[ac], "--force-login")) {
+			force_login = 1;
 		} else if (!strcmp(argv[ac], "-v") || !strcmp(argv[ac], "--verbose")) {
 			verbose = 1;
 		} else if (argv[ac][0] == '-') {
