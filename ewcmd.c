@@ -9,6 +9,7 @@
 #include <netdb.h>
 #include <fcntl.h>
 #include <linux/fd.h>
+#include <ctype.h>
 
 #include "version.h"
 #include "iproto.h"
@@ -76,7 +77,7 @@ void SendChar(char c) {
 void SendUsername(char *s) {
 	char *TmpPtr = s;
 
-	while (*TmpPtr) SendChar(*TmpPtr++);
+	while (*TmpPtr) SendChar(toupper(*TmpPtr++));
 	SendChar(13);
 	SendChar(10);
 }
@@ -106,7 +107,7 @@ void SendNextCommand() {
 	}
 
 	char *TmpPtr = Commands;
-	while (*TmpPtr != 0 && *TmpPtr != '\n') SendChar(*TmpPtr++);
+	while (*TmpPtr != 0 && *TmpPtr != '\n') SendChar(toupper(*TmpPtr++));
 	SendChar(13);
 	SendChar(10);
 
