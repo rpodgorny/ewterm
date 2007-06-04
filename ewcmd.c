@@ -510,10 +510,10 @@ void ProcessArgs(int argc, char *argv[]) {
 			printf("-X exch1,exch2,...\n");
 			printf("-U user\n");
 			printf("-P pass\n");
-			printf("--login\n");
-			printf("--attach id\n");
-			printf("--logout\n");
-			printf("[--force-login]\tRe-open session when it's already in use\n");
+			printf("[-l|--login]\n");
+			printf("[-a|--attach] id\n");
+			printf("[-o|--logout]\n");
+			printf("[-L|--force-login]\tRe-open session when it's already in use\n");
 			printf("[-v|--verbose]\n");
 			printf("\n");
 			printf("-h\tDisplay this help\n");
@@ -533,13 +533,13 @@ void ProcessArgs(int argc, char *argv[]) {
 			swp = 4;
 		} else if (!strcmp(argv[ac], "-P")) {
 			swp = 5;
-		} else if (!strcmp(argv[ac], "--login")) {
+		} else if (!strcmp(argv[ac], "-l") || !strcmp(argv[ac], "--login")) {
 			login = 1;
-		} else if (!strcmp(argv[ac], "--attach")) {
+		} else if (!strcmp(argv[ac], "-a") || !strcmp(argv[ac], "--attach")) {
 			swp = 7;
-		} else if (!strcmp(argv[ac], "--logout")) {
+		} else if (!strcmp(argv[ac], "-o") || !strcmp(argv[ac], "--logout")) {
 			logout = 1;
-		} else if (!strcmp(argv[ac], "--force-login")) {
+		} else if (!strcmp(argv[ac], "-L") || !strcmp(argv[ac], "--force-login")) {
 			force_login = 1;
 		} else if (!strcmp(argv[ac], "-v") || !strcmp(argv[ac], "--verbose")) {
 			verbose = 1;
