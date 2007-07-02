@@ -27,6 +27,7 @@ unsigned int HostPort = 7880;
 
 char Exchanges[256] = "", Username[256] = "", Password[256] = "";
 int login = 0, attach = 0, logout = 0, force_login = 0;
+int timeout = 0;
 int read_from_stdin = 1;
 int verbose = 0;
 int detaching = 0; // are we in the phase of detaching (expecting server to drop connection)?
@@ -407,10 +408,21 @@ void MainProc() {
 			if (connection->WriteBuffer) FD_SET(connection->Fd, &WriteQ);
 		}
 
-		if (select(MaxFd + 1, &ReadQ, &WriteQ, 0, 0) < 0) {
+		struct timeval to;
+		to.tv_sec = timeout;
+		struct timeval *top = &to;
+		if (timeout == 0) top = NULL;
+
+		int s = select(MaxFd + 1, &ReadQ, &WriteQ, 0, top);
+
+		if (s < 0) {
 			if (errno == EINTR) continue;
 			perror("Select failed");
 			Done(1);
+		} else if (s == 0) {
+			// timeout
+			if (jobs) continue;
+			Done(100);
 		} else {
 			// stdin
 			if (read_from_stdin && FD_ISSET(0, &ReadQ)) {
@@ -492,6 +504,9 @@ void ProcessArgs(int argc, char *argv[]) {
 			case 5:
 				strncpy(Password, argv[ac], 256);
 				break;
+			case 6:
+				timeout = atoi(argv[ac]);
+				break;
 			case 7:
 				attach = atoi(argv[ac]);
 				break;
@@ -515,6 +530,7 @@ void ProcessArgs(int argc, char *argv[]) {
 			printf("[-o|--logout]\n");
 			printf("[-L|--force-login]\tRe-open session when it's already in use\n");
 			printf("[-v|--verbose]\n");
+			printf("[-t|--timeout] sec\tUser input timeout\n");
 			printf("\n");
 			printf("-h\tDisplay this help\n");
 			printf("-c\tConnect to <host> (defaults to %s)\n", HostName);
@@ -543,6 +559,8 @@ void ProcessArgs(int argc, char *argv[]) {
 			force_login = 1;
 		} else if (!strcmp(argv[ac], "-v") || !strcmp(argv[ac], "--verbose")) {
 			verbose = 1;
+		} else if (!strcmp(argv[ac], "-t") || !strcmp(argv[ac], "--timeout")) {
+			swp = 6;
 		} else if (argv[ac][0] == '-') {
 			fprintf(stderr, "Unknown option \"%s\". Use -h or --help to get list of all the\n", argv[ac]);
 			fprintf(stderr, "available options.\n");
