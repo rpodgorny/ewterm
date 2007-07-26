@@ -430,6 +430,7 @@ void MainProc() {
 
 		struct timeval to;
 		to.tv_sec = timeout_denominator;
+		to.tv_usec = 0;
 		struct timeval *top = &to;
 		if (timeout_denominator == 0) top = NULL;
 
