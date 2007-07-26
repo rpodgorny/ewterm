@@ -45,10 +45,16 @@ int Reconnect = 0;
 
 
 int common_denominator(int a, int b) {
-	// TODO: implement this
 	if (a == 0) return b;
 	if (b == 0) return a;
-	return 1;
+
+	while (b) {
+		int t = b;
+		b = a % b;
+		a = t;
+	}
+
+	return a;
 }
 
 void Done(int Err) {
