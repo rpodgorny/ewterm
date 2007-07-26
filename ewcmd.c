@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include <linux/fd.h>
 #include <ctype.h>
+#include <time.h>
 
 #include "version.h"
 #include "iproto.h"
@@ -27,7 +28,8 @@ unsigned int HostPort = 7880;
 
 char Exchanges[256] = "", Username[256] = "", Password[256] = "";
 int login = 0, attach = 0, logout = 0, force_login = 0;
-int timeout = 0;
+int login_timeout = 0, command_timeout = 0, timeout_denominator = 0;
+time_t login_start = 0, command_start = 0;
 int read_from_stdin = 1;
 int verbose = 0;
 int detaching = 0; // are we in the phase of detaching (expecting server to drop connection)?
@@ -42,7 +44,23 @@ int want_quit = 0;
 int Reconnect = 0;
 
 
+int common_denominator(int a, int b) {
+	// TODO: implement this
+	if (a == 0) return b;
+	if (b == 0) return a;
+	return 1;
+}
+
 void Done(int Err) {
+	switch (Err) {
+		case 1: printf("EWCMD ERROR 1 (SOCKET OR I/O ERROR)\n"); break;
+		case 101: printf("EWCMD ERROR 101 (LOGIN FAILED)\n"); break;
+		case 102: printf("EWCMD ERROR 102 (ATTACH FAILED)\n"); break;
+		case 103: printf("EWCMD ERROR 103 (LOGIN TIMEOUT)\n"); break;
+		case 104: printf("EWCMD ERROR 104 (COMMAND TIMEOUT)\n"); break;
+		case 105: printf("EWCMD ERROR 105 (LOGIN FAILED - SESSION IN USE)\n"); break;
+	}
+
 	exit(Err);
 }
 
@@ -81,6 +99,8 @@ void SendUsername(char *s) {
 	while (*TmpPtr) SendChar(toupper(*TmpPtr++));
 	SendChar(13);
 	SendChar(10);
+
+	login_start = time(NULL);
 }
 
 void SendPassword(char *s) {
@@ -111,6 +131,8 @@ void SendNextCommand() {
 	while (*TmpPtr != 0 && *TmpPtr != '\n') SendChar(toupper(*TmpPtr++));
 	SendChar(13);
 	SendChar(10);
+
+	command_start = time(NULL);
 
 	// move to next command
 	memmove(Commands, TmpPtr+1, strlen(TmpPtr));
@@ -168,9 +190,7 @@ void GotPromptEnd(struct connection *c, char type, char *job, char *d) {
 }
 
 void GotLoginError(struct connection *c, char *d) {
-	fprintf(stderr, "LOGIN ERROR!!!\n");
-
-	Done(100);
+	Done(101);
 }
 
 void GotLoginSuccess(struct connection *c, char *d) {
@@ -204,10 +224,7 @@ void GotConnectionId(struct connection *c, int id, char *d) {
 }
 
 void GotAttach(struct connection *c, int status, char *d) {
-	if (status == 0) {
-		fprintf(stderr, "ATTACH FAILED!!!\n");
-		Done(100);
-	}
+	if (status == 0) Done(102);
 
 	logged_in = 1;
 
@@ -233,8 +250,7 @@ void CheckChr(struct connection *c, char Chr) {
 				SendChar(13);
 				SendChar(10);
 			} else {
-				fprintf(stderr, "LOGIN ERROR!!! SESSION IN USE!!!\n");
-				Done(100);
+				Done(105);
 			}
 		}
 
@@ -409,20 +425,17 @@ void MainProc() {
 		}
 
 		struct timeval to;
-		to.tv_sec = timeout;
+		to.tv_sec = timeout_denominator;
 		struct timeval *top = &to;
-		if (timeout == 0) top = NULL;
+		if (timeout_denominator == 0) top = NULL;
 
 		int s = select(MaxFd + 1, &ReadQ, &WriteQ, 0, top);
 
 		if (s < 0) {
 			if (errno == EINTR) continue;
-			perror("Select failed");
 			Done(1);
 		} else if (s == 0) {
 			// timeout
-			if (jobs) continue;
-			Done(100);
 		} else {
 			// stdin
 			if (read_from_stdin && FD_ISSET(0, &ReadQ)) {
@@ -448,7 +461,6 @@ void MainProc() {
 					if (detaching) {
 						Done(0);
 					} else {
-						perror("Read from fd failed");
 						Done(1);
 					}
 				} else {
@@ -462,11 +474,16 @@ void MainProc() {
 
 			// Exchange output
 			if (connection && FD_ISSET(connection->Fd, &WriteQ)) {
-				if (DoWrite(connection) < 0) {
-					perror("Write to fd failed");
-					Done(1);
-				}
+				if (DoWrite(connection) < 0) Done(1);
 			}
+		}
+
+		if (login_timeout && login_start && !logged_in) {
+			if (time(NULL) - login_start > login_timeout) Done(103);
+		}
+
+		if (command_timeout && command_start && jobs) {
+			if (time(NULL) - command_start > command_timeout) Done(104);
 		}
 	}
 }
@@ -505,10 +522,13 @@ void ProcessArgs(int argc, char *argv[]) {
 				strncpy(Password, argv[ac], 256);
 				break;
 			case 6:
-				timeout = atoi(argv[ac]);
+				login_timeout = atoi(argv[ac]);
 				break;
 			case 7:
 				attach = atoi(argv[ac]);
+				break;
+			case 8:
+				command_timeout = atoi(argv[ac]);
 				break;
 		}
 
@@ -530,7 +550,8 @@ void ProcessArgs(int argc, char *argv[]) {
 			printf("[-o|--logout]\n");
 			printf("[-L|--force-login]\tRe-open session when it's already in use\n");
 			printf("[-v|--verbose]\n");
-			printf("[-t|--timeout] sec\tUser input timeout\n");
+			printf("[-t|--login-timeout] sec\tExchange login timeout\n");
+			printf("[-T|--command-timeout] sec\tCommand run timeout\n");
 			printf("\n");
 			printf("-h\tDisplay this help\n");
 			printf("-c\tConnect to <host> (defaults to %s)\n", HostName);
@@ -559,8 +580,10 @@ void ProcessArgs(int argc, char *argv[]) {
 			force_login = 1;
 		} else if (!strcmp(argv[ac], "-v") || !strcmp(argv[ac], "--verbose")) {
 			verbose = 1;
-		} else if (!strcmp(argv[ac], "-t") || !strcmp(argv[ac], "--timeout")) {
+		} else if (!strcmp(argv[ac], "-t") || !strcmp(argv[ac], "--login-timeout")) {
 			swp = 6;
+		} else if (!strcmp(argv[ac], "-T") || !strcmp(argv[ac], "--command-timeout")) {
+			swp = 8;
 		} else if (argv[ac][0] == '-') {
 			fprintf(stderr, "Unknown option \"%s\". Use -h or --help to get list of all the\n", argv[ac]);
 			fprintf(stderr, "available options.\n");
@@ -607,6 +630,8 @@ int main(int argc, char **argv) {
 
 		if (exit) Done(0);
 	}
+
+	timeout_denominator = common_denominator(login_timeout, command_timeout);
 
 	if (*HostPortStr && *HostPortStr != '0') HostPort = atoi(HostPortStr);
 
