@@ -59,7 +59,11 @@ int common_denominator(int a, int b) {
 
 void Done(int Err) {
 	switch (Err) {
-		case 1: printf("EWCMD ERROR 1 (SOCKET OR I/O ERROR)\n"); break;
+		case 1: printf("EWCMD ERROR 1 (SELECT OR I/O ERROR)\n"); break;
+		case 4: printf("EWCMD ERROR 4 (FAILED TO CREATE SOCKET)\n"); break;
+		case 5: printf("EWCMD ERROR 5 (FAILED TO RESOLVE ADDRESS)\n"); break;
+		case 6: printf("EWCMD ERROR 6 (CONNECTION FAILED)\n"); break;
+		case 9: printf("EWCMD ERROR 9 (FAILED TO CREATE CONNECTION WRAPPER)\n"); break;
 		case 101: printf("EWCMD ERROR 101 (LOGIN FAILED)\n"); break;
 		case 102: printf("EWCMD ERROR 102 (ATTACH FAILED)\n"); break;
 		case 103: printf("EWCMD ERROR 103 (LOGIN TIMEOUT)\n"); break;
@@ -361,34 +365,28 @@ void AttachConnection() {
 	int SockFd;
 
 	SockFd = socket(PF_INET, SOCK_STREAM, 0);
-	if (SockFd < 0) {
-		perror("socket()");
-		exit(6);
-	}
+	if (SockFd < 0) Done(4);
 
 	addr.sin_family = AF_INET;
 	{
 		struct hostent *host = gethostbyname(HostName);
 		if (!host) {
-			perror("gethostbyname()");
 			close(SockFd);
-			exit(6);
+			Done(5);
 		}
 		addr.sin_addr.s_addr = ((struct in_addr *)host->h_addr)->s_addr;
 	}
 	addr.sin_port = htons(HostPort);
 
 	if (connect(SockFd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-		perror("connect()");
 		close(SockFd);
-		exit(6);
+		Done(6);
 	}
 	connection = MkConnection(SockFd);
 
 	if (!connection) {
-		fprintf(stderr, "Unable to create connection!\n");
 		close(SockFd);
-		exit(9);
+		Done(9);
 	}
 
 	if (login) {
