@@ -868,6 +868,12 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 			IProtoSEND(c, 0x41, "I");
 
 			c->X25Prompt[idx] = 'I';
+		} else if (strlen(err)) {
+			// command error from EWSD, we need to send a confirmation
+			c->X25LastConnId[idx] = p->connid;
+			c->X25LastTail[idx] = p->tail;
+
+			c->X25Prompt[idx] = 'e';
 		} else {
 			c->X25Prompt[idx] = 0;
 		}
@@ -2116,7 +2122,8 @@ perror("CONN");
 
 					if (c->X25WriteBufLen == 0
 					&& c->X25Prompt[j] != 'X'
-					&& c->X25Prompt[j] != 'c') {
+					&& c->X25Prompt[j] != 'c'
+					&& c->X25Prompt[j] != 'e') {
 						continue;
 					}
 
@@ -2152,6 +2159,9 @@ perror("CONN");
 						char msg[256] = "";
 						sprintf(msg, ":::%s@%s COMPLETION \"%s\"\n", c->user, c->host, c->X25WriteBuf);
 						LogStr(MLog, msg, strlen(msg));
+					} else if (c->X25Prompt[j] == 'e') {
+						p = command_confirmation_packet(c->X25LastConnId[j], c->id, c->X25LastTail[j], NULL, 0);
+						c->X25Prompt[j] = 0;
 					} else if (c->X25Prompt[j] == 'U') {
 						strncpy(c->X25User, c->X25WriteBuf, c->X25WriteBufLen);
 						c->X25User[c->X25WriteBufLen] = 0;
