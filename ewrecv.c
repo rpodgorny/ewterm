@@ -1882,7 +1882,8 @@ int main(int argc, char *argv[]) {
 					for (k = 0; k < X25ConnCount; k++) {
 						if (Conns[j]->X25Connected[k]
 						&& (Conns[j]->X25Prompt[k] == 'X'
-						|| Conns[j]->X25Prompt[k] == 'c')) {
+						|| Conns[j]->X25Prompt[k] == 'c'
+						|| Conns[j]->X25Prompt[k] == 'e')) {
 							add = 1;
 						}
 					}
