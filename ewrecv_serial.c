@@ -40,8 +40,11 @@
 /* TODO: All nonblocking stuff buffered! TCP support! */
 
 
-struct connection *connection = NULL;
-struct connection *to_destroy = NULL; /* Delayed destruction */
+struct connection *Conns[128];
+int ConnCount;
+/*
+///struct connection *connection = NULL;
+struct connection *to_destroy = NULL; // Delayed destruction
 
 #define foreach_conn(but) \
 if (connection) { \
@@ -61,7 +64,7 @@ if (connection) { \
 #define	foreach_ipr_conn_end	} foreach_conn_end
 
 #define delete_from_list(c)	{ c->next->prev = c->prev; c->prev->next = c->next; }
-
+*/
 /* Some types */
 
 typedef unsigned char byte;
@@ -96,6 +99,9 @@ enum {
 	CM_PBUSY, /* exchange prompt output in progress */
 	CM_PROMPT, /* exchange prompt ready */
 } CommandMode = 0;
+
+/// TODO: get rid of this shit
+unsigned short LastId = 1;
 
 int WantPrompt = 0; /* get prompt when CMD_READY */
 char Prompt = 0; /* prompt type */
@@ -587,12 +593,8 @@ void LogCh(char Chr) {
 	}
 }
 
-int SendChar(struct connection *c, char Chr) {
-	pdebug("SendChar() %c/x%x\n", Chr, Chr);
-
-	if (LoggedIn && c && c != connection) return -1;
-
-	if (c && c->authenticated < 2) return -1;
+int SendChar(struct connection *conn, char Chr) {
+	if (conn && conn->authenticated < 2) return -1;
 
 	if (Chr > 32 || Chr == 10 || Chr == 8 || Chr == 13) LogChar(Chr);
 
@@ -602,12 +604,17 @@ int SendChar(struct connection *c, char Chr) {
   
 	pdebug("SendChar() %c/x%x \n", Chr, Chr);
 
-	pdebug("%p(%d)\n", c, c?c->IProtoState:-1);
-	if (c && c->IProtoState != IPR_DC4) {
-		foreach_conn (c) {
+	pdebug("%p(%d)\n", conn, conn?conn->IProtoState:-1);
+
+	if (conn && conn->IProtoState != IPR_DC4) {
+		int i = 0;
+		for (i = 0; i < ConnCount; i++) {
+			struct connection *c = Conns[i];
+
+			if (c == conn) continue;
 			if (!c->authenticated) continue;
 			Write(c, &Chr, 1);
-		} foreach_conn_end;
+		}
 	}
 
 	if (CuaFd < 0) return 1;
@@ -618,7 +625,7 @@ int SendChar(struct connection *c, char Chr) {
 	}
 
 	WriteBuf[WriteBufLen++] = Chr;
-printf("AAA %c %d %x\n", Chr, Chr, Chr);
+
 	return 1;
 }
 
@@ -631,10 +638,14 @@ void ProcessExchangeChar(char Chr) {
 
 	if (prompt && Chr != ENQ) {
 		prompt = 0;
-		foreach_ipr_conn (NULL) {
+		int i = 0;
+		for (i = 0; i < ConnCount; i++) {
+			struct connection *c = Conns[i];
+
+			if (c->IProtoState == IPR_HANDSHAKE) continue;
 			if (!c->authenticated) continue;
 			IProtoSEND(c, 0x40, NULL);
-		} foreach_ipr_conn_end;
+		}
 	}
 
 	if (Chr == ETX) {
@@ -643,10 +654,14 @@ void ProcessExchangeChar(char Chr) {
 			CommandMode = CM_PROMPT;
 
 			LastMask = 0;
-			foreach_ipr_conn (NULL) {
+			int i = 0;
+			for (i = 0; i < ConnCount; i++) {
+				struct connection *c = Conns[i];
+
+				if (c->IProtoState == IPR_HANDSHAKE) continue;
 				if (!c->authenticated) continue;
 				IProtoSEND(c, 0x46, "0");
-			} foreach_ipr_conn_end;
+			}
 
 			if (!Prompt) {
 				char *lastlinet = Lines[LastLine];
@@ -656,15 +671,21 @@ void ProcessExchangeChar(char Chr) {
 				if (linelent == 1 && lastlinet[linelent - 1] == '<') {
 					Prompt = '<';
 					if (!LoggedIn || LoggedIn == 1) {
-						foreach_ipr_conn (NULL) {
+						for (i = 0; i < ConnCount; i++) {
+							struct connection *c = Conns[i];
+
+							if (c->IProtoState == IPR_HANDSHAKE) continue;
 							if (!c->authenticated) continue;
 							IProtoSEND(c, 0x43, NULL);
-						} foreach_ipr_conn_end;
+						}
 						if (!LoggedIn) {
-							foreach_ipr_conn (connection) {
+							for (i = 0; i < ConnCount; i++) {
+								struct connection *c = Conns[i];
+
+								if (c->IProtoState == IPR_HANDSHAKE) continue;
 								if (!c->authenticated) continue;
 								IProtoSEND(c, 0x04, "RO");
-							} foreach_ipr_conn_end;
+							}
 						}
 						LoggedIn = 2;
 					}
@@ -689,11 +710,15 @@ void ProcessExchangeChar(char Chr) {
 				}
 				Prompt = 0;
 
-				foreach_ipr_conn (NULL) {
+				int i = 0;
+				for (i = 0; i < ConnCount; i++) {
+					struct connection *c = Conns[i];
+
+					if (c->IProtoState == IPR_HANDSHAKE) continue;
 					if (!c->authenticated) continue;
 					pdebug("%p->%s\n", c, s);
 					IProtoSEND(c, 0x41, s);
-				} foreach_ipr_conn_end;
+				}
 			}
 		} else {
 			CommandMode = CM_READY;
@@ -727,18 +752,26 @@ void ProcessExchangeChar(char Chr) {
 
 			/* Analyze this line */
 			if (!strncmp(lastlinet, "END JOB ", 8)) {
-				foreach_ipr_conn (NULL) {
+				int i = 0;
+				for (i = 0; i < ConnCount; i++) {
+					struct connection *c = Conns[i];
+
+					if (c->IProtoState == IPR_HANDSHAKE) continue;
 					if (!c->authenticated) continue;
 					IProtoSEND(c, 0x45, lastlinet + 8);
-				} foreach_ipr_conn_end;
+				}
 			} else if (!strncmp(lastlinet, "PLEASE ENTER USERID", 19)) {
 				Prompt = 'U';
 				if (!LoggedIn) {
 					LoggedIn = 1;
-					foreach_ipr_conn (connection) {
+					int i = 0;
+					for (i = 0; i < ConnCount; i++) {
+						struct connection *c = Conns[i];
+
+						if (c->IProtoState == IPR_HANDSHAKE) continue;
 						if (!c->authenticated) continue;
 						IProtoSEND(c, 0x04, "RO");
-					} foreach_ipr_conn_end;
+					}
 				}
 			} else if (!strncmp(lastlinet, "PLEASE ENTER CURRENT PASSWORD", 29)) {
 				Prompt = 'P';
@@ -750,10 +783,14 @@ void ProcessExchangeChar(char Chr) {
 				}
 			} else if (strstr(lastlinet, "MASKNO:")) {
 				char *m = strstr(lastlinet, "MASKNO:") + 7;
-				foreach_ipr_conn (NULL) {
+				int i = 0;
+				for (i = 0; i < ConnCount; i++) {
+					struct connection *c = Conns[i];
+
+					if (c->IProtoState == IPR_HANDSHAKE) continue;
 					if (!c->authenticated) continue;
 					IProtoSEND(c, 0x46, m);
-				} foreach_ipr_conn_end;
+				}
 				LastMask = atoi(m);
 			}
 			pdebug("P %c\n", Prompt);
@@ -787,21 +824,29 @@ void ProcessExchangeChar(char Chr) {
 					} else {
 						LastMask = 0;
 					}
-					foreach_ipr_conn (NULL) {
+					int i = 0;
+					for (i = 0; i < ConnCount; i++) {
+						struct connection *c = Conns[i];
+
 						char s[256];
 						sprintf(s, "%d", LastMask); pdebug("LM->%d\n", LastMask);
+						if (c->IProtoState == IPR_HANDSHAKE) continue;
 						if (!c->authenticated) continue;
 						IProtoSEND(c, 0x46, s);
-					} foreach_ipr_conn_end;
+					}
 				}
 				{
 					char s[256];
 					snprintf(s, 256, "%d,%s,%s,%s", ActJob, ActOMT, Usrname, ActExchange);
 					pdebug("%s <- ::%s::\n", s, lastlinet);
-					foreach_ipr_conn (NULL) {
+					int i = 0;
+					for (i = 0; i < ConnCount; i++) {
+						struct connection *c = Conns[i];
+
+						if (c->IProtoState == IPR_HANDSHAKE) continue;
 						if (!c->authenticated) continue;
 						IProtoSEND(c, 0x47, s);
-					} foreach_ipr_conn_end;
+					}
 				}
 			}
 
@@ -825,77 +870,118 @@ void ProcessExchangeChar(char Chr) {
 
 				if (LastMask == 12062) {
 					/* NOT AUTHORIZED TO OPEN A SESSION. */
-					foreach_ipr_conn (NULL) {
+					int i = 0;
+					for (i = 0; i < ConnCount; i++) {
+						struct connection *c = Conns[i];
+
+						if (c->IProtoState == IPR_HANDSHAKE) continue;
 						if (!c->authenticated) continue;
 						IProtoSEND(c, 0x42, NULL);
-					} foreach_ipr_conn_end;
+					}
 					LoggedIn = 0;
 				} else if (LastMask == 12060) {
 					/* LOCKED. */
-					foreach_ipr_conn (NULL) {
+					int i = 0;
+					for (i = 0; i < ConnCount; i++) {
+						struct connection *c = Conns[i];
+
+						if (c->IProtoState == IPR_HANDSHAKE) continue;
 						if (!c->authenticated) continue;
 						IProtoSEND(c, 0x42, NULL);
-					} foreach_ipr_conn_end;
+					}
 					LoggedIn = 0;
 				} else if (LastMask == 12048) {
 					/* SESSION REJECTED, NEW PASSWORD INVALID. */
-					foreach_ipr_conn (NULL) {
+					int i = 0;
+					for (i = 0; i < ConnCount; i++) {
+						struct connection *c = Conns[i];
+
+						if (c->IProtoState == IPR_HANDSHAKE) continue;
 						if (!c->authenticated) continue;
 						IProtoSEND(c, 0x42, NULL);
-					} foreach_ipr_conn_end;
+					}
 					LoggedIn = 0;
 				} else if (LastMask == 12055) {
 					/* CURRENT PASSWORD EXPIRED, PLEASE ENTER NEW PASSWORD. */
 					Prompt = 'p';
 				} else if (LastMask == 12059) {
 					/* SESSION REJECTED, USERID PATR   IN USE. */
-					foreach_ipr_conn (NULL) {
+					int i = 0;
+					for (i = 0; i < ConnCount; i++) {
+						struct connection *c = Conns[i];
+
+						if (c->IProtoState == IPR_HANDSHAKE) continue;
 						if (!c->authenticated) continue;
 						IProtoSEND(c, 0x42, NULL);
-					} foreach_ipr_conn_end;
+					}
 					LoggedIn = 0;
 				} else if (LastMask == 10115 || LastMask == 6904) {
 					/* INVALID PASSWORD */
-					foreach_ipr_conn (NULL) {
+					int i = 0;
+					for (i = 0; i < ConnCount; i++) {
+						struct connection *c = Conns[i];
+
+						if (c->IProtoState == IPR_HANDSHAKE) continue;
 						if (!c->authenticated) continue;
 						IProtoSEND(c, 0x42, NULL);
-					} foreach_ipr_conn_end;
+					}
 					LoggedIn = 0;
 				} else if (LastMask == 6299) {
 					/* SESSION FOR PATR   CANCELLED! */
-					foreach_ipr_conn (NULL) {
+					int i = 0;
+					for (i = 0; i < ConnCount; i++) {
+						struct connection *c = Conns[i];
+
+						if (c->IProtoState == IPR_HANDSHAKE) continue;
 						if (!c->authenticated) continue;
 						IProtoSEND(c, 0x44, NULL);
-					} foreach_ipr_conn_end;
+					}
 					LoggedIn = 0;
 				} else if (LastMask == 10119) {
 					/* SESSION CANCELLED BY TIMEOUT */
-					foreach_ipr_conn (NULL) {
+					int i = 0;
+					for (i = 0; i < ConnCount; i++) {
+						struct connection *c = Conns[i];
+
+						if (c->IProtoState == IPR_HANDSHAKE) continue;
 						if (!c->authenticated) continue;
 						IProtoSEND(c, 0x44, NULL);
-					} foreach_ipr_conn_end;
+					}
 					LoggedIn = 0;
 				} else if (LastMask == 10397) {
 					/* SESSION CANCELLED FROM TERMINAL */
-					foreach_ipr_conn (NULL) {
+					int i = 0;
+					for (i = 0; i < ConnCount; i++) {
+						struct connection *c = Conns[i];
+
+						if (c->IProtoState == IPR_HANDSHAKE) continue;
 						if (!c->authenticated) continue;
 						IProtoSEND(c, 0x44, NULL);
-					} foreach_ipr_conn_end;
+					}
 					LoggedIn = 0;
 				} else if (LastMask == 7 && !strncmp(lastlinet, "ENDSESSION;", 11)) {
 					/* Logout - hope it will work properly.. */
-					foreach_ipr_conn (NULL) {
+					int i = 0;
+					for (i = 0; i < ConnCount; i++) {
+						struct connection *c = Conns[i];
+
+						if (c->IProtoState == IPR_HANDSHAKE) continue;
 						if (!c->authenticated) continue;
 						IProtoSEND(c, 0x44, NULL);
-					} foreach_ipr_conn_end;
+					}
 					LoggedIn = 0;
 				}
 
 				if (!LoggedIn && LI) {
-					foreach_ipr_conn (connection) {
+					///foreach_ipr_conn (connection) {
+					int i = 0;
+					for (i = 0; i < ConnCount; i++) {
+						struct connection *c = Conns[i];
+
+						if (c->IProtoState == IPR_HANDSHAKE) continue;
 						if (c->authenticated < 2) continue;
 						IProtoSEND(c, 0x04, "RW");
-					} foreach_ipr_conn_end;
+					}
 				}
 			}
 		}
@@ -909,18 +995,22 @@ void ProcessExchangeChar(char Chr) {
 void AnnounceUser(struct connection *conn, int opcode);
 
 void DestroyConnection(struct connection *conn) {
+	printf("Destroying connection %d\n", conn->id);
+
 	AnnounceUser(conn, 0x06);
 
-	close(conn->Fd);
-	if (conn == connection) {
-		if (conn->next != conn) {
-			connection = conn->next;
-			if (LoggedIn && !(connection->authenticated < 2)) IProtoSEND(connection, 0x04, "RW");
-		} else {
-			connection = NULL;
-		}
+	if (conn->Fd != -1) close(conn->Fd);
+	
+	// find the index and move the connection from end there
+	int i = 0;
+	for (i = 0; i < ConnCount; i++) {
+		if (Conns[i] == conn) break;
 	}
-	delete_from_list(conn);
+
+	if (i < ConnCount-1) Conns[i] = Conns[ConnCount-1];
+
+	ConnCount--;
+
 	FreeConnection(conn);
 
 	/* Force rebuild of the fd tables. */
@@ -937,11 +1027,10 @@ void ErrorConnection(struct connection *conn) {
 	DestroyConnection(conn);
 }
 
-
 void SetMaster(struct connection *conn) {
 	if (conn->authenticated < 2) return;
-
-	/* *COUGH* ;-) --pasky */
+/* TODO: disabled for now - enable in the future!
+	// *COUGH* ;-) --pasky
 	connection = conn;
 
 	foreach_ipr_conn (connection) {
@@ -950,6 +1039,7 @@ void SetMaster(struct connection *conn) {
 	} foreach_ipr_conn_end;
 
 	if (LoggedIn) IProtoSEND(connection, 0x04, "RW");
+*/
 }
 
 char *ComposeUser(struct connection *conn, int self) {
@@ -960,10 +1050,16 @@ char *ComposeUser(struct connection *conn, int self) {
 
 void AnnounceUser(struct connection *conn, int opcode) {
 	char *s = ComposeUser(conn, 0);
-	foreach_ipr_conn (conn) {
+
+	int i = 0;
+	for (i = 0; i < ConnCount; i++) {
+		struct connection *c = Conns[i];
+
+		if (c != conn) continue;
+		if (c->IProtoState == IPR_HANDSHAKE) continue;
 		if (!c->authenticated) continue;
 		IProtoSEND(c, opcode, s);
-	} foreach_ipr_conn_end;
+	}
 }
 
 void AuthFailed(struct connection *conn) {
@@ -973,18 +1069,22 @@ void AuthFailed(struct connection *conn) {
 	strcat(msg, conn->host);
 	strcat(msg, "!\n");
 
-	foreach_ipr_conn (conn) {
+	int i = 0;
+	for (i = 0; i < ConnCount; i++) {
+		struct connection *c = Conns[i];
+
+		if (c != conn) continue;
+		if (c->IProtoState == IPR_HANDSHAKE) continue;
 		IProtoSEND(c, 0x3, msg);
-	} foreach_ipr_conn_end;
+	}
 
 	log_msg("--- ewrecv: unauthorized connection by client %d\n\n", conn->id);
 
 	IProtoSEND(conn, 0x8, NULL);
 	IProtoSEND(conn, 0x6, ComposeUser(conn, 1));
 
-	/* Otherwise, FreeConnection() fails as ie. IProtoUser is at different
-	* position than suitable when handlers are called. */
-	to_destroy = conn;
+	// Otherwise, FreeConnection() fails as ie. IProtoUser is at different position than suitable when handlers are called.
+///	to_destroy = conn;
 	Reselect = 1;
 }
 
@@ -1012,8 +1112,13 @@ void GotPrivMsg(struct connection *conn, char *tg, int id, char *host, char *msg
 
 	snprintf(s, 1024, "%s@%s:%d=%s", conn->user?conn->user:"", conn->host, conn->id, msg);
 
-	foreach_ipr_conn (NULL) {
+	int i = 0;
+	for (i = 0; i < ConnCount; i++) {
+		struct connection *c = Conns[i];
+
+		if (c->IProtoState == IPR_HANDSHAKE) continue;
 		if (!c->authenticated) continue;
+
 		if (id >= 0) {
 			if (id == c->id) {
 				IProtoSEND(c, 0x03, s);
@@ -1032,19 +1137,23 @@ void GotPrivMsg(struct connection *conn, char *tg, int id, char *host, char *msg
 		} else {
 			IProtoSEND(c, 0x03, s);
 		}
-	} foreach_ipr_conn_end;
+	}
 }
 
 
 void TakeOverRequest(struct connection *conn, char *d) {
 	if (conn && conn->authenticated < 2) return;
+/* TODO: disabled for now - enable in the future!
 	if (conn != connection) SetMaster(conn);
+*/
 }
 
 void CancelPromptRequest(struct connection *conn, char *d) {
 	pdebug("CancelPromptRequest()\n");
 
+/* TODO: only master can do that, implement in the future!
 	if (conn != connection) return;
+*/
 	if (conn && conn->authenticated < 2) return;
   	if (CommandMode == CM_PROMPT) {
 		Prompt = 0;
@@ -1068,7 +1177,10 @@ void LoginPromptRequest(struct connection *conn, char *exch, char *d) {
 }
 
 void PromptRequest(struct connection *conn, char *d) {
-	if (conn != connection || (conn && conn->authenticated < 2)) return;
+/* TODO: only master can do this, implement in the future!
+	if (conn != connection) return;
+*/
+	if (conn && conn->authenticated < 2) return;
 	if (CommandMode == CM_READY) {
 		SendChar(NULL, ACK);
 	} else //if (CommandMode != CM_PROMPT && CommandMode != CM_PBUSY) /* This may make some problems, maybe? There may be a situation when we'll want next prompt before processing the first one, possibly. Let's see. --pasky */
@@ -1102,14 +1214,19 @@ void SendBurst(struct connection *conn, char *lines, char *d) {
 void SendIntro(struct connection *conn) {
 	WriteChar(conn, SO); /* start burst */
 
-	foreach_conn (conn) {
+	int i = 0;
+	for (i = 0; i < ConnCount; i++) {
+		struct connection *c = Conns[i];
+
+		if (c == conn) continue;
 		if (!c->authenticated) continue;
 		IProtoSEND(conn, 0x05, ComposeUser(c, 0));
-	} foreach_conn_end;
+	}
 
 	if (LoggedIn == 2) IProtoSEND(conn, 0x43, NULL);
 
-	if ((conn != connection && LoggedIn) || conn->authenticated < 2) {
+/* TODO: implement the master check below somehow */
+	if (/*(conn != connection && LoggedIn) ||*/ conn->authenticated < 2) {
 		IProtoSEND(conn, 0x04, "RO");
 	} else {
 		IProtoSEND(conn, 0x04, "RW");
@@ -1145,10 +1262,65 @@ void ExchangeListRequest(struct connection *c, char *d) {
 	IProtoSEND(c, 0x50, NULL);
 }
 
+// TODO: do something useful or get rid of this shit
 void CancelJobRequest(struct connection *c, char *d) {
 	log_msg("CancelJobRequest()\n");
 
 	if (!c->authenticated) return;
+}
+
+void DetachRequest(struct connection *c, char *d) {
+	log_msg("DetachJobRequest()\n");
+
+	close(c->Fd);
+	c->Fd = -1;
+}
+
+void AttachRequest(struct connection *c, int id, char *d) {
+	log_msg("AttachJobRequest()\n");
+
+	// find the connection with given id
+	int i = 0;
+	for (i = 0; i < ConnCount; i++) {
+		if (Conns[i]->id == id) break;
+	}
+
+	if (i == ConnCount) {
+		// not found
+		char msg[256] = "";
+		sprintf(msg, ":::CONNECTION WITH ID %d NOT FOUND!!!\n", id);
+		Write(c, msg, strlen(msg));
+		IProtoSEND(c, 0x52, "0");
+		return;
+	}
+
+	if (Conns[i]->Fd != -1) {
+		// someone's already attached
+		char msg[256] = "";
+		sprintf(msg, ":::CONNECTION WITH ID %d NOT DETACHED!!!\n", id);
+		Write(c, msg, strlen(msg));
+		IProtoSEND(c, 0x52, "0");
+		return;
+	}
+
+	Conns[i]->Fd = c->Fd;
+	c->Fd = -1;
+
+	Conns[i]->IProtoState = c->IProtoState;
+
+	c->destroy = 1; // we can't destroy a connection in handles so we just flag it and destroy elsewhere
+
+	IProtoSEND(Conns[i], 0x52, "1");
+
+	Reselect = 1;
+}
+
+void ConnectionIdRequest(struct connection *c, char *d) {
+	log_msg("ConnectionIdRequest()\n");
+
+	char tmp[20] = "";
+	sprintf(tmp, "%d", c->id);
+	IProtoSEND(c, 0x51, tmp);
 }
 
 struct connection *TryAccept(int Fd) {
@@ -1200,6 +1372,10 @@ struct connection *TryAccept(int Fd) {
 			/* 6.1 */
 			NULL,
 
+			// 6.2
+			NULL,
+			NULL,
+
 			/* 2.1a */
 			NULL,
 			NULL,
@@ -1224,6 +1400,11 @@ struct connection *TryAccept(int Fd) {
 			/* 6.1 */
 			ExchangeListRequest,
 			CancelJobRequest,
+			
+			// 6.2
+			DetachRequest,
+			AttachRequest,
+			ConnectionIdRequest,
 
 			/* 0.5pre3 */
 			SendIntro /* AuthSuccess */,
@@ -1243,11 +1424,11 @@ struct connection *TryAccept(int Fd) {
 			conn->host = strdup(n);
 			endhostent();
 		}
-
+/*
 		if (connection) {
 			{
-				/* less memory, more time.. but it should still be fast enough as we don't expect more than 3-5 users per ewrecv.. */
-				int lowest_spot = 0; /* lowest free place for us */
+				// less memory, more time.. but it should still be fast enough as we don't expect more than 3-5 users per ewrecv..
+				int lowest_spot = 0; // lowest free place for us
 				for (;;) {
 					int b = 1;
 					foreach_conn (NULL) {
@@ -1270,6 +1451,10 @@ struct connection *TryAccept(int Fd) {
 			connection->prev = conn;
 			conn->id = 0;
 		}
+*/
+
+		Conns[ConnCount] = conn;
+		ConnCount++;
 	}
 
 	WriteChar(conn, DC1);
@@ -1289,6 +1474,11 @@ struct connection *TryAccept(int Fd) {
 		conn->authenticated = 2;
 		/* SendBurst(conn); */ /* Clients request it now. */
 	}
+
+	conn->id = LastId++;
+
+	// just in case of overflow (zero is fobidden)
+	if (LastId == 0) LastId++;
 
 	return conn;
 }
@@ -1625,6 +1815,15 @@ int main(int argc, char *argv[]) {
 
 	/* select forever */
 	for (;;) {
+		// destroy connections flagged to be destroyed
+		int i = 0;
+		for (i = 0; i < ConnCount; i++) {
+			if (Conns[i]->destroy) {
+				DestroyConnection(Conns[i]);
+				i = 0; // restart the loop because the array has changed
+			}
+		}
+
 		int MaxFd;
 		fd_set ReadQ;
 		fd_set WriteQ;
@@ -1633,22 +1832,28 @@ int main(int argc, char *argv[]) {
 		/* prepare for select */
 		Reselect = 0;
 
+/* TODO - done above?
 		if (to_destroy && !to_destroy->WriteBufferLen) {
 			DestroyConnection(to_destroy);
 			to_destroy = NULL;
 		}
-
+*/
 		MaxFd = 0;
 
 		FD_ZERO(&ReadQ);
 		FD_ZERO(&WriteQ);
 
-		foreach_conn (NULL) { /* talking with terminal */
+		// terminals
+		for (i = 0; i < ConnCount; i++) {
+			struct connection *c = Conns[i];
+
+			if (c->Fd == -1) continue;
+
 			FD_SET(c->Fd, &ReadQ);
 			if (c->Fd > MaxFd) MaxFd = c->Fd;
 			if (c->WriteBuffer) FD_SET(c->Fd, &WriteQ);
 			FD_SET(c->Fd, &ErrorQ);
-		} foreach_conn_end;
+		}
 
 		if (SockFd >= 0) { /* listening on socket */
 			FD_SET(SockFd, &ReadQ);
@@ -1668,7 +1873,11 @@ int main(int argc, char *argv[]) {
 			Done(4);
 		} else {
 			/* something from terminal */
-			foreach_conn (NULL) {
+			int i = 0;
+			for (i = 0; i < ConnCount; i++) {
+				struct connection *c = Conns[i];
+
+				if (c->Fd == -1) continue;
 				if (!FD_ISSET(c->Fd, &ReadQ)) continue;
 
 				errno = 0;
@@ -1679,30 +1888,35 @@ int main(int argc, char *argv[]) {
 
 					while (Read(c, &Chr, 1)) {
 						TestIProtoChar(c, Chr);
-printf("BBB %c %d %x\n", Chr, Chr, Chr);
 					}
 				}
 
 				if (Reselect) goto reselect;
-			} foreach_conn_end;
+			}
 
 			/* something to terminal */
-			foreach_conn (NULL) {
+			for (i = 0; i < ConnCount; i++) {
+				struct connection *c = Conns[i];
+
+				if (c->Fd == -1) continue;
 				if (!FD_ISSET(c->Fd, &WriteQ)) continue;
 
 				errno = 0; /* XXX: Is write() returning 0 an error? */
 				if (DoWrite(c) < 0 && errno != EINTR) ErrorConnection(c);
 
 				if (Reselect) goto reselect;
-			} foreach_conn_end;
+			}
 
 			/* terminal error */
-			foreach_conn (NULL) {
+			for (i = 0; i < ConnCount; i++) {
+				struct connection *c = Conns[i];
+
+				if (c->Fd == -1) continue;
 				if (!FD_ISSET(c->Fd, &ErrorQ)) continue;
 
 				ErrorConnection(c);
 				goto reselect;
-			} foreach_conn_end;
+			}
 
 			/* new connection from terminal */
 			if (SockFd >= 0 && FD_ISSET(SockFd, &ReadQ)) {
@@ -1738,10 +1952,12 @@ printf("BBB %c %d %x\n", Chr, Chr, Chr);
 
 					ProcessExchangeChar(Chr);
 
-					foreach_conn (NULL) {
+					for (i = 0; i < ConnCount; i++) {
+						struct connection *c = Conns[i];
+
 						if (!c->authenticated) continue;
 						Write(c, &Chr, 1);
-					} foreach_conn_end;
+					}
 				}
 			}
 
