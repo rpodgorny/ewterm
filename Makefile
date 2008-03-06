@@ -117,7 +117,7 @@ lex.yy.c: scanforms.l
 
 
 clean:
-	$(RM) *.o ewalarm ewterm ewrecv mkforms forms *~ lex.yy.c parseforms.tab.*
+	$(RM) *.o ewalarm ewterm ewrecv ewrecv_serial mkforms forms *~ lex.yy.c parseforms.tab.*
 
 
 install: all
