@@ -1158,6 +1158,7 @@ void AlarmsOffRequest(struct connection *conn, char *d) {
 	IProtoSEND(conn, 0x49, NULL);
 }
 
+/// TODO: get rid of this shit
 void TakeOverRequest(struct connection *conn, char *d) {
 	if (conn && conn->authenticated < 2) return;
 }
