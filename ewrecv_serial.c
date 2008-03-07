@@ -42,6 +42,7 @@
 
 struct connection *Conns[128];
 int ConnCount;
+int master_id;
 /*
 ///struct connection *connection = NULL;
 struct connection *to_destroy = NULL; // Delayed destruction
@@ -1029,17 +1030,19 @@ void ErrorConnection(struct connection *conn) {
 
 void SetMaster(struct connection *conn) {
 	if (conn->authenticated < 2) return;
-/* TODO: disabled for now - enable in the future!
-	// *COUGH* ;-) --pasky
-	connection = conn;
 
-	foreach_ipr_conn (connection) {
+	master_id = conn->id;
+
+	int i = 0;
+	for (i = 0; i < ConnCount; i++) {
+		struct connection *c = Conns[i];
+
+		if (c == conn) continue;
 		if (!c->authenticated) continue;
 		IProtoSEND(c, 0x04, "RO");
-	} foreach_ipr_conn_end;
+	}
 
-	if (LoggedIn) IProtoSEND(connection, 0x04, "RW");
-*/
+	if (LoggedIn) IProtoSEND(conn, 0x04, "RW");
 }
 
 char *ComposeUser(struct connection *conn, int self) {
@@ -1055,7 +1058,7 @@ void AnnounceUser(struct connection *conn, int opcode) {
 	for (i = 0; i < ConnCount; i++) {
 		struct connection *c = Conns[i];
 
-		if (c != conn) continue;
+		if (c == conn) continue;
 		if (c->IProtoState == IPR_HANDSHAKE) continue;
 		if (!c->authenticated) continue;
 		IProtoSEND(c, opcode, s);
@@ -1073,7 +1076,7 @@ void AuthFailed(struct connection *conn) {
 	for (i = 0; i < ConnCount; i++) {
 		struct connection *c = Conns[i];
 
-		if (c != conn) continue;
+		if (c == conn) continue;
 		if (c->IProtoState == IPR_HANDSHAKE) continue;
 		IProtoSEND(c, 0x3, msg);
 	}
@@ -1143,17 +1146,14 @@ void GotPrivMsg(struct connection *conn, char *tg, int id, char *host, char *msg
 
 void TakeOverRequest(struct connection *conn, char *d) {
 	if (conn && conn->authenticated < 2) return;
-/* TODO: disabled for now - enable in the future!
-	if (conn != connection) SetMaster(conn);
-*/
+
+	if (conn->id != master_id) SetMaster(conn);
 }
 
 void CancelPromptRequest(struct connection *conn, char *d) {
 	pdebug("CancelPromptRequest()\n");
 
-/* TODO: only master can do that, implement in the future!
-	if (conn != connection) return;
-*/
+	if (conn->id != master_id) return;
 	if (conn && conn->authenticated < 2) return;
   	if (CommandMode == CM_PROMPT) {
 		Prompt = 0;
@@ -1177,9 +1177,7 @@ void LoginPromptRequest(struct connection *conn, char *exch, char *d) {
 }
 
 void PromptRequest(struct connection *conn, char *d) {
-/* TODO: only master can do this, implement in the future!
-	if (conn != connection) return;
-*/
+	if (conn->id != master_id) return;
 	if (conn && conn->authenticated < 2) return;
 	if (CommandMode == CM_READY) {
 		SendChar(NULL, ACK);
@@ -1225,8 +1223,7 @@ void SendIntro(struct connection *conn) {
 
 	if (LoggedIn == 2) IProtoSEND(conn, 0x43, NULL);
 
-/* TODO: implement the master check below somehow */
-	if (/*(conn != connection && LoggedIn) ||*/ conn->authenticated < 2) {
+	if ((conn->id != master_id && LoggedIn) || conn->authenticated < 2) {
 		IProtoSEND(conn, 0x04, "RO");
 	} else {
 		IProtoSEND(conn, 0x04, "RW");
