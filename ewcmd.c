@@ -17,6 +17,8 @@
 #include "ascii.h"
 
 
+#define COMMANDS_MAXLEN 102400
+
 struct connection *connection = NULL;
 
 int MainLoop = 0;
@@ -34,7 +36,7 @@ int read_from_stdin = 1;
 int verbose = 0;
 int detaching = 0; // are we in the phase of detaching (expecting server to drop connection)?
 
-char Commands[1024] = "";
+char Commands[COMMANDS_MAXLEN+1] = "";
 
 int logged_in = 0;
 
@@ -420,7 +422,11 @@ void MainProc() {
 		FD_ZERO(&WriteQ);
 
 		// stdin
-		if (read_from_stdin && !want_quit) FD_SET(0, &ReadQ);
+		if (read_from_stdin
+		&& !want_quit
+		&& strlen(Commands) < COMMANDS_MAXLEN) {
+			FD_SET(0, &ReadQ);
+		}
 
 		if (connection) {
 			FD_SET(connection->Fd, &ReadQ);
@@ -443,9 +449,15 @@ void MainProc() {
 			// timeout
 		} else {
 			// stdin
-			if (read_from_stdin && FD_ISSET(0, &ReadQ)) {
-				char buf[256] = "";
-				int r = read(0, buf, 256);
+			if (read_from_stdin
+			&& strlen(Commands) < COMMANDS_MAXLEN
+			&& FD_ISSET(0, &ReadQ)) {
+				char buf[256+1] = "";
+
+				int to_read = COMMANDS_MAXLEN - strlen(Commands);
+				if (to_read > 256) to_read = 256;
+
+				int r = read(0, buf, to_read);
 				buf[r] = 0;
 
 				if (r == 0) {
