@@ -1832,6 +1832,7 @@ int main(int argc, char *argv[]) {
 
 		FD_ZERO(&ReadQ);
 		FD_ZERO(&WriteQ);
+		FD_ZERO(&ErrorQ);
 
 		// terminals
 		for (i = 0; i < ConnCount; i++) {
