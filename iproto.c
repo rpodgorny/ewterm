@@ -50,6 +50,7 @@ struct connection *MakeConnection(int Fd, struct conn_handlers *handlers) {
 }
 
 void FreeConnection(struct connection *conn) {
+	if (conn->host) free(conn->host);
 	if (conn->user) free(conn->user);
 	if (conn->authstr) free(conn->authstr);
 	if (conn->IProtoPacket) free(conn->IProtoPacket);
