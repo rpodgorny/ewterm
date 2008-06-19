@@ -720,37 +720,43 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 
 	b = block_getchild(p->data, "3-3");
 	if (b && b->data) {
-		strncpy(unkx3_3, (char *)b->data, b->len);
+		memcpy(unkx3_3, (char *)b->data, b->len);
+		unkx3_3[b->len] = 0;
 		FilterCR(unkx3_3);
 	}
 
 	b = block_getchild(p->data, "4-1");
 	if (b && b->data) {
-		strncpy(exch, (char *)b->data, b->len);
+		memcpy(exch, (char *)b->data, b->len);
+		exch[b->len] = 0;
 		FilterCR(exch);
 	}
 
 	b = block_getchild(p->data, "4-2");
 	if (b && b->data) {
-		strncpy(apsver, (char *)b->data, b->len);
+		memcpy(apsver, (char *)b->data, b->len);
+		apsver[b->len] = 0;
 		FilterCR(apsver);
 	}
 
 	b = block_getchild(p->data, "4-3");
 	if (b && b->data) {
-		strncpy(patchver, (char *)b->data, b->len);
+		memcpy(patchver, (char *)b->data, b->len);
+		patchver[b->len] = 0;
 		FilterCR(patchver);
 	}
 
 	b = block_getchild(p->data, "4-4");
 	if (b && b->data) {
-		strncpy(omt, (char *)b->data, b->len);
+		memcpy(omt, (char *)b->data, b->len);
+		omt[b->len] = 0;
 		FilterCR(omt);
 	}
 
 	b = block_getchild(p->data, "4-5");
 	if (b && b->data) {
-		strncpy(user, (char *)b->data, b->len);
+		memcpy(user, (char *)b->data, b->len);
+		user[b->len] = 0;
 		FilterCR(user);
 	}
 
@@ -766,7 +772,8 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 
 	b = block_getchild(p->data, "4-8");
 	if (b && b->data) {
-		strncpy(hint, (char *)b->data, b->len);
+		memcpy(hint, (char *)b->data, b->len);
+		hint[b->len] = 0;
 		FilterCR(hint);
 	}
 
@@ -778,13 +785,15 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 
 	b = block_getchild(p->data, "5-2");
 	if (b && b->data) {
-		strncpy(err, (char *)b->data, b->len);
+		memcpy(err, (char *)b->data, b->len);
+		err[b->len] = 0;
 		FilterCR(err);
 	}
 
 	b = block_getchild(p->data, "5-3");
 	if (b && b->data) {
-		strncpy(prompt, (char *)b->data, b->len);
+		memcpy(prompt, (char *)b->data, b->len);
+		prompt[b->len] = 0;
 		FilterCR(prompt);
 	}
 
@@ -795,7 +804,8 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 
 	b = block_getchild(p->data, "7");
 	if (b && b->data) {
-		strncpy(answer, (char *)b->data, b->len);
+		memcpy(answer, (char *)b->data, b->len);
+		answer[b->len] = 0;
 		FilterCR(answer);
 	}
 
@@ -2166,14 +2176,14 @@ perror("CONN");
 						p = command_confirmation_packet(c->X25LastConnId[j], c->id, c->X25LastTail[j], NULL, 0);
 						c->X25Prompt[j] = 0;
 					} else if (c->X25Prompt[j] == 'U') {
-						strncpy(c->X25User, c->X25WriteBuf, c->X25WriteBufLen);
+						memcpy(c->X25User, c->X25WriteBuf, c->X25WriteBufLen);
 						c->X25User[c->X25WriteBufLen] = 0;
 
 						c->X25Prompt[j] = 'P';
 
 						ask_for_password = 1;
 					} else if (c->X25Prompt[j] == 'P') {
-						strncpy(c->X25Passwd, c->X25WriteBuf, c->X25WriteBufLen);
+						memcpy(c->X25Passwd, c->X25WriteBuf, c->X25WriteBufLen);
 						c->X25Passwd[c->X25WriteBufLen] = 0;
 
 						// Username and password are messed with newlines, fix it
@@ -2189,7 +2199,7 @@ perror("CONN");
 						sprintf(msg, "\n\n:::%s@%s TRIED TO LOG IN TO %s AS %s\n", c->user, c->host, X25Conns[j].name, c->X25User);
 						LogStr(MLog, msg, strlen(msg));
 					} else if (c->X25Prompt[j] == 'N') {
-						strncpy(c->X25NewPasswd, c->X25WriteBuf, c->X25WriteBufLen);
+						memcpy(c->X25NewPasswd, c->X25WriteBuf, c->X25WriteBufLen);
 						c->X25NewPasswd[c->X25WriteBufLen] = 0;
 
 						// Username and password are messed with newlines, fix it
