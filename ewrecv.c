@@ -492,7 +492,8 @@ void ReOpenX25() {
 		/* Make lock name */
 		// TODO: sanitize this
 		char *FirstPtr = rindex(X25Local, '/');
-		sprintf(LockName, "%s/LCK..%s", LOCKDIR, FirstPtr);
+		snprintf(LockName, 100, "%s/LCK..%s", LOCKDIR, FirstPtr);
+		LockName[99] = '\0';
 
 		TryLock(LockName);
 
@@ -651,7 +652,7 @@ int SendChar(struct connection *c, char Chr) {
 
 int LastMask = 0;
 // TODO: move this to somewhere else
-void GenHeader(char *exch, char *apsver, char *patchver, char *date, char *time, unsigned short jobnr, char *omt, char *user, unsigned short msggrp, unsigned short mask, char *hint, char *out) {
+void GenHeader(char *exch, char *apsver, char *patchver, char *date, char *time, unsigned short jobnr, char *omt, char *user, unsigned short msggrp, unsigned short mask, char *hint, char *out, int len) {
 	// TODO: better condition
 	if (strlen(exch) == 0) {
 		out[0] = 0;
@@ -659,12 +660,17 @@ void GenHeader(char *exch, char *apsver, char *patchver, char *date, char *time,
 	}
 
 	char omtuser[32] = "";
-	if (strlen(omt) && strlen(user)) sprintf(omtuser, "%s/%s", omt, user);
+	if (strlen(omt) && strlen(user)) {
+		snprintf(omtuser, 32, "%s/%s", omt, user);
+		omtuser[31] = '\0';
+	}
 
 	char left_part[100] = "";
 
-	sprintf(left_part, "%s/%s/%s", exch, apsver, patchver);
-	sprintf(out, "%-53s %8s  %8s\n%04d %14s                %04d/%05d %26s\n\n", left_part, date, time, jobnr, omtuser, msggrp, mask, hint);
+	snprintf(left_part, 100, "%s/%s/%s", exch, apsver, patchver);
+	left_part[99] = '\0';
+	snprintf(out, len, "%-53s %8s  %8s\n%04d %14s                %04d/%05d %26s\n\n", left_part, date, time, jobnr, omtuser, msggrp, mask, hint);
+	out[len-1] = '\0';
 }
 
 // a helper function to get rid of excess carriage-returns
@@ -762,12 +768,14 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 
 	b = block_getchild(p->data, "4-6");
 	if (b && b->data) {
-		sprintf(sdate, "%02d-%02d-%02d", *b->data, *(b->data+1), *(b->data+2));
+		snprintf(sdate, 256, "%02d-%02d-%02d", *b->data, *(b->data+1), *(b->data+2));
+		sdate[255] = '\0';
 	}
 
 	b = block_getchild(p->data, "4-7");
 	if (b && b->data) {
-		sprintf(stime, "%02d:%02d:%02d", *b->data, *(b->data+1), *(b->data+2));
+		snprintf(stime, 256, "%02d:%02d:%02d", *b->data, *(b->data+1), *(b->data+2));
+		stime[255] = '\0';
 	}
 
 	b = block_getchild(p->data, "4-8");
@@ -817,13 +825,14 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 	// TODO: the 100 is just a try, I don't know how to distinguish real sequence numbers from other junk
 	if (seq > 1 && seq < 100) {
 		char tmp[128] = "";
-		sprintf(tmp, "CONTINUATION TEXT %04d\n\n", seq-1);
+		snprintf(tmp, 128, "CONTINUATION TEXT %04d\n\n", seq-1);
+		tmp[127] = '\0';
 		if (c) Write(c, tmp, strlen(tmp));
 		LogStr(log, tmp, strlen(tmp));
 	}
 
 	char header[256] = "";
-	GenHeader(exch, apsver, patchver, sdate, stime, jobnr, omt, user, msggrp, mask, hint, header);
+	GenHeader(exch, apsver, patchver, sdate, stime, jobnr, omt, user, msggrp, mask, hint, header, 256);
 
 	if (strlen(header)) {
 		if (c) Write(c, header, strlen(header));
@@ -833,14 +842,16 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 	// TODO: better condition
 	if (c && jobnr) {
 		char header[200] = "";
-		sprintf(header, "%d,%s,%s,%s", jobnr, omt, user, exch);
+		snprintf(header, 200, "%d,%s,%s,%s", jobnr, omt, user, exch);
+		header[199] = '\0';
 		IProtoSEND(c, 0x47, header);
 	}
 
 	// TODO: better condition
 	if (c && mask) {
 		char mask_s[20] = "";
-		sprintf(mask_s, "%d", mask);
+		snprintf(mask_s, 20, "%d", mask);
+		mask_s[19] = '\0';
 		IProtoSEND(c, 0x46, mask_s);
 	}
 
@@ -890,7 +901,8 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 	} else if (p->dir == 3 && p->pltype == 1) {
 		// "Command accepted" confirmation
 		char tmp[256];
-		sprintf(tmp, ":::%s CONFIRMED JOB %d\n\n", X25Conns[idx].name, jobnr);
+		snprintf(tmp, 256, ":::%s CONFIRMED JOB %d\n\n", X25Conns[idx].name, jobnr);
+		tmp[255] = '\0';
 
 		if (c) {
 			// save the job number for possible cancellation
@@ -903,7 +915,8 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 	} else if (c && p->dir == 0x0c && p->pltype == 1) {
 		if (strlen(unkx3_3)) {
 			char msg[256] = "";
-			sprintf(msg, "\n\n:::LOGIN SUCCESS FOR USER %s ON %s AT %s\n\n", c->X25User, X25Conns[idx].name, ctime(&tv));
+			snprintf(msg, 256, "\n\n:::LOGIN SUCCESS FOR USER %s ON %s AT %s\n\n", c->X25User, X25Conns[idx].name, ctime(&tv));
+			msg[255] = '\0';
 
 			if (c) {
 				c->X25LoggedIn[idx] = 1;
@@ -942,7 +955,8 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 		} else if (seq == 0x0304) {
 			// PASSWORD EXPIRED
 			char msg[256] = "";
-			sprintf(msg, "\n\n:::(%s) PLEASE ENTER NEW PASSWORD\n\n", X25Conns[idx].name);
+			snprintf(msg, 256, "\n\n:::(%s) PLEASE ENTER NEW PASSWORD\n\n", X25Conns[idx].name);
+			msg[255] = '\0';
 
 			if (c) {
 				IProtoSEND(c, 0x40, NULL);
@@ -956,7 +970,8 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 		} else if (seq == 0x0307) {
 			// SESSION IN USE
 			char msg[256] = "";
-			sprintf(msg, "\n\n:::SESSION ON %s IN USE, FORCE LOGIN? (+/-)\n\n", X25Conns[idx].name);
+			snprintf(msg, 256, "\n\n:::SESSION ON %s IN USE, FORCE LOGIN? (+/-)\n\n", X25Conns[idx].name);
+			msg[255] = '\0';
 
 			if (c) {
 				IProtoSEND(c, 0x40, NULL);
@@ -984,13 +999,15 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 	}
 
 	char jobnr_s[10] = "";
-	sprintf(jobnr_s, "%04d", jobnr);
+	snprintf(jobnr_s, 10, "%04d", jobnr);
+	jobnr_s[9] = '\0';
 
 	// TODO: are these all cases?
 	if (unkx5_4 == 2
 	|| unkx5__0 == 2) {
 		char tmp[256] = "";
-		sprintf(tmp, "\nEND JOB %04d\n\n", jobnr);
+		snprintf(tmp, 256, "\nEND JOB %04d\n\n", jobnr);
+		tmp[255] = '\0';
 
 		if (c) {
 			Write(c, tmp, strlen(tmp));
@@ -1008,13 +1025,15 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 		LogStr(log, tmp, strlen(tmp));
 	} else if (unkx5__0 == 1) {
 		char tmp[256] = "";
-		sprintf(tmp, "\nEND TEXT JOB %04d\n\n", jobnr);
+		snprintf(tmp, 256, "\nEND TEXT JOB %04d\n\n", jobnr);
+		tmp[255] = '\0';
 
 		if (c) Write(c, tmp, strlen(tmp));
 		LogStr(log, tmp, strlen(tmp));
 	} else if (unkx5__0 == 0) {
 		char tmp[256] = "";
-		sprintf(tmp, "\nINTERRUPTION TEXT JOB %04d\n\n", jobnr);
+		snprintf(tmp, 256, "\nINTERRUPTION TEXT JOB %04d\n\n", jobnr);
+		tmp[255] = '\0';
 
 		if (c) Write(c, tmp, strlen(tmp));
 		LogStr(log, tmp, strlen(tmp));
@@ -1220,7 +1239,8 @@ void LoginPromptRequest(struct connection *conn, char *exch, char *d) {
 		// not found
 		if (found == 0) {
 			char msg[256];
-			sprintf(msg, "EXCHANGE %s NOT FOUND IN LIST!\n\n", p);
+			snprintf(msg, 256, "EXCHANGE %s NOT FOUND IN LIST!\n\n", p);
+			msg[255] = '\0';
 			Write(conn, msg, strlen(msg));
 			IProtoSEND(conn, 0x42, NULL);
 			return;
@@ -1361,7 +1381,8 @@ void AttachRequest(struct connection *c, int id, char *d) {
 	if (i == ConnCount) {
 		// not found
 		char msg[256] = "";
-		sprintf(msg, ":::CONNECTION WITH ID %d NOT FOUND!!!\n", id);
+		snprintf(msg, 256, ":::CONNECTION WITH ID %d NOT FOUND!!!\n", id);
+		msg[255] = '\0';
 		Write(c, msg, strlen(msg));
 		IProtoSEND(c, 0x52, "0");
 		return;
@@ -1370,7 +1391,8 @@ void AttachRequest(struct connection *c, int id, char *d) {
 	if (Conns[i]->Fd != -1) {
 		// someone's already attached
 		char msg[256] = "";
-		sprintf(msg, ":::CONNECTION WITH ID %d NOT DETACHED!!!\n", id);
+		snprintf(msg, 256, ":::CONNECTION WITH ID %d NOT DETACHED!!!\n", id);
+		msg[255] = '\0';
 		Write(c, msg, strlen(msg));
 		IProtoSEND(c, 0x52, "0");
 		return;
@@ -1392,7 +1414,8 @@ void ConnectionIdRequest(struct connection *c, char *d) {
 	log_msg("ConnectionIdRequest()\n");
 
 	char tmp[20] = "";
-	sprintf(tmp, "%d", c->id);
+	snprintf(tmp, 20, "%d", c->id);
+	tmp[19] = '\0';
 	IProtoSEND(c, 0x51, tmp);
 }
 
@@ -1995,7 +2018,8 @@ int main(int argc, char *argv[]) {
 
 				if (r <= 0 && errno != EINTR) {
 					char msg[256] = "";
-					sprintf(msg, "Read from %s failed", X25Conns[i].address);
+					snprintf(msg, 256, "Read from %s failed", X25Conns[i].address);
+					msg[255] = '\0';
 					perror(msg);
 
 					shutdown(fd, SHUT_RDWR);
@@ -2161,7 +2185,8 @@ perror("CONN");
 							strncpy(c->X25LastCommand, c->X25WriteBuf, c->X25WriteBufLen);
 
 							char msg[256] = "";
-							sprintf(msg, ":::%s@%s COMMAND \"%s\"\n", c->user, c->host, c->X25WriteBuf);
+							snprintf(msg, 256, ":::%s@%s COMMAND \"%s\"\n", c->user, c->host, c->X25WriteBuf);
+							msg[255] = '\0';
 							LogStr(MLog, msg, strlen(msg));
 						}
 					} else if (c->X25Prompt[j] == 'I' || c->X25Prompt[j] == 'p') {
@@ -2170,7 +2195,8 @@ perror("CONN");
 						c->X25Prompt[j] = 0;
 							
 						char msg[256] = "";
-						sprintf(msg, ":::%s@%s COMPLETION \"%s\"\n", c->user, c->host, c->X25WriteBuf);
+						snprintf(msg, 256, ":::%s@%s COMPLETION \"%s\"\n", c->user, c->host, c->X25WriteBuf);
+						msg[255] = '\0';
 						LogStr(MLog, msg, strlen(msg));
 					} else if (c->X25Prompt[j] == 'e') {
 						p = command_confirmation_packet(c->X25LastConnId[j], c->id, c->X25LastTail[j], NULL, 0);
@@ -2196,7 +2222,8 @@ perror("CONN");
 						c->X25Prompt[j] = 0;
 							
 						char msg[256] = "";
-						sprintf(msg, "\n\n:::%s@%s TRIED TO LOG IN TO %s AS %s\n", c->user, c->host, X25Conns[j].name, c->X25User);
+						snprintf(msg, 256, "\n\n:::%s@%s TRIED TO LOG IN TO %s AS %s\n", c->user, c->host, X25Conns[j].name, c->X25User);
+						msg[255] = '\0';
 						LogStr(MLog, msg, strlen(msg));
 					} else if (c->X25Prompt[j] == 'N') {
 						memcpy(c->X25NewPasswd, c->X25WriteBuf, c->X25WriteBufLen);
@@ -2218,10 +2245,12 @@ perror("CONN");
 						c->X25LoggedIn[j] = 0;
 						
 						char msg[256] = "";
-						sprintf(msg, "\n\n:::%s@%s TRIED TO LOG OUT FROM %s AS %s\n", c->user, c->host, X25Conns[j].name, c->X25User);
+						snprintf(msg, 256, "\n\n:::%s@%s TRIED TO LOG OUT FROM %s AS %s\n", c->user, c->host, X25Conns[j].name, c->X25User);
+						msg[255] = '\0';
 						LogStr(MLog, msg, strlen(msg));
 
-						sprintf(msg, "\n\n:::LOGOUT FROM %s\n\n", X25Conns[j].name);
+						snprintf(msg, 256, "\n\n:::LOGOUT FROM %s\n\n", X25Conns[j].name);
+						msg[255] = '\0';
 						Write(c, msg, strlen(msg));
 
 						// TODO: create function for this test
@@ -2237,7 +2266,8 @@ perror("CONN");
 							p = login_packet(c->id, c->host, c->X25User, c->X25Passwd, NULL, 1);
 						} else {
 							char msg[256] = "";
-							sprintf(msg, "\n\n:::WRONG ANSWER!!!\n\n");
+							snprintf(msg, 256, "\n\n:::WRONG ANSWER!!!\n\n");
+							msg[255] = '\0';
 							Write(c, msg, strlen(msg));
 
 							LogoutRequest(c, NULL);
@@ -2249,16 +2279,20 @@ perror("CONN");
 
 						if (c->X25LastJob[j] == 0) {
 							char msg[256] = "";
-							sprintf(msg, "\n\n:::NOTHING TO CANCEL ON %s!!!\n\n", X25Conns[j].name);
+							snprintf(msg, 256, "\n\n:::NOTHING TO CANCEL ON %s!!!\n\n", X25Conns[j].name);
+							msg[255] = '\0';
 							Write(c, msg, strlen(msg));
 						} else if (!strncasecmp(c->X25LastCommand, "DISP", 4)
 						|| !strncasecmp(c->X25LastCommand, "STAT", 4)) {
-							sprintf(cmd, "STOPDISP:JN=%d;\n", c->X25LastJob[j]);
+							snprintf(cmd, 256, "STOPDISP:JN=%d;\n", c->X25LastJob[j]);
+							cmd[255] = '\0';
 						} else if (!strncasecmp(c->X25LastCommand, "EXECCMDFILE", 11)) {
-							sprintf(cmd, "STOPJOB:JN=%d;\n", c->X25LastJob[j]);
+							snprintf(cmd, 256, "STOPJOB:JN=%d;\n", c->X25LastJob[j]);
+							cmd[255] = '\0';
 						} else {
 							char msg[256] = "";
-							sprintf(msg, "\n\n:::NO CANCEL COMMAND!!!\n\n");
+							snprintf(msg, 256, "\n\n:::NO CANCEL COMMAND!!!\n\n");
+							msg[255] = '\0';
 							Write(c, msg, strlen(msg));
 						}
 
@@ -2266,10 +2300,12 @@ perror("CONN");
 							p = command_packet(c->id, cmd, strlen(cmd));
 							
 							char msg[256] = "";
-							sprintf(msg, "\n\n:::CANCELLING JOB %d ON %s\n\n", c->X25LastJob[j], X25Conns[j].name);
+							snprintf(msg, 256, "\n\n:::CANCELLING JOB %d ON %s\n\n", c->X25LastJob[j], X25Conns[j].name);
+							msg[255] = '\0';
 							Write(c, msg, strlen(msg));
 							
-							sprintf(msg, "\n\n:::%s@%s CANCELLING JOB %d ON %s\n\n", c->user, c->host, c->X25LastJob[j], X25Conns[j].name);
+							snprintf(msg, 256, "\n\n:::%s@%s CANCELLING JOB %d ON %s\n\n", c->user, c->host, c->X25LastJob[j], X25Conns[j].name);
+							msg[255] = '\0';
 							LogStr(MLog, msg, strlen(msg));
 						}
 
