@@ -165,6 +165,8 @@ int LineLen = 0; /* length of the last line */
 char LockName[100] = "";
 #endif
 
+void HACK_KillStaleConnection(struct connection *c);
+
 ///static char *wl = "4z";
 
 /* Terminal thingies */
@@ -988,6 +990,7 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 
 			// logout from other exchanges, too...
 			LogoutRequest(c, NULL);
+HACK_KillStaleConnection(c);
 		}
 	} else if (c && p->dir == 0x0e && p->pltype == 0) {
 		// Session timeout (or maybe something else, too...)
@@ -996,6 +999,7 @@ void ProcessExchangePacket(struct packet *p, struct connection *c, int idx, FILE
 
 		// logout from other exchanges, too...
 		LogoutRequest(c, NULL);
+HACK_KillStaleConnection(c);
 	}
 
 	char jobnr_s[10] = "";
@@ -1319,6 +1323,28 @@ void SendIntro(struct connection *conn) {
 	}
 
 	WriteChar(conn, SI); /* end burst */
+}
+
+// Try to kill a dead connection
+void HACK_KillStaleConnection(struct connection *c) {
+	log_msg("HACK_KillStaleConnection()\n");
+
+	if (!c->authenticated) return;
+//	if (c->Fd != -1) return; // we don't want to disconnect clients
+
+	int nonelogged = 1;
+	int i = 0;
+	for (i = 0; i < X25ConnCount; i++) {
+		if (c->X25Connected[i] == 0) continue;
+		if (c->X25LoggedIn[i] == 0) continue;
+
+		nonelogged = 0;
+	}
+
+	if (nonelogged) {
+		printf(":::KILL IT!!!\n\n");
+		c->destroy = 1;
+	}
 }
 
 void LogoutRequest(struct connection *c, char *d) {
