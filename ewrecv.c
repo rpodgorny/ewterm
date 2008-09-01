@@ -284,6 +284,24 @@ void SigHupCaught() {
 	signal(SIGHUP, SigHupCaught);
 }
 
+void SigUsr1Caught() {
+	printf("ConnCount = %d\n", ConnCount);
+	int i = 0;
+	for (i = 0; i < ConnCount; i++) {
+		printf("--- conn %d\n", i);
+		printf("  ReadBufferLen = %d\n", Conns[i]->ReadBufferLen);
+		printf("  WriteBufferLen = %d\n", Conns[i]->WriteBufferLen);
+
+		int j = 0;
+		for (j = 0; j < 32; j++) {
+			printf("    %d X25BufLen = %d\n", j, Conns[i]->X25BufLen[j]);
+		}
+
+		printf("  X25WriteBufLen = %d\n", Conns[i]->X25WriteBufLen);
+		printf("\n");
+	}
+}
+
 void Lock(FILE *Fl) {
 	/* Create our lock */
 	Fl = fopen(LockName, "w");
@@ -1556,6 +1574,7 @@ struct connection *TryAccept(int Fd) {
 
 		Conns[ConnCount] = conn;
 		ConnCount++;
+printf(":::ConnCount = %d\n\n", ConnCount);
 	}
 
 	WriteChar(conn, DC1);
@@ -1641,6 +1660,7 @@ void InstallSignals() {
 	signal(SIGQUIT, SigTermCaught);
 	signal(SIGINT, SigTermCaught);
 	signal(SIGHUP, SigHupCaught);
+	signal(SIGUSR1, SigUsr1Caught);
 	signal(SIGPIPE, SIG_IGN);
 }
 
