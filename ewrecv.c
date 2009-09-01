@@ -1402,7 +1402,11 @@ void CancelJobRequest(struct connection *c, char *d) {
 	for (i = 0; i < X25ConnCount; i++) {
 		if (c->X25Connected && c->X25LoggedIn[i] == 0) continue;
 
-		c->X25Prompt[i] = 'c';
+		if (c->X25Prompt[i] == 'I') {
+			c->X25Prompt[i] = 'C';
+		} else {
+			c->X25Prompt[i] = 'c';
+		}
 	}
 }
 
@@ -1963,6 +1967,7 @@ int main(int argc, char *argv[]) {
 					for (k = 0; k < X25ConnCount; k++) {
 						if (Conns[j]->X25Connected[k]
 						&& (Conns[j]->X25Prompt[k] == 'X'
+						|| Conns[j]->X25Prompt[k] == 'C'
 						|| Conns[j]->X25Prompt[k] == 'c'
 						|| Conns[j]->X25Prompt[k] == 'e')) {
 							add = 1;
@@ -2205,6 +2210,7 @@ perror("CONN");
 
 					if (c->X25WriteBufLen == 0
 					&& c->X25Prompt[j] != 'X'
+					&& c->X25Prompt[j] != 'C'
 					&& c->X25Prompt[j] != 'c'
 					&& c->X25Prompt[j] != 'e') {
 						continue;
@@ -2320,7 +2326,14 @@ perror("CONN");
 						}
 
 						c->X25Prompt[j] = 0;
+					} else if (c->X25Prompt[j] == 'C') {
+						// cancel in iteractive MML
+						p = command_cancel_packet(c->X25LastConnId[j], c->id, c->X25LastTail[j], c->X25LastJob[j]);
+
+						c->X25LastJob[j] = 0;
+						c->X25Prompt[j] = 0;
 					} else if (c->X25Prompt[j] == 'c') {
+						// cancel everywhere else
 						char cmd[256] = "";
 
 						if (c->X25LastJob[j] == 0) {
@@ -2328,6 +2341,7 @@ perror("CONN");
 							snprintf(msg, 256, "\n\n:::NOTHING TO CANCEL ON %s!!!\n\n", X25Conns[j].name);
 							msg[255] = '\0';
 							Write(c, msg, strlen(msg));
+
 						} else if (!strncasecmp(c->X25LastCommand, "DISP", 4)
 						|| !strncasecmp(c->X25LastCommand, "STAT", 4)) {
 							snprintf(cmd, 256, "STOPDISP:JN=%d;\n", c->X25LastJob[j]);
@@ -2356,7 +2370,6 @@ perror("CONN");
 						}
 
 						c->X25LastJob[j] = 0;
-
 						c->X25Prompt[j] = 0;
 					}
 

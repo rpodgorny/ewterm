@@ -207,3 +207,35 @@ struct packet *command_confirmation_packet(unsigned short connid, unsigned short
 
 	return ret;
 }
+
+struct packet *command_cancel_packet(unsigned short connid, unsigned short sessid, unsigned char tail, unsigned short jobnr) {
+	struct packet *ret = packet_alloc();
+	ret->family = 0xf1;
+	ret->unk1 = 0xe0;
+	ret->dir = 0x03;
+	ret->pltype = 0x01;
+	ret->connid = connid;
+	ret->subseq = 0;
+	ret->unk2 = 0;
+	ret->sessid = sessid;
+	ret->tail = tail;
+
+	ret->data = block_alloc();
+	ret->data->id = 0x0a;
+	ret->data->data = NULL;
+	ret->data->nchildren = 0;
+
+	unsigned char xxx[1024];
+
+	xxx[0] = 0x05;
+	block_addchild(ret->data, "1", xxx, 1);
+
+	*(unsigned short *)(xxx) = htons(0);
+	*(unsigned short *)(xxx+2) = htons(jobnr);
+	*(unsigned short *)(xxx+4) = htons(0);
+	*(unsigned short *)(xxx+6) = htons(0);
+	*(unsigned short *)(xxx+8) = htons(0);
+	block_addchild(ret->data, "2", xxx, 0x0a);
+
+	return ret;
+}

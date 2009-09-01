@@ -15,8 +15,9 @@ char ROConnPassword[128];
 #define BUF_GRAIN 256
 
 void *ShrinkBuffer(void *Buf, int Len) {
+#ifdef DEBUG
 	printf(":::SHRINK %x %d\n\n", Buf, Len);
-
+#endif
 	if (!(Len % BUF_GRAIN)) {
 		Buf = realloc(Buf, Len + BUF_GRAIN);
 	}

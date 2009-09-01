@@ -8,5 +8,6 @@ struct packet *login_packet(unsigned short, char *, char *, char *, char *, unsi
 struct packet *logout_packet(unsigned short);
 struct packet *command_packet(unsigned short, char *, int);
 struct packet *command_confirmation_packet(unsigned short, unsigned short, unsigned char, char *, int);
+struct packet *command_cancel_packet(unsigned short, unsigned short, unsigned char, unsigned short);
 
 #endif
